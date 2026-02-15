@@ -27,8 +27,8 @@ param metricCategories array = [
   }
 ]
 
-@description('Enable all log categories automatically')
-param enableAllLogs bool = true
+// @description('Enable all log categories automatically')
+// param enableAllLogs bool = true
 
 // Note: This module is meant to be called with a specific resource scope
 // Example usage in parent template:

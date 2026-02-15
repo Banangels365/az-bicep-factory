@@ -2,7 +2,7 @@
 using 'main.bicep'
 
 // Organization configuration
-param organizationName = 'contoso'
+param organizationName = 'ACMY'
 param location = 'canadacentral'
 param environment = 'prod'
 
@@ -16,22 +16,8 @@ param tags = {
 }
 
 // Logging configuration
-param logRetentionDays = 90
-param enableSentinel = true
+// param logRetentionDays = 90
+// param enableSentinel = true
 
-// Subscription associations
-param managementSubscriptionId = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
-
-param devSubscriptionIds = [
-  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
-]
-
-param stagingSubscriptionIds = [
-  'cccccccc-cccc-cccc-cccc-cccccccccccc'
-]
-
-param prodSubscriptionIds = [
-  'dddddddd-dddd-dddd-dddd-dddddddddddd'
-  'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
-]
+// billing scope ID for subscription creation
+param managementSubscriptionId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
