@@ -43,10 +43,10 @@ echo "Adding Federated Credential (OIDC)..."
 az ad app federated-credential create \
   --id "$APP_ID" \
   --parameters "{
-    \"name\": \"github-oidc\",
+    \"name\": \"github-oidc-environment\",
     \"issuer\": \"https://token.actions.githubusercontent.com\",
-    \"subject\": \"repo:${GITHUB_USERNAME}/${REPO_NAME}:ref:refs/heads/*\",
-    \"description\": \"GitHub Actions OIDC\",
+    \"subject\": \"repo:${GITHUB_USERNAME}/${REPO_NAME}:environment:pr-validation\",
+    \"description\": \"GitHub Actions OIDC via Environment\",
     \"audiences\": [\"api://AzureADTokenExchange\"]
   }"
 
