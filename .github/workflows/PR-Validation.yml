@@ -19,6 +19,7 @@ jobs:
 
     env:
       LOCATION: canadacentral
+      ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MG_ID }}   # ID du management group racine
 
     steps:
       - name: Checkout repository
@@ -29,7 +30,8 @@ jobs:
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # subscription-id peut être omis si le principal a les droits sur le MG
+          # subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Install Bicep
         run: az bicep install
@@ -44,29 +46,30 @@ jobs:
             az bicep lint --file "$file"
           done
 
-      # 🔎 Validation des paramètres
-      - name: Validate all parameter files
+      # 🔎 Validation des fichiers de paramètres au niveau management group
+      - name: Validate parameter files (Management Group scope)
         run: |
-          echo "=== Validating Parameter Files ==="
+          echo "=== Validating Parameter Files at MG scope ==="
           for param in $(find . -name '*.bicepparam'); do
             echo "Validating $param"
-            az deployment sub validate \
+            az deployment mg validate \
+              --management-group-id $ROOT_MG_ID \
               --location $LOCATION \
               --template-file main.bicep \
               --parameters "$param" || true
           done
 
-      # 🔎 What-If global
-      - name: Subscription What-If
+      # 🔎 What-If au niveau du management group racine
+      - name: Management Group What-If
         run: |
-          az deployment sub what-if \
-            --management-group-id ${{ secrets.AZURE_ROOT_MG_ID }} \
+          az deployment mg what-if \
+            --management-group-id $ROOT_MG_ID \
             --location $LOCATION \
             --template-file main.bicep \
             --parameters main.bicepparam
         continue-on-error: true
 
-      # 🔐 PSRule
+      # 🔐 PSRule for Azure
       - name: PSRule for Azure
         uses: microsoft/ps-rule@v2.9.0
         with:
@@ -86,3 +89,4 @@ jobs:
       - name: Azure Logout
         if: always()
         run: az logout
+        
