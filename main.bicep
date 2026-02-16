@@ -1,7 +1,7 @@
 // az-platform-lz/main.bicep
 // Main orchestrator for Azure Landing Zone Platform deployment
 
-targetScope = 'tenant'
+targetScope = 'managementGroup'
 
 @description('Organization name (used for naming)')
 param organizationName string = 'ACMY'

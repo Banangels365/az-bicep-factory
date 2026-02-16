@@ -1,69 +1,88 @@
 name: Azure Landing Zone - PR Validation
+
 on:
   push:
-    branches-ignore: 
+    branches-ignore:
       - main
   pull_request:
     branches-ignore:
       - main
+
 permissions:
   contents: read
   id-token: write
+
 jobs:
-  bicep_validation:
-    name: Bicep Validation
+  validate:
+    name: Validate Bicep & Security
     runs-on: ubuntu-latest
+
     env:
-      LOCATION: canadacentral  # Ajustez selon votre région
+      LOCATION: canadacentral
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    # Validation de la structure des fichiers Bicep
-    - name: Bicep Build & Validate
-      shell: bash
-      run: |
-        echo "=== Validating Platform Bicep Files ==="
-        for file in $(find . -name '*.bicep' -not -path '*/\.*'); do
-          echo "Building $file"
-          az bicep build --file "$file"
-          az bicep lint --file "$file"
-        done
-    
-    # What-If pour voir les changements sans déployer
-    - name: Azure Deployment What-If
-      shell: bash
-      run: |
-        az deployment sub what-if \
-          --location ${{ env.LOCATION }} \
-          --template-file main.bicep \
-          --parameters main.bicepparam
-      continue-on-error: true
-  
-    
-    # Analyse de sécurité avec PSRule for Azure
-    - name: PSRule for Azure
-      uses: microsoft/ps-rule@v2.9.0
-      with:
-        modules: PSRule.Rules.Azure
-        inputType: repository
-        inputPath: .
-      continue-on-error: true
-    
-    # Checkov pour analyse de sécurité
-    - name: Run Checkov
-      uses: bridgecrewio/checkov-action@master
-      with:
-        framework: bicep
-        directory: .
-        soft_fail: false
-    
-    - name: Azure Logout
-      shell: bash
-      run: az logout
-      if: always()
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep
+        run: az bicep install
+
+      # 🔎 Build & Lint tous les fichiers Bicep
+      - name: Build & Lint all Bicep files
+        run: |
+          echo "=== Bicep Validation ==="
+          for file in $(find . -name '*.bicep' -not -path '*/\.*'); do
+            echo "Building $file"
+            az bicep build --file "$file"
+            az bicep lint --file "$file"
+          done
+
+      # 🔎 Validation des paramètres
+      - name: Validate all parameter files
+        run: |
+          echo "=== Validating Parameter Files ==="
+          for param in $(find . -name '*.bicepparam'); do
+            echo "Validating $param"
+            az deployment sub validate \
+              --location $LOCATION \
+              --template-file main.bicep \
+              --parameters "$param" || true
+          done
+
+      # 🔎 What-If global
+      - name: Subscription What-If
+        run: |
+          az deployment sub what-if \
+            --management-group-id ${{ secrets.AZURE_ROOT_MG_ID }} \
+            --location $LOCATION \
+            --template-file main.bicep \
+            --parameters main.bicepparam
+        continue-on-error: true
+
+      # 🔐 PSRule
+      - name: PSRule for Azure
+        uses: microsoft/ps-rule@v2.9.0
+        with:
+          modules: PSRule.Rules.Azure
+          inputType: repository
+          inputPath: .
+        continue-on-error: false
+
+      # 🔐 Checkov
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: bicep
+          directory: .
+          soft_fail: false
+
+      - name: Azure Logout
+        if: always()
+        run: az logout
