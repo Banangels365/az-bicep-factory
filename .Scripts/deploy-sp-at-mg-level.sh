@@ -6,8 +6,8 @@
 set -euo pipefail
 
 GITHUB_USERNAME="Banangels365"
-REPO_NAME="az-platform-lz"
-SP_NAME="sp-github-az-platform-lz"
+REPO_NAME="az-bicep-factory"
+SP_NAME="sp-mg-az-demo-lz"
 
 echo "Getting Tenant ID..."
 TENANT_ID=$(az account show --query tenantId -o tsv)

@@ -1,4 +1,4 @@
-// az-platform-lz/policy-initiative/main.bicep
+// platform-lz/policy-initiative/main.bicep
 // Azure Policy Initiative (Policy Set Definition) module
 
 targetScope = 'managementGroup'

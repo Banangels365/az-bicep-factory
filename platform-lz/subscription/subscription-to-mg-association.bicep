@@ -1,4 +1,4 @@
-// az-platform-lz/subscription/subscription-to-mg-association.bicep
+// platform-lz/subscription/subscription-to-mg-association.bicep
 // Subscription to management group association module for centralized subscription management
 
 targetScope = 'tenant'

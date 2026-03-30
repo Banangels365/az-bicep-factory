@@ -1,4 +1,4 @@
-// az-platform-lz/log-analytics-workspace/main.bicep
+// platform-lz/log-analytics-workspace/main.bicep
 // Log Analytics Workspace module for centralized logging
 
 @description('Log Analytics Workspace name')
@@ -109,9 +109,3 @@ output workspaceName string = logAnalyticsWorkspace.name
 
 @description('Log Analytics Workspace customer ID')
 output customerId string = logAnalyticsWorkspace.properties.customerId
-
-@description('Log Analytics Workspace primary shared key')
-output primarySharedKey string = logAnalyticsWorkspace.listKeys().primarySharedKey
-
-@description('Log Analytics Workspace secondary shared key')
-output secondarySharedKey string = logAnalyticsWorkspace.listKeys().secondarySharedKey

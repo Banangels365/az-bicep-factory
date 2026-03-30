@@ -1,4 +1,4 @@
-// az-platform-lz/management-group/main.bicep
+// platform-lz/management-group/main.bicep
 // Management Group module for Azure Landing Zone hierarchy
 
 targetScope = 'tenant'
@@ -14,8 +14,8 @@ param displayName string
 @description('Parent Management Group ID (leave empty for root level)')
 param parentManagementGroupId string = ''
 
-@description('Subscription IDs to associate with this management group')
-param subscriptionIds array = []
+// @description('Subscription IDs to associate with this management group')
+// param subscriptionIds array = []
 
 // Management Group Resource
 resource managementGroup 'Microsoft.Management/managementGroups@2023-04-01' = {
@@ -33,12 +33,12 @@ resource managementGroup 'Microsoft.Management/managementGroups@2023-04-01' = {
 }
 
 // Associate subscriptions to management group
-resource subscriptionAssociations 'Microsoft.Management/managementGroups/subscriptions@2023-04-01' = [
-  for subscriptionId in subscriptionIds: {
-    parent: managementGroup
-    name: subscriptionId
-  }
-]
+// resource subscriptionAssociations 'Microsoft.Management/managementGroups/subscriptions@2023-04-01' = [
+//   for subscriptionId in subscriptionIds: {
+//     parent: managementGroup
+//     name: subscriptionId
+//   }
+// ]
 
 // Outputs
 @description('Management Group resource ID')

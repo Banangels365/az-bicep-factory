@@ -1,4 +1,4 @@
-// az-platform-lz/policy-assignment/main.bicep
+// platform-lz/policy-assignment/main.bicep
 // Azure Policy Assignment module
 
 targetScope = 'managementGroup'

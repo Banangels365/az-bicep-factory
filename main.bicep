@@ -1,4 +1,4 @@
-// az-platform-lz/main.bicep
+// platform-lz/main.bicep
 // Main orchestrator for Azure Landing Zone Platform deployment
 
 targetScope = 'managementGroup'
@@ -68,7 +68,7 @@ var managementGroupPrefix = organizationName
 // ============================================
 
 // Root Management Group (Tenant Root Group is implicit)
-module rootMg 'management-group/main.bicep' = {
+module rootMg './platform-lz/management-group/main.bicep' = {
   name: 'lab-root-mg'
   scope: tenant()
   params: {
@@ -110,7 +110,7 @@ module rootMg 'management-group/main.bicep' = {
 // }
 
 // Production Management Group
-module prodMg 'management-group/main.bicep' = {
+module prodMg './platform-lz/management-group/main.bicep' = {
   name: 'Lab-prod-mg'
   scope: tenant()
   params: {
@@ -126,7 +126,7 @@ module prodMg 'management-group/main.bicep' = {
 }
 
 // Development Management Group
-module devMg 'management-group/main.bicep' = {
+module devMg './platform-lz/management-group/main.bicep' = {
   name: 'Lab-dev-mg'
   scope: tenant()
   params: {
@@ -142,7 +142,7 @@ module devMg 'management-group/main.bicep' = {
 }
 
 // Logging Management Group
-module loggingMg 'management-group/main.bicep' = {
+module loggingMg './platform-lz/management-group/main.bicep' = {
   name: 'Lab-logging-mg'
   scope: tenant()
   params: {
@@ -157,7 +157,7 @@ module loggingMg 'management-group/main.bicep' = {
 }
 
 // Quarantine Management Group
-module quarantineMg 'management-group/main.bicep' = {
+module quarantineMg './platform-lz/management-group/main.bicep' = {
   name: 'Lab-quarantine-mg'
   scope: tenant()
   params: {
@@ -174,7 +174,7 @@ module quarantineMg 'management-group/main.bicep' = {
 // ============================================
 // SUBSCRIPTION CREATION
 // ============================================
-module prodSubscription_1 'subscription/main.bicep' = {
+module prodSubscription_1 './platform-lz/subscription/main.bicep' = {
   name: 'deploy-prod-subscription-01'
   scope: tenant()
   params: {
@@ -188,7 +188,7 @@ module prodSubscription_1 'subscription/main.bicep' = {
   ]
 }
 
-module prodSubscription_2 'subscription/main.bicep' = {
+module prodSubscription_2 './platform-lz/subscription/main.bicep' = {
   name: 'deploy-prod-subscription-02'
   scope: tenant()
   params: {
@@ -202,7 +202,7 @@ module prodSubscription_2 'subscription/main.bicep' = {
   ]
 }
 
-module loggingSubscription 'subscription/main.bicep' = {
+module loggingSubscription './platform-lz/subscription/main.bicep' = {
   name: 'deploy-logging-subscription'
   scope: tenant()
   params: {
@@ -220,7 +220,7 @@ module loggingSubscription 'subscription/main.bicep' = {
 // SUBSCRIPTION TO MANAGEMENT GROUP ASSOCIATIONS
 // ============================================
 
-module prodSubscriptionAssociation_1 'subscription/subscription-to-mg-association.bicep' = {
+module prodSubscriptionAssociation_1 './platform-lz/subscription/subscription-to-mg-association.bicep' = {
   name: 'associate-prod-subscription-01'
   scope: tenant()
   params: {
@@ -233,7 +233,7 @@ module prodSubscriptionAssociation_1 'subscription/subscription-to-mg-associatio
   ]
 }
 
-module prodSubscriptionAssociation_2 'subscription/subscription-to-mg-association.bicep' = {
+module prodSubscriptionAssociation_2 './platform-lz/subscription/subscription-to-mg-association.bicep' = {
   name: 'associate-prod-subscription-02'
   scope: tenant()
   params: {
@@ -246,7 +246,7 @@ module prodSubscriptionAssociation_2 'subscription/subscription-to-mg-associatio
   ]
 }
 
-module loggingSubscriptionAssociation 'subscription/subscription-to-mg-association.bicep' = {
+module loggingSubscriptionAssociation './platform-lz/subscription/subscription-to-mg-association.bicep' = {
   name: 'associate-logging-subscription'
   scope: tenant()
   params: {
@@ -263,7 +263,7 @@ module loggingSubscriptionAssociation 'subscription/subscription-to-mg-associati
 // RESOURCES GROUP CREATION
 // ============================================
 
-module NetworkingRg 'resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+module NetworkingRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
   name: 'deploy-networking-rg'
   scope: subscription(prodSubscriptionId)
   params: {
@@ -277,7 +277,7 @@ module NetworkingRg 'resource-group/main.bicep' = if (!empty(prodSubscriptionId)
   ]
 }
 
-module IdentityRg 'resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+module IdentityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
   name: 'deploy-identity-rg'
   scope: subscription(prodSubscriptionId)
   params: {
@@ -291,7 +291,7 @@ module IdentityRg 'resource-group/main.bicep' = if (!empty(prodSubscriptionId)) 
   ]
 }
 
-module SecurityRg 'resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+module SecurityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
   name: 'deploy-security-rg'
   scope: subscription(prodSubscriptionId)
   params: {
@@ -305,7 +305,7 @@ module SecurityRg 'resource-group/main.bicep' = if (!empty(prodSubscriptionId)) 
   ]
 }
 
-module OperationsRg 'resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
   name: 'deploy-operations-rg'
   scope: subscription(prodSubscriptionId)
   params: {

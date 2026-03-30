@@ -1,4 +1,4 @@
-// az-platform-lz/resource-group/main.bicep
+// platform-lz/resource-group/main.bicep
 // Resource Group module for centralized resource management
 
 targetScope = 'subscription'

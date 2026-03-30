@@ -6,8 +6,8 @@ set -euo pipefail
 
 SUBSCRIPTION_ID="0061dc3e-7704-4778-bcda-b566d000d486"
 GITHUB_USERNAME="Banangels365"
-REPO_NAME="az-platform-lz"
-SP_NAME="sp-github-az-platform-lz"
+REPO_NAME="az-bicep-factory"
+SP_NAME="sp-sub-az-demo-lz"
 
 echo "Creating Azure AD Application..."
 
