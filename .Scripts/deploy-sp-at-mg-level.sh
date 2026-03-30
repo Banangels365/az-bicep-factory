@@ -23,7 +23,6 @@ if [ -z "$ROOT_MG_ID" ]; then
 fi
 
 echo "Creating Azure AD Application..."
-
 APP_ID=$(az ad app create \
   --display-name "$SP_NAME" \
   --query appId -o tsv)
@@ -32,20 +31,18 @@ echo "Creating Service Principal..."
 az ad sp create --id "$APP_ID" > /dev/null
 
 echo "Assigning RBAC role at Root Management Group..."
-
 az role assignment create \
   --assignee "$APP_ID" \
   --role Owner \
   --scope /providers/Microsoft.Management/managementGroups/$ROOT_MG_ID
 
 echo "Adding Federated Credential (OIDC)..."
-
 az ad app federated-credential create \
   --id "$APP_ID" \
   --parameters "{
     \"name\": \"github-oidc-environment\",
     \"issuer\": \"https://token.actions.githubusercontent.com\",
-    \"subject\": \"repo:${GITHUB_USERNAME}/${REPO_NAME}:environment:pr-validation\",
+    \"subject\": \"repo:${GITHUB_USERNAME}/${REPO_NAME}:environment:Sandbox\",
     \"description\": \"GitHub Actions OIDC via Environment\",
     \"audiences\": [\"api://AzureADTokenExchange\"]
   }"
@@ -62,3 +59,8 @@ echo "Add these values as GitHub repository secrets:"
 echo "- AZURE_CLIENT_ID"
 echo "- AZURE_TENANT_ID"
 echo "- AZURE_SUBSCRIPTION_ID (optional if needed)"
+
+# If the script fail to execute due to Microsoft graph conections, 
+# Run this command in Azure Cloud Shell (Bash) to refresh permissions for the app. 
+# This is needed if you get errors related to Microsoft Graph permissions when running the script.:
+# az login --scope "https://graph.microsoft.com/.default"
