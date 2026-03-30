@@ -21,6 +21,7 @@ param location string = 'canadacentral'
   'dev'
   'logging'
   'quarantine'
+  'sandbox'
 ])
 param environment string = 'prod'
 
@@ -29,6 +30,9 @@ param managementSubscriptionId string
 
 @description('Production subscription ID for resources')
 param prodSubscriptionId string = ''
+
+// @description('Liste des abonnements à créer')
+// param subscriptions array = []
 
 @description('Tags to apply to all resources')
 param tags object = {
@@ -74,6 +78,7 @@ module rootMg './platform-lz/management-group/main.bicep' = {
   params: {
     managementGroupId: '${managementGroupPrefix}-root'
     displayName: '${organizationName} Root'
+    parentManagementGroupId: 'ec11ba4c-e4cc-4358-95f4-be3f5b30cf99' // Root management group ID (tenant root group)
     // description: 'Root management group for ${organizationName}'
   }
 }
@@ -117,8 +122,6 @@ module prodMg './platform-lz/management-group/main.bicep' = {
     managementGroupId: '${managementGroupPrefix}-prod'
     displayName: 'Production'
     parentManagementGroupId: '${managementGroupPrefix}-root'
-    // subscriptionIds: prodSubscriptionIds
-    // description: 'Management group for production workloads'
   }
   dependsOn: [
     rootMg
@@ -133,8 +136,6 @@ module devMg './platform-lz/management-group/main.bicep' = {
     managementGroupId: '${managementGroupPrefix}-dev'
     displayName: 'Development'
     parentManagementGroupId: '${managementGroupPrefix}-root'
-    // subscriptionIds: prodSubscriptionIds
-    // description: 'Management group for development workloads'
   }
   dependsOn: [
     rootMg
@@ -149,7 +150,6 @@ module loggingMg './platform-lz/management-group/main.bicep' = {
     managementGroupId: '${managementGroupPrefix}-logging'
     displayName: 'Logging'
     parentManagementGroupId: '${managementGroupPrefix}-root'
-    // description: 'Management group for sandbox/experimentation workloads'
   }
   dependsOn: [
     rootMg
@@ -164,100 +164,73 @@ module quarantineMg './platform-lz/management-group/main.bicep' = {
     managementGroupId: '${managementGroupPrefix}-quarantine'
     displayName: 'Quarantine'
     parentManagementGroupId: '${managementGroupPrefix}-root'
-    // description: 'Management group for quarantine resources'
   }
   dependsOn: [
     rootMg
   ]
 }
 
+// Configuration des abonnements à créer
+var subscriptionConfigs = [
+  {
+    alias: 'sub-prod-${organizationName}-01'
+    displayName: '${organizationName} Production Subscription 01'
+    billingScope: managementSubscriptionId
+    workload: 'Prod'
+    mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
+  }
+  {
+    alias: 'sub-prod-${organizationName}-02'
+    displayName: '${organizationName} Production Subscription 02'
+    billingScope: managementSubscriptionId
+    workload: 'Prod'
+    mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
+  }
+  {
+    alias: 'sub-logging-${organizationName}'
+    displayName: '${organizationName} Logging Subscription'
+    billingScope: managementSubscriptionId
+    workload: 'Logging'
+    mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-logging'
+  }
+]
+
 // ============================================
 // SUBSCRIPTION CREATION
 // ============================================
-module prodSubscription_1 './platform-lz/subscription/main.bicep' = {
-  name: 'deploy-prod-subscription-01'
-  scope: tenant()
-  params: {
-    subscriptionAliasName: 'sub-prod-${organizationName}-01'
-    subscriptionDisplayName: '${organizationName} Production Subscription 01'
-    billingScope: managementSubscriptionId
-    workload: 'Prod'
-  }
-  dependsOn: [
-    prodMg
-  ]
-}
 
-module prodSubscription_2 './platform-lz/subscription/main.bicep' = {
-  name: 'deploy-prod-subscription-02'
-  scope: tenant()
-  params: {
-    subscriptionAliasName: 'sub-prod-${organizationName}-02'
-    subscriptionDisplayName: '${organizationName} Production Subscription 02'
-    billingScope: managementSubscriptionId
-    workload: 'Prod'
+module subscriptionsModule './platform-lz/subscription/main.bicep' = [
+  for sub in subscriptionConfigs: {
+    scope: tenant()
+    params: {
+      subscriptionAliasName: sub.alias
+      subscriptionDisplayName: sub.displayName
+      billingScope: sub.billingScope
+      workload: sub.workload
+    }
+    dependsOn: [
+      prodMg
+      loggingMg
+    ]
   }
-  dependsOn: [
-    prodMg
-  ]
-}
-
-module loggingSubscription './platform-lz/subscription/main.bicep' = {
-  name: 'deploy-logging-subscription'
-  scope: tenant()
-  params: {
-    subscriptionAliasName: 'sub-logging-${organizationName}'
-    subscriptionDisplayName: '${organizationName} Logging Subscription'
-    billingScope: managementSubscriptionId
-    workload: 'Logging'
-  }
-  dependsOn: [
-    loggingMg
-  ]
-}
+]
 
 // ============================================
 // SUBSCRIPTION TO MANAGEMENT GROUP ASSOCIATIONS
 // ============================================
 
-module prodSubscriptionAssociation_1 './platform-lz/subscription/subscription-to-mg-association.bicep' = {
-  name: 'associate-prod-subscription-01'
-  scope: tenant()
-  params: {
-    subscriptionId: prodSubscription_1.outputs.subscriptionId
-    managementGroupId: prodMg.outputs.managementGroupId
+module subscriptionAssociations './platform-lz/subscription/subscription-to-mg-association.bicep' = [
+  for (sub, i) in subscriptionConfigs: {
+    scope: tenant()
+    params: {
+      subscriptionId: subscriptionsModule[i].outputs.subscriptionId
+      managementGroupId: sub.mgId
+    }
+    dependsOn: [
+      subscriptionsModule[i]
+    ]
   }
-  dependsOn: [
-    // prodSubscription_1
-    // prodMg
-  ]
-}
-
-module prodSubscriptionAssociation_2 './platform-lz/subscription/subscription-to-mg-association.bicep' = {
-  name: 'associate-prod-subscription-02'
-  scope: tenant()
-  params: {
-    subscriptionId: prodSubscription_2.outputs.subscriptionId
-    managementGroupId: prodMg.outputs.managementGroupId
-  }
-  dependsOn: [
-    // prodSubscription_2
-    // prodMg
-  ]
-}
-
-module loggingSubscriptionAssociation './platform-lz/subscription/subscription-to-mg-association.bicep' = {
-  name: 'associate-logging-subscription'
-  scope: tenant()
-  params: {
-    subscriptionId: loggingSubscription.outputs.subscriptionId
-    managementGroupId: loggingMg.outputs.managementGroupId
-  }
-  dependsOn: [
-    // loggingSubscription
-    // loggingMg
-  ]
-}
+]
 
 // ============================================
 // RESOURCES GROUP CREATION

@@ -1,14 +1,14 @@
-// az-platform-lz/main.bicepparam
+// platform-lz/main.bicepparam
 using 'main.bicep'
 
 // Organization configuration
 param organizationName = 'ACMY'
 param location = 'canadacentral'
-param environment = 'prod'
+param environment = 'sandbox'
 
 // Tagging strategy
 param tags = {
-  Environment: 'Production'
+  Environment: 'sandbox'
   ManagedBy: 'Bicep'
   CostCenter: 'IT-Platform'
   Owner: 'CloudOps-Team'
@@ -20,4 +20,4 @@ param tags = {
 // param enableSentinel = true
 
 // billing scope ID for subscription creation
-param managementSubscriptionId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+param managementSubscriptionId = 'f3a6536e-1f68-4ca4-bb51-adf7822ec8bc' // Subscription ID where the management group and billing scope are located
