@@ -236,6 +236,16 @@ module subscriptionAssociations './platform-lz/subscription/subscription-to-mg-a
 // RESOURCES GROUP CREATION
 // ============================================
 
+module managementRg './platform-lz/resource-group/main.bicep' = {
+  name: 'deploy-management-rg'
+  scope: subscription(managementSubscriptionId)
+  params: {
+    resourceGroupName: 'rg-${environment}-${location}-management'
+    location: location
+    tags: tags
+  }
+}
+
 module NetworkingRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
   name: 'deploy-networking-rg'
   scope: subscription(prodSubscriptionId)
