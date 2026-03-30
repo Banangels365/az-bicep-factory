@@ -29,21 +29,21 @@ param subscriptions = [
     displayName: '${organizationName} Production Subscription 01'
     billingScope: '/subscriptions/${managementSubscriptionId}'
     workload: 'Prod'
-    mgId: '/providers/Microsoft.Management/managementGroups/${organizationName}-prod'
+    mgId: '${organizationName}-prod'
   }
   {
     alias: 'sub-prod-${organizationName}-02'
     displayName: '${organizationName} Production Subscription 02'
     billingScope: '/subscriptions/${managementSubscriptionId}'
     workload: 'Prod'
-    mgId: '/providers/Microsoft.Management/managementGroups/${organizationName}-prod'
+    mgId: '${organizationName}-prod'
   }
   {
     alias: 'sub-logging-${organizationName}'
     displayName: '${organizationName} Logging Subscription'
     billingScope: '/subscriptions/${managementSubscriptionId}'
     workload: 'Logging'
-    mgId: '/providers/Microsoft.Management/managementGroups/${organizationName}-logging'
+    mgId: '${organizationName}-logging'
   }
   // Ajoutez d'autres
 ]

@@ -78,7 +78,7 @@ module rootMg './platform-lz/management-group/main.bicep' = {
   params: {
     managementGroupId: '${managementGroupPrefix}-root'
     displayName: '${organizationName} Root'
-    parentManagementGroupId: 'ec11ba4c-e4cc-4358-95f4-be3f5b30cf99' // Root management group ID (tenant root group)
+    parentManagementGroupId: 'Tenant Root Group' // Root management group ID (tenant root group)
     // description: 'Root management group for ${organizationName}'
   }
 }
