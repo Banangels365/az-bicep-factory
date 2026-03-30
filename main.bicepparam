@@ -1,12 +1,12 @@
 // platform-lz/main.bicepparam
-using 'main.bicep'
+using './main.bicep'
 
 // Organization configuration
 param organizationName = 'ACMY'
 param location = 'canadacentral'
 param environment = 'sandbox'
 
-// Tagging strategy
+// liste des tags à appliquer à toutes les ressources
 param tags = {
   Environment: 'sandbox'
   ManagedBy: 'Bicep'
@@ -21,3 +21,29 @@ param tags = {
 
 // billing scope ID for subscription creation
 param managementSubscriptionId = 'f3a6536e-1f68-4ca4-bb51-adf7822ec8bc' // Subscription ID where the management group and billing scope are located
+
+// Liste des abonnements à créer
+param subscriptions = [
+  {
+    alias: 'sub-prod-${organizationName}-01'
+    displayName: '${organizationName} Production Subscription 01'
+    billingScope: '/subscriptions/${managementSubscriptionId}'
+    workload: 'Prod'
+    mgId: '/providers/Microsoft.Management/managementGroups/${organizationName}-prod'
+  }
+  {
+    alias: 'sub-prod-${organizationName}-02'
+    displayName: '${organizationName} Production Subscription 02'
+    billingScope: '/subscriptions/${managementSubscriptionId}'
+    workload: 'Prod'
+    mgId: '/providers/Microsoft.Management/managementGroups/${organizationName}-prod'
+  }
+  {
+    alias: 'sub-logging-${organizationName}'
+    displayName: '${organizationName} Logging Subscription'
+    billingScope: '/subscriptions/${managementSubscriptionId}'
+    workload: 'Logging'
+    mgId: '/providers/Microsoft.Management/managementGroups/${organizationName}-logging'
+  }
+  // Ajoutez d'autres
+]

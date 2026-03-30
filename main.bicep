@@ -31,8 +31,8 @@ param managementSubscriptionId string
 @description('Production subscription ID for resources')
 param prodSubscriptionId string = ''
 
-// @description('Liste des abonnements à créer')
-// param subscriptions array = []
+@description('Liste des abonnements à créer')
+param subscriptions array = []
 
 @description('Tags to apply to all resources')
 param tags object = {
@@ -171,36 +171,36 @@ module quarantineMg './platform-lz/management-group/main.bicep' = {
 }
 
 // Configuration des abonnements à créer
-var subscriptionConfigs = [
-  {
-    alias: 'sub-prod-${organizationName}-01'
-    displayName: '${organizationName} Production Subscription 01'
-    billingScope: managementSubscriptionId
-    workload: 'Prod'
-    mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
-  }
-  {
-    alias: 'sub-prod-${organizationName}-02'
-    displayName: '${organizationName} Production Subscription 02'
-    billingScope: managementSubscriptionId
-    workload: 'Prod'
-    mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
-  }
-  {
-    alias: 'sub-logging-${organizationName}'
-    displayName: '${organizationName} Logging Subscription'
-    billingScope: managementSubscriptionId
-    workload: 'Logging'
-    mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-logging'
-  }
-]
+// var subscriptionConfigs = [
+//   {
+//     alias: 'sub-prod-${organizationName}-01'
+//     displayName: '${organizationName} Production Subscription 01'
+//     billingScope: '/subscriptions/${managementSubscriptionId}'
+//     workload: 'Prod'
+//     mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
+//   }
+//   {
+//     alias: 'sub-prod-${organizationName}-02'
+//     displayName: '${organizationName} Production Subscription 02'
+//     billingScope: '/subscriptions/${managementSubscriptionId}'
+//     workload: 'Prod'
+//     mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
+//   }
+//   {
+//     alias: 'sub-logging-${organizationName}'
+//     displayName: '${organizationName} Logging Subscription'
+//     billingScope: '/subscriptions/${managementSubscriptionId}'
+//     workload: 'Logging'
+//     mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-logging'
+//   }
+// ]
 
 // ============================================
 // SUBSCRIPTION CREATION
 // ============================================
 
 module subscriptionsModule './platform-lz/subscription/main.bicep' = [
-  for sub in subscriptionConfigs: {
+  for sub in subscriptions: {
     scope: tenant()
     params: {
       subscriptionAliasName: sub.alias
@@ -220,7 +220,7 @@ module subscriptionsModule './platform-lz/subscription/main.bicep' = [
 // ============================================
 
 module subscriptionAssociations './platform-lz/subscription/subscription-to-mg-association.bicep' = [
-  for (sub, i) in subscriptionConfigs: {
+  for (sub, i) in subscriptions: {
     scope: tenant()
     params: {
       subscriptionId: subscriptionsModule[i].outputs.subscriptionId
