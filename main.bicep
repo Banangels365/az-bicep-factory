@@ -98,18 +98,18 @@ module prodMg './platform-lz/management-group/main.bicep' = {
 }
 
 // Development Management Group
-module devMg './platform-lz/management-group/main.bicep' = {
-  name: 'Lab-dev-mg'
-  scope: tenant()
-  params: {
-    managementGroupId: '${managementGroupPrefix}-dev'
-    displayName: 'Development'
-    parentManagementGroupId: '${managementGroupPrefix}-root'
-  }
-  dependsOn: [
-    rootMg
-  ]
-}
+// module devMg './platform-lz/management-group/main.bicep' = {
+//   name: 'Lab-dev-mg'
+//   scope: tenant()
+//   params: {
+//     managementGroupId: '${managementGroupPrefix}-dev'
+//     displayName: 'Development'
+//     parentManagementGroupId: '${managementGroupPrefix}-root'
+//   }
+//   dependsOn: [
+//     rootMg
+//   ]
+// }
 
 // Logging Management Group
 module loggingMg './platform-lz/management-group/main.bicep' = {
@@ -179,7 +179,6 @@ module subscriptionsModule './platform-lz/subscription/main.bicep' = [
     }
     dependsOn: [
       prodMg
-      loggingMg
     ]
   }
 ]
@@ -579,7 +578,6 @@ module managementRg 'br/public:avm/res/resources/resource-group:0.2.3' = {
 output managementGroupIds object = {
   root: rootMg.outputs.managementGroupId
   prod: prodMg.outputs.managementGroupId
-  dev: devMg.outputs.managementGroupId
   logging: loggingMg.outputs.managementGroupId
   quarantine: quarantineMg.outputs.managementGroupId
 }
