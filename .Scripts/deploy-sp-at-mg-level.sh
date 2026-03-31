@@ -36,6 +36,11 @@ az role assignment create \
   --role Owner \
   --scope /providers/Microsoft.Management/managementGroups/$ROOT_MG_ID
 
+az role assignment create \
+  --assignee "$APP_ID" \
+  --role Contributor \
+  --scope /providers/Microsoft.Management/managementGroups/$ROOT_MG_ID
+
 echo "Adding Federated Credential (OIDC)..."
 az ad app federated-credential create \
   --id "$APP_ID" \
