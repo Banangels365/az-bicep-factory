@@ -1,5 +1,5 @@
 // platform-lz/main.bicepparam
-using './main.bicep'
+using './platform.bicep'
 
 // Organization configuration
 param organizationName = 'ACMY'
