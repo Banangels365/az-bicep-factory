@@ -3,11 +3,11 @@
 # It assumes that you have already logged in to Azure CLI and set the correct subscription context.
 
 # 1. Platform Landing Zone
-cd platform
+cd platform-lz
 ./scripts/deploy-platform.ps1 -Environment sandbox -Location canadacentral
 
 # 2. Connectivity Landing Zone
-cd ../connectivity/hub
+cd ../connectivity-lz
 az deployment sub create \
   --name hub-deployment \
   --location canadacentral \
@@ -15,10 +15,11 @@ az deployment sub create \
   --parameters main.bicepparam
 
 # 3. Identity Landing Zone
-cd ../../scripts
-./deploy-identity-complete.sh
+cd ../identity-lz
+./deploy_identity_complete.sh
 
 # 4. Workload Landing Zone
+cd ../workload-lz
 export WORKLOAD_NAME="crm"
-export ENVIRONMENT="prod"
+export ENVIRONMENT="sandbox"
 ./deploy-workload.sh
