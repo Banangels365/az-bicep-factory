@@ -28,8 +28,8 @@ param environment string = 'prod'
 @description('billing scope ID for subscription creation')
 param managementSubscriptionId string
 
-@description('Production subscription ID for resources')
-param prodSubscriptionId string = ''
+// @description('Production subscription ID for resources')
+// param prodSubscriptionId string = ''
 
 @description('Liste des abonnements à créer')
 param subscriptions array = []
@@ -64,8 +64,8 @@ param tags object = {
 
 // Variables
 var managementGroupPrefix = organizationName
+var resourceGroupName = 'rg-platform-management-${environment}'
 // var logAnalyticsWorkspaceName = 'law-${organizationName}-platform-${environment}'
-// var resourceGroupName = 'rg-platform-management-${environment}'
 
 // ============================================
 // MANAGEMENT GROUP HIERARCHY
@@ -82,37 +82,6 @@ module rootMg './platform-lz/management-group/main.bicep' = {
     // description: 'Root management group for ${organizationName}'
   }
 }
-
-// Platform Management Group
-// module platformMg 'management-group/main.bicep' = {
-//   name: 'lab-platform-mg'
-//   scope: tenant()
-//   params: {
-//     managementGroupId: '${managementGroupPrefix}-platform'
-//     displayName: 'Lab-Platform'
-//     parentManagementGroupId: '${managementGroupPrefix}-root'
-//     //parentManagementGroupId: rootMg.outputs.managementGroupId
-//     // description: 'Management group for platform resources (management, identity, connectivity)'
-//   }
-//   dependsOn: [
-//     rootMg
-//   ]
-// }
-
-// Landing Zones Management Group
-// module landingZonesMg 'management-group/main.bicep' = {
-//   name: 'deploy-landing-zones-mg'
-//   scope: tenant()
-//   params: {
-//     managementGroupId: '${managementGroupPrefix}-landing-zones'
-//     displayName: 'Landing Zones'
-//     parentManagementGroupId: '${managementGroupPrefix}-root'
-//     // description: 'Management group for application landing zones'
-//   }
-//   dependsOn: [
-//     rootMg
-//   ]
-// }
 
 // Production Management Group
 module prodMg './platform-lz/management-group/main.bicep' = {
@@ -236,86 +205,95 @@ module subscriptionAssociations './platform-lz/subscription/subscription-to-mg-a
 // RESOURCES GROUP CREATION
 // ============================================
 
-module managementRg './platform-lz/resource-group/main.bicep' = {
-  name: 'deploy-management-rg'
-  scope: subscription(managementSubscriptionId)
-  params: {
-    resourceGroupName: 'rg-${environment}-${location}-management'
-    location: location
-    tags: tags
-  }
-}
+// module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+//   name: 'deploy-operations-rg'
+//   scope: subscription(prodSubscriptionId)
+//   params: {
+//     resourceGroupName: 'rg-${environment}-${location}-operations'
+//     location: location
+//     tags: tags
+//   }
+//   dependsOn: [
+//     rootMg
+//     prodMg
+//   ]
+// }
 
-module NetworkingRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-  name: 'deploy-networking-rg'
-  scope: subscription(prodSubscriptionId)
-  params: {
-    resourceGroupName: 'rg-${environment}-${location}-networking'
-    location: location
-    tags: tags
-  }
-  dependsOn: [
-    rootMg
-    prodMg
-  ]
-}
+// Note: RG creation for new subscriptions is commented out because subscription IDs are runtime outputs.
+// To create RGs in new subscriptions, deploy them separately after subscription creation.
+// Example: Use a separate Bicep template with scope subscription('<new-sub-id>') and call it post-deployment.
 
-module IdentityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-  name: 'deploy-identity-rg'
-  scope: subscription(prodSubscriptionId)
-  params: {
-    resourceGroupName: 'rg-${environment}-${location}-identity'
-    location: location
-    tags: tags
-  }
-  dependsOn: [
-    rootMg
-    prodMg
-  ]
-}
+// Anciens modules RG (remplacés par la boucle ci-dessus)
+// module NetworkingRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+//   name: 'deploy-networking-rg'
+//   scope: subscription(prodSubscriptionId)
+//   params: {
+//     resourceGroupName: 'rg-${environment}-${location}-networking'
+//     location: location
+//     tags: tags
+//   }
+//   dependsOn: [
+//     rootMg
+//     prodMg
+//   ]
+// }
 
-module SecurityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-  name: 'deploy-security-rg'
-  scope: subscription(prodSubscriptionId)
-  params: {
-    resourceGroupName: 'rg-${environment}-${location}-security'
-    location: location
-    tags: tags
-  }
-  dependsOn: [
-    rootMg
-    prodMg
-  ]
-}
+// module IdentityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+//   name: 'deploy-identity-rg'
+//   scope: subscription(prodSubscriptionId)
+//   params: {
+//     resourceGroupName: 'rg-${environment}-${location}-identity'
+//     location: location
+//     tags: tags
+//   }
+//   dependsOn: [
+//     rootMg
+//     prodMg
+//   ]
+// }
 
-module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-  name: 'deploy-operations-rg'
-  scope: subscription(prodSubscriptionId)
-  params: {
-    resourceGroupName: 'rg-${environment}-${location}-operations'
-    location: location
-    tags: tags
-  }
-  dependsOn: [
-    rootMg
-    prodMg
-  ]
-}
+// module SecurityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+//   name: 'deploy-security-rg'
+//   scope: subscription(prodSubscriptionId)
+//   params: {
+//     resourceGroupName: 'rg-${environment}-${location}-security'
+//     location: location
+//     tags: tags
+//   }
+//   dependsOn: [
+//     rootMg
+//     prodMg
+//   ]
+// }
+
+// module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
+//   name: 'deploy-operations-rg'
+//   scope: subscription(prodSubscriptionId)
+//   params: {
+//     resourceGroupName: 'rg-${environment}-${location}-operations'
+//     location: location
+//     tags: tags
+//   }
+//   dependsOn: [
+//     rootMg
+//     prodMg
+//   ]
+// }
 
 // ============================================
 // PLATFORM RESOURCES (Logging)
 // ============================================
 
 // Resource Group for Platform Management
-// module managementRg 'br/public:avm/res/resources/resource-group:0.2.3' = {
-//   name: 'deploy-management-rg'
-//   scope: subscription(managementSubscriptionId)
-//   params: {
-//     name: resourceGroupName
-//     location: location
-//     tags: tags
-//   }
-// }
+module managementRg 'br/public:avm/res/resources/resource-group:0.2.3' = {
+  name: 'deploy-management-rg'
+  scope: subscription(managementSubscriptionId)
+  params: {
+    name: resourceGroupName
+    location: location
+    tags: tags
+  }
+}
 
 // Log Analytics Workspace
 // module logAnalytics 'log-analytics-workspace/main.bicep' = {
@@ -605,6 +583,14 @@ output managementGroupIds object = {
   logging: loggingMg.outputs.managementGroupId
   quarantine: quarantineMg.outputs.managementGroupId
 }
+
+output subscriptions array = [
+  for (sub, i) in subscriptions: {
+    alias: sub.alias
+    displayName: sub.displayName
+    subscriptionId: subscriptionsModule[i].outputs.subscriptionId
+  }
+]
 
 // output logAnalyticsWorkspaceId string = logAnalytics.outputs.workspaceId
 // output logAnalyticsWorkspaceName string = logAnalytics.outputs.workspaceName

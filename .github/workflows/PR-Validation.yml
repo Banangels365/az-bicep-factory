@@ -50,7 +50,7 @@ jobs:
       - name: Validate parameter files (Management Group scope)
         run: |
           echo "=== Validating Parameter Files at MG scope ==="
-          for param in $(find . -name '*.bicepparam'); do
+          for param in $(find . -name '*.bicepparam' -not -name 'rg-deployment.bicepparam'); do
             echo "Validating $param"
             az deployment mg validate \
               --management-group-id $ROOT_MG_ID \
@@ -58,6 +58,16 @@ jobs:
               --template-file main.bicep \
               --parameters "$param" || true
           done
+
+      # 🔎 Validation du déploiement RG au niveau subscription
+      - name: Validate RG deployment at subscription scope
+        run: |
+          echo "=== Validating RG Deployment at Sub scope ==="
+          az deployment sub validate \
+            --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+            --location $LOCATION \
+            --template-file rg-deployment.bicep \
+            --parameters rg-deployment.bicepparam || true
 
       # 🔎 What-If au niveau du management group racine
       - name: Management Group What-If
@@ -67,6 +77,16 @@ jobs:
             --location $LOCATION \
             --template-file main.bicep \
             --parameters main.bicepparam
+        continue-on-error: true
+
+      # 🔎 What-If pour le déploiement RG
+      - name: RG Deployment What-If
+        run: |
+          az deployment sub what-if \
+            --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+            --location $LOCATION \
+            --template-file rg-deployment.bicep \
+            --parameters rg-deployment.bicepparam
         continue-on-error: true
 
       # 🔐 PSRule for Azure
