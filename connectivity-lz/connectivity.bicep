@@ -1,4 +1,4 @@
-// connectivity-lz/modules/hub_network.bicep
+// connectivity-lz/connectivity.bicep
 // Hub Network orchestrator for Hub-Spoke topology
 
 targetScope = 'subscription'
@@ -50,11 +50,22 @@ param deployDdosProtection bool = false
   'VpnGw1'
   'VpnGw2'
   'VpnGw3'
+  'VpnGw4'
+  'VpnGw5'
   'VpnGw1AZ'
   'VpnGw2AZ'
   'VpnGw3AZ'
+  'VpnGw4AZ'
+  'VpnGw5AZ'
 ])
 param vpnGatewaySku string = 'VpnGw1'
+
+@description('VPN Gateway generation — Generation2 required for VpnGw4/5 and all AZ SKUs')
+@allowed([
+  'Generation1'
+  'Generation2'
+])
+param vpnGatewayGeneration string = 'Generation1'
 
 @description('Azure Firewall SKU tier')
 @allowed([
@@ -76,7 +87,10 @@ param tags object = {
   Purpose: 'Hub-Network'
 }
 
-// Variables
+// ============================================
+// VARIABLES
+// ============================================
+
 var resourceGroupName = 'rg-${organizationName}-hub-${environment}-${location}'
 var hubVnetName = 'vnet-${organizationName}-hub-${environment}-${location}'
 var firewallName = 'afw-${organizationName}-hub-${environment}'
@@ -86,7 +100,6 @@ var ddosProtectionPlanName = 'ddos-${organizationName}-${environment}'
 
 // NSG names
 var nsgManagementName = 'nsg-hub-management-${environment}'
-var nsgFirewallName = 'nsg-hub-firewall-${environment}'
 
 // Public IP names
 var pipVpnGatewayName = 'pip-vpngw-${environment}'
@@ -100,7 +113,7 @@ var rtManagementName = 'rt-hub-management-${environment}'
 // RESOURCE GROUP
 // ============================================
 
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
+resource connectivityResourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   name: resourceGroupName
   location: location
   tags: tags
@@ -111,7 +124,7 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 // ============================================
 
 module ddosProtection './modules/ddos_protection.bicep' = if (deployDdosProtection) {
-  scope: resourceGroup
+  scope: connectivityResourceGroup
   name: 'deploy-ddos-protection'
   params: {
     ddosProtectionPlanName: ddosProtectionPlanName
@@ -125,12 +138,62 @@ module ddosProtection './modules/ddos_protection.bicep' = if (deployDdosProtecti
 // ============================================
 
 module nsgManagement './modules/network_security_group.bicep' = {
-  scope: resourceGroup
+  scope: connectivityResourceGroup
   name: 'deploy-nsg-management'
   params: {
     nsgName: nsgManagementName
     location: location
     securityRules: [
+      // --- Bastion mandatory inbound rules (per Microsoft documentation) ---
+      {
+        name: 'AllowHttpsInbound'
+        description: 'Allow HTTPS from Internet to Bastion'
+        protocol: 'Tcp'
+        sourcePortRange: '*'
+        destinationPortRange: '443'
+        sourceAddressPrefix: 'Internet'
+        destinationAddressPrefix: '*'
+        access: 'Allow'
+        priority: 100
+        direction: 'Inbound'
+      }
+      {
+        name: 'AllowGatewayManagerInbound'
+        description: 'Allow GatewayManager inbound (required by Bastion)'
+        protocol: 'Tcp'
+        sourcePortRange: '*'
+        destinationPortRange: '443'
+        sourceAddressPrefix: 'GatewayManager'
+        destinationAddressPrefix: '*'
+        access: 'Allow'
+        priority: 110
+        direction: 'Inbound'
+      }
+      {
+        name: 'AllowAzureLoadBalancerInbound'
+        description: 'Allow Azure Load Balancer health probes'
+        protocol: 'Tcp'
+        sourcePortRange: '*'
+        destinationPortRange: '443'
+        sourceAddressPrefix: 'AzureLoadBalancer'
+        destinationAddressPrefix: '*'
+        access: 'Allow'
+        priority: 120
+        direction: 'Inbound'
+      }
+      {
+        name: 'AllowBastionHostCommunication'
+        description: 'Allow Bastion host-to-host communication'
+        protocol: '*'
+        sourcePortRange: '*'
+        destinationPortRanges: ['5701', '8080']
+        sourceAddressPrefix: 'VirtualNetwork'
+        destinationAddressPrefix: 'VirtualNetwork'
+        access: 'Allow'
+        priority: 130
+        direction: 'Inbound'
+      }
+      // --- Management subnet rules ---
       {
         name: 'AllowRDP'
         description: 'Allow RDP from Bastion subnet'
@@ -138,9 +201,9 @@ module nsgManagement './modules/network_security_group.bicep' = {
         sourcePortRange: '*'
         destinationPortRange: '3389'
         sourceAddressPrefix: bastionSubnetAddressPrefix
-        destinationAddressPrefix: '*'
+        destinationAddressPrefix: managementSubnetAddressPrefix
         access: 'Allow'
-        priority: 100
+        priority: 200
         direction: 'Inbound'
       }
       {
@@ -150,9 +213,9 @@ module nsgManagement './modules/network_security_group.bicep' = {
         sourcePortRange: '*'
         destinationPortRange: '22'
         sourceAddressPrefix: bastionSubnetAddressPrefix
-        destinationAddressPrefix: '*'
+        destinationAddressPrefix: managementSubnetAddressPrefix
         access: 'Allow'
-        priority: 110
+        priority: 210
         direction: 'Inbound'
       }
       {
@@ -175,84 +238,13 @@ module nsgManagement './modules/network_security_group.bicep' = {
 }
 
 // ============================================
-// ROUTE TABLES
-// ============================================
-
-module routeTableManagement './modules/route_table.bicep' = {
-  scope: resourceGroup
-  name: 'deploy-rt-management'
-  params: {
-    routeTableName: rtManagementName
-    location: location
-    disableBgpRoutePropagation: false
-    routes: deployAzureFirewall
-      ? [
-          {
-            name: 'ToInternet'
-            addressPrefix: '0.0.0.0/0'
-            nextHopType: 'VirtualAppliance'
-            nextHopIpAddress: deployAzureFirewall ? azureFirewall.outputs.privateIpAddress : ''
-          }
-        ]
-      : []
-    tags: tags
-  }
-  dependsOn: deployAzureFirewall
-    ? [
-        azureFirewall
-      ]
-    : []
-}
-
-// ============================================
-// HUB VIRTUAL NETWORK
-// ============================================
-
-module hubVnet './modules/virtual_network.bicep' = {
-  scope: resourceGroup
-  name: 'deploy-hub-vnet'
-  params: {
-    vnetName: hubVnetName
-    location: location
-    addressPrefixes: [hubVnetAddressPrefix]
-    enableDdosProtection: deployDdosProtection
-    ddosProtectionPlanId: deployDdosProtection ? ddosProtection.outputs.ddosProtectionPlanId : ''
-    subnets: [
-      {
-        name: 'GatewaySubnet'
-        addressPrefix: gatewaySubnetAddressPrefix
-      }
-      {
-        name: 'AzureFirewallSubnet'
-        addressPrefix: firewallSubnetAddressPrefix
-      }
-      {
-        name: 'AzureBastionSubnet'
-        addressPrefix: bastionSubnetAddressPrefix
-      }
-      {
-        name: 'snet-hub-management'
-        addressPrefix: managementSubnetAddressPrefix
-        networkSecurityGroupId: nsgManagement.outputs.nsgId
-        routeTableId: routeTableManagement.outputs.routeTableId
-      }
-    ]
-    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
-    enableDiagnostics: true
-    tags: tags
-  }
-  dependsOn: [
-    nsgManagement
-    routeTableManagement
-  ]
-}
-
-// ============================================
 // PUBLIC IP ADDRESSES
+// Déployées tôt pour que le Firewall resolve son IP privée
+// avant la création de la route table.
 // ============================================
 
 module pipVpnGateway './modules/public_ip.bicep' = if (deployVpnGateway) {
-  scope: resourceGroup
+  scope: connectivityResourceGroup
   name: 'deploy-pip-vpngw'
   params: {
     publicIpName: pipVpnGatewayName
@@ -267,7 +259,7 @@ module pipVpnGateway './modules/public_ip.bicep' = if (deployVpnGateway) {
 }
 
 module pipFirewall './modules/public_ip.bicep' = if (deployAzureFirewall) {
-  scope: resourceGroup
+  scope: connectivityResourceGroup
   name: 'deploy-pip-firewall'
   params: {
     publicIpName: pipFirewallName
@@ -282,13 +274,14 @@ module pipFirewall './modules/public_ip.bicep' = if (deployAzureFirewall) {
 }
 
 module pipBastion './modules/public_ip.bicep' = if (deployBastion) {
-  scope: resourceGroup
+  scope: connectivityResourceGroup
   name: 'deploy-pip-bastion'
   params: {
     publicIpName: pipBastionName
     location: location
     sku: 'Standard'
     allocationMethod: 'Static'
+    zones: availabilityZones // FIX: zones ajoutées pour cohérence HA
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
     enableDiagnostics: true
     tags: tags
@@ -296,38 +289,63 @@ module pipBastion './modules/public_ip.bicep' = if (deployBastion) {
 }
 
 // ============================================
-// VPN GATEWAY
+// HUB VIRTUAL NETWORK (phase 1 — sans NSG/UDR sur le management subnet)
+// On crée d'abord le VNet pour obtenir son ID, puis on déploie
+// le Firewall, et enfin la route table pointant vers le Firewall.
+// Le subnet management est mis à jour dans une passe séparée via
+// le module subnet.bicep (phase 2, voir plus bas).
 // ============================================
 
-module vpnGateway './modules/vpn_gateway.bicep' = if (deployVpnGateway) {
-  scope: resourceGroup
-  name: 'deploy-vpn-gateway'
+module hubVnet './modules/virtual_network.bicep' = {
+  scope: connectivityResourceGroup
+  name: 'deploy-hub-vnet'
   params: {
-    vpnGatewayName: vpnGatewayName
+    vnetName: hubVnetName
     location: location
-    gatewaySku: vpnGatewaySku
-    gatewayType: 'Vpn'
-    vpnType: 'RouteBased'
-    vpnGatewayGeneration: 'Generation1'
-    subnetId: '${hubVnet.outputs.vnetId}/subnets/GatewaySubnet'
-    publicIpAddressId: pipVpnGateway.outputs.publicIpId
-    enableBgp: false
+    addressPrefixes: [hubVnetAddressPrefix]
+    enableDdosProtection: deployDdosProtection
+    ddosProtectionPlanId: deployDdosProtection ? ddosProtection.outputs.ddosProtectionPlanId : ''
+    subnets: [
+      {
+        name: 'GatewaySubnet'
+        addressPrefix: gatewaySubnetAddressPrefix
+        // GatewaySubnet ne doit PAS avoir de NSG ni de route table
+      }
+      {
+        name: 'AzureFirewallSubnet'
+        addressPrefix: firewallSubnetAddressPrefix
+        // AzureFirewallSubnet ne doit PAS avoir de NSG ni de route table
+      }
+      {
+        name: 'AzureBastionSubnet'
+        addressPrefix: bastionSubnetAddressPrefix
+        // AzureBastionSubnet ne doit PAS avoir de route table
+        networkSecurityGroupId: nsgManagement.outputs.nsgId
+      }
+      {
+        name: 'snet-hub-management'
+        addressPrefix: managementSubnetAddressPrefix
+        networkSecurityGroupId: nsgManagement.outputs.nsgId
+        // routeTableId sera appliqué en phase 2 après le déploiement du Firewall
+      }
+    ]
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
     enableDiagnostics: true
     tags: tags
   }
   dependsOn: [
-    hubVnet
-    pipVpnGateway
+    nsgManagement
   ]
 }
 
 // ============================================
 // AZURE FIREWALL
+// Déployé après le VNet pour obtenir l'IP privée
+// qui sera utilisée dans la route table (phase 2).
 // ============================================
 
 module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall) {
-  scope: resourceGroup
+  scope: connectivityResourceGroup
   name: 'deploy-azure-firewall'
   params: {
     firewallName: firewallName
@@ -352,11 +370,88 @@ module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall)
 }
 
 // ============================================
+// ROUTE TABLE (phase 2)
+// Créée après le Firewall pour utiliser son IP privée.
+// ============================================
+
+module routeTableManagement './modules/route_table.bicep' = {
+  scope: connectivityResourceGroup
+  name: 'deploy-rt-management'
+  params: {
+    routeTableName: rtManagementName
+    location: location
+    disableBgpRoutePropagation: true // FIX: true recommandé avec Azure Firewall (évite routes BGP conflictuelles)
+    routes: deployAzureFirewall
+      ? [
+          {
+            name: 'DefaultToFirewall'
+            addressPrefix: '0.0.0.0/0'
+            nextHopType: 'VirtualAppliance'
+            nextHopIpAddress: azureFirewall.outputs.privateIpAddress
+          }
+        ]
+      : []
+    tags: tags
+  }
+  dependsOn: deployAzureFirewall ? [azureFirewall] : [] // FIX: dependsOn simplifié et valide
+}
+
+// ============================================
+// SUBNET MANAGEMENT — Phase 2
+// Mise à jour du subnet management avec la route table
+// maintenant que le Firewall et son IP sont disponibles.
+// ============================================
+
+module managementSubnet './modules/subnet.bicep' = {
+  scope: connectivityResourceGroup
+  name: 'deploy-subnet-management-phase2'
+  params: {
+    vnetName: hubVnetName
+    subnetName: 'snet-hub-management'
+    addressPrefix: managementSubnetAddressPrefix
+    networkSecurityGroupId: nsgManagement.outputs.nsgId
+    routeTableId: routeTableManagement.outputs.routeTableId
+  }
+  dependsOn: [
+    hubVnet
+    routeTableManagement
+    nsgManagement
+  ]
+}
+
+// ============================================
+// VPN GATEWAY
+// ============================================
+
+module vpnGateway './modules/vpn_gateway.bicep' = if (deployVpnGateway) {
+  scope: connectivityResourceGroup
+  name: 'deploy-vpn-gateway'
+  params: {
+    vpnGatewayName: vpnGatewayName
+    location: location
+    gatewaySku: vpnGatewaySku
+    gatewayType: 'Vpn'
+    vpnType: 'RouteBased'
+    vpnGatewayGeneration: vpnGatewayGeneration // FIX: paramétrisé (était hardcodé Generation1)
+    subnetId: '${hubVnet.outputs.vnetId}/subnets/GatewaySubnet'
+    publicIpAddressId: pipVpnGateway.outputs.publicIpId
+    enableBgp: false
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
+    enableDiagnostics: true
+    tags: tags
+  }
+  dependsOn: [
+    hubVnet
+    pipVpnGateway
+  ]
+}
+
+// ============================================
 // AZURE BASTION
 // ============================================
 
 module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
-  scope: resourceGroup
+  scope: connectivityResourceGroup
   name: 'deploy-bastion'
   params: {
     bastionName: bastionName
@@ -372,6 +467,7 @@ module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
     tags: tags
   }
   dependsOn: [
+    hubVnet // FIX: dépendance explicite sur le VNet ajoutée
     pipBastion
   ]
 }
@@ -380,7 +476,7 @@ module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
 // OUTPUTS
 // ============================================
 
-output resourceGroupName string = resourceGroup.name
+output resourceGroupName string = connectivityResourceGroup.name
 output hubVnetId string = hubVnet.outputs.vnetId
 output hubVnetName string = hubVnet.outputs.vnetName
 output hubVnetAddressPrefix string = hubVnetAddressPrefix
@@ -394,5 +490,4 @@ output vpnGatewayId string = deployVpnGateway ? vpnGateway.outputs.vpnGatewayId 
 output azureFirewallId string = deployAzureFirewall ? azureFirewall.outputs.firewallId : ''
 output azureFirewallPrivateIp string = deployAzureFirewall ? azureFirewall.outputs.privateIpAddress : ''
 output bastionId string = deployBastion ? bastion.outputs.bastionId : ''
-
 output ddosProtectionPlanId string = deployDdosProtection ? ddosProtection.outputs.ddosProtectionPlanId : ''

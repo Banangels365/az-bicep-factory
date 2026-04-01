@@ -7,7 +7,7 @@ targetScope = 'subscription'
 param roleName string
 
 @description('Description of the custom role')
-param description string
+param customRoleDescription string
 
 @description('Actions allowed by this role')
 param actions array
@@ -31,7 +31,7 @@ resource customRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
   name: guid(subscription().id, roleName)
   properties: {
     roleName: roleName
-    description: description
+    description: customRoleDescription
     type: 'CustomRole'
     permissions: [
       {

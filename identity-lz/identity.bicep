@@ -135,7 +135,7 @@ module rbacPlatformAdmins './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.platformAdmins
     roleDefinitionIdOrName: 'Contributor'
     principalType: 'Group'
-    description: 'Platform Admins - Contributor on Management Subscription'
+    roleAssignmentDescription: 'Platform Admins - Contributor on Management Subscription'
   }
 }
 
@@ -147,7 +147,7 @@ module rbacNetworkAdmins './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.networkAdmins
     roleDefinitionIdOrName: 'Network Contributor'
     principalType: 'Group'
-    description: 'Network Admins - Network Contributor'
+    roleAssignmentDescription: 'Network Admins - Network Contributor'
   }
 }
 
@@ -159,7 +159,7 @@ module rbacSecurityAdmins './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.securityAdmins
     roleDefinitionIdOrName: 'Security Admin'
     principalType: 'Group'
-    description: 'Security Admins - Security Admin'
+    roleAssignmentDescription: 'Security Admins - Security Admin'
   }
 }
 
@@ -171,7 +171,7 @@ module rbacLoggingAdmins './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.loggingAdmins
     roleDefinitionIdOrName: 'Contributor'
     principalType: 'Group'
-    description: 'Logging Admins - Contributor on Logging Subscription'
+    roleAssignmentDescription: 'Logging Admins - Contributor on Logging Subscription'
   }
 }
 
@@ -183,7 +183,7 @@ module rbacLoggingContributors './modules/rbac_subscription_assignment.bicep' = 
     principalId: entraGroupIds.loggingContributors
     roleDefinitionIdOrName: 'Contributor'
     principalType: 'Group'
-    description: 'Logging Contributors - Contributor on Logging Subscription'
+    roleAssignmentDescription: 'Logging Contributors - Contributor on Logging Subscription'
   }
 }
 
@@ -195,7 +195,7 @@ module rbacLoggingReaders './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.loggingReaders
     roleDefinitionIdOrName: 'Reader'
     principalType: 'Group'
-    description: 'Logging Readers - Reader on Logging Subscription'
+    roleAssignmentDescription: 'Logging Readers - Reader on Logging Subscription'
   }
 }
 
@@ -207,7 +207,7 @@ module rbacProdAdmins './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.prodAdmins
     roleDefinitionIdOrName: 'Contributor'
     principalType: 'Group'
-    description: 'Prod Admins - Contributor on Prod Subscription'
+    roleAssignmentDescription: 'Prod Admins - Contributor on Prod Subscription'
   }
 }
 
@@ -219,7 +219,7 @@ module rbacProdReaders './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.prodReaders
     roleDefinitionIdOrName: 'Reader'
     principalType: 'Group'
-    description: 'Prod Readers - Reader on Prod Subscription'
+    roleAssignmentDescription: 'Prod Readers - Reader on Prod Subscription'
   }
 }
 
@@ -231,7 +231,7 @@ module rbacCostManagers './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.costManagers
     roleDefinitionIdOrName: 'Cost Management Contributor'
     principalType: 'Group'
-    description: 'Cost Managers - Cost Management Contributor'
+    roleAssignmentDescription: 'Cost Managers - Cost Management Contributor'
   }
 }
 
@@ -243,7 +243,7 @@ module rbacBillingReaders './modules/rbac_subscription_assignment.bicep' = {
     principalId: entraGroupIds.billingReaders
     roleDefinitionIdOrName: 'Cost Management Reader'
     principalType: 'Group'
-    description: 'Billing Readers - Cost Management Reader'
+    roleAssignmentDescription: 'Billing Readers - Cost Management Reader'
   }
 }
 
@@ -259,7 +259,7 @@ module rbacPlatformMI './modules/rbac_subscription_assignment.bicep' = {
     principalId: miPlatform.outputs.principalId
     roleDefinitionIdOrName: 'Contributor'
     principalType: 'ServicePrincipal'
-    description: 'Platform Managed Identity - Contributor'
+    roleAssignmentDescription: 'Platform Managed Identity - Contributor'
   }
 }
 
@@ -271,19 +271,19 @@ module rbacNetworkMI './modules/rbac_subscription_assignment.bicep' = {
     principalId: miNetwork.outputs.principalId
     roleDefinitionIdOrName: 'Network Contributor'
     principalType: 'ServicePrincipal'
-    description: 'Network Managed Identity - Network Contributor'
+    roleAssignmentDescription: 'Network Managed Identity - Network Contributor'
   }
 }
 
-// App Deploy MI - Contributor on Dev/Staging/Prod
-module rbacAppDeployMIDev './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(devSubscriptionId)
-  name: 'rbac-app-deploy-mi-dev'
+// App Deploy MI - Contributor on logging subscriptions
+module rbacAppDeployMILog './modules/rbac_subscription_assignment.bicep' = {
+  scope: subscription(loggingSubscriptionId)
+  name: 'rbac-app-deploy-mi-logging'
   params: {
     principalId: miAppDeploy.outputs.principalId
     roleDefinitionIdOrName: 'Contributor'
     principalType: 'ServicePrincipal'
-    description: 'App Deploy Managed Identity - Contributor on Dev'
+    roleAssignmentDescription: 'App Deploy Managed Identity - Contributor on Logging'
   }
 }
 
@@ -294,7 +294,7 @@ module rbacAppDeployMIProd './modules/rbac_subscription_assignment.bicep' = {
     principalId: miAppDeploy.outputs.principalId
     roleDefinitionIdOrName: 'Contributor'
     principalType: 'ServicePrincipal'
-    description: 'App Deploy Managed Identity - Contributor on Prod'
+    roleAssignmentDescription: 'App Deploy Managed Identity - Contributor on Prod'
   }
 }
 
@@ -306,7 +306,7 @@ module rbacBackupMI './modules/rbac_subscription_assignment.bicep' = {
     principalId: miBackup.outputs.principalId
     roleDefinitionIdOrName: 'Backup Contributor'
     principalType: 'ServicePrincipal'
-    description: 'Backup Managed Identity - Backup Contributor'
+    roleAssignmentDescription: 'Backup Managed Identity - Backup Contributor'
   }
 }
 
@@ -318,7 +318,7 @@ module rbacMonitoringMIMgmt './modules/rbac_subscription_assignment.bicep' = {
     principalId: miMonitoring.outputs.principalId
     roleDefinitionIdOrName: 'Monitoring Reader'
     principalType: 'ServicePrincipal'
-    description: 'Monitoring Managed Identity - Monitoring Reader'
+    roleAssignmentDescription: 'Monitoring Managed Identity - Monitoring Reader'
   }
 }
 

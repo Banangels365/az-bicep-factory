@@ -19,7 +19,7 @@ param roleDefinitionIdOrName string
 param principalType string = 'ServicePrincipal'
 
 @description('Description for the role assignment')
-param description string = ''
+param roleAssignmentDescription string = ''
 
 @description('Condition for the role assignment (ABAC)')
 param condition string = ''
@@ -50,8 +50,8 @@ var builtInRoleNames = {
   'SQL Security Manager': '056cd41c-7e88-42e1-933e-88ba6a50c9c3'
   'Virtual Machine Contributor': '9980e02c-c2be-4d73-94e8-173b1dc7cf3c'
   'Website Contributor': 'de139f84-1756-47ae-9be6-808fbbe84772'
-  'AcrPull': '7f951dda-4ed3-4680-a7ca-43fe172d538d'
-  'AcrPush': '8311e382-0749-4cb8-b61a-304f252e45ec'
+  //'AcrPull': '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+  //'AcrPush': '8311e382-0749-4cb8-b61a-304f252e45ec'
   'Kubernetes Cluster Admin': '0ab0b1a8-8aac-4efd-b8c2-3ee1fb270be8'
   'Azure Kubernetes Service RBAC Admin': '3498e952-d568-435e-9b2c-8d77e338d7f7'
   'Cosmos DB Account Reader Role': 'fbdf93bf-df7d-467e-a4d2-9458aa1360c8'
@@ -72,7 +72,7 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     roleDefinitionId: roleDefinitionId
     principalId: principalId
     principalType: principalType
-    description: !empty(description) ? description : null
+    description: !empty(roleAssignmentDescription) ? roleAssignmentDescription : null
     condition: !empty(condition) ? condition : null
     conditionVersion: !empty(condition) ? conditionVersion : null
     delegatedManagedIdentityResourceId: !empty(delegatedManagedIdentityResourceId)

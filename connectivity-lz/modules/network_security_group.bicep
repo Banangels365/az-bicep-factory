@@ -46,16 +46,51 @@ resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-09-0
         properties: {
           description: rule.?description ?? ''
           protocol: rule.protocol
-          sourcePortRange: rule.?sourcePortRange ?? '*'
-          destinationPortRange: rule.?destinationPortRange ?? null
-          destinationPortRanges: rule.?destinationPortRanges ?? null
-          sourceAddressPrefix: rule.?sourceAddressPrefix ?? '*'
-          sourceAddressPrefixes: rule.?sourceAddressPrefixes ?? null
-          destinationAddressPrefix: rule.?destinationAddressPrefix ?? '*'
-          destinationAddressPrefixes: rule.?destinationAddressPrefixes ?? null
           access: rule.access
           priority: rule.priority
           direction: rule.direction
+
+          ...(rule.?sourcePortRange != null
+            ? {
+                sourcePortRange: rule.sourcePortRange
+              }
+            : {})
+
+          ...(rule.?destinationPortRange != null
+            ? {
+                destinationPortRange: rule.destinationPortRange
+              }
+            : {})
+
+          ...(rule.?destinationPortRanges != null
+            ? {
+                destinationPortRanges: rule.destinationPortRanges
+              }
+            : {})
+
+          ...(rule.?sourceAddressPrefix != null
+            ? {
+                sourceAddressPrefix: rule.sourceAddressPrefix
+              }
+            : {})
+
+          ...(rule.?sourceAddressPrefixes != null
+            ? {
+                sourceAddressPrefixes: rule.sourceAddressPrefixes
+              }
+            : {})
+
+          ...(rule.?destinationAddressPrefix != null
+            ? {
+                destinationAddressPrefix: rule.destinationAddressPrefix
+              }
+            : {})
+
+          ...(rule.?destinationAddressPrefixes != null
+            ? {
+                destinationAddressPrefixes: rule.destinationAddressPrefixes
+              }
+            : {})
         }
       }
     ]
@@ -88,34 +123,24 @@ resource networkWatcher 'Microsoft.Network/networkWatchers@2023-09-01' existing 
 }
 
 // NSG Flow Logs
-resource flowLogs 'Microsoft.Network/networkWatchers/flowLogs@2023-09-01' = if (enableFlowLogs && !empty(flowLogsStorageAccountId)) {
+module flowLogsModule './network_watcher_flowlogs.bicep' = if (enableFlowLogs && !empty(flowLogsStorageAccountId)) {
+  name: 'deploy-flowlogs-${nsgName}'
+
   scope: resourceGroup(networkWatcherRg)
-  parent: networkWatcher
-  name: '${nsgName}-flowlogs'
-  location: location
-  tags: tags
-  properties: {
-    targetResourceId: networkSecurityGroup.id
-    storageId: flowLogsStorageAccountId
-    enabled: true
-    retentionPolicy: {
-      days: flowLogsRetentionDays
-      enabled: true
-    }
-    format: {
-      type: 'JSON'
-      version: 2
-    }
-    flowAnalyticsConfiguration: !empty(logAnalyticsWorkspaceId)
-      ? {
-          networkWatcherFlowAnalyticsConfiguration: {
-            enabled: true
-            workspaceResourceId: logAnalyticsWorkspaceId
-            trafficAnalyticsInterval: 10
-          }
-        }
-      : null
+
+  params: {
+    networkWatcherName: networkWatcherName
+    nsgId: networkSecurityGroup.id
+    flowLogsStorageAccountId: flowLogsStorageAccountId
+    location: location
+    tags: tags
+    flowLogsRetentionDays: flowLogsRetentionDays
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
+    flowLogName: '${nsgName}-flowlogs'
   }
+  dependsOn: [
+    networkWatcher
+  ]
 }
 
 // Outputs

@@ -19,7 +19,7 @@ param roleDefinitionIdOrName string
 param principalType string = 'ServicePrincipal'
 
 @description('Description for the role assignment')
-param description string = ''
+param roleAssignmentDescription string = ''
 
 @description('Condition for the role assignment (ABAC)')
 param condition string = ''
@@ -55,7 +55,7 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     roleDefinitionId: roleDefinitionId
     principalId: principalId
     principalType: principalType
-    description: !empty(description) ? description : null
+    description: !empty(roleAssignmentDescription) ? roleAssignmentDescription : null
     condition: !empty(condition) ? condition : null
     conditionVersion: !empty(condition) ? conditionVersion : null
   }
