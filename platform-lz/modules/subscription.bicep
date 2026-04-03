@@ -14,12 +14,12 @@ param billingScope string
 
 @description('Workload type: Prod, Dev, Logging, Quarantine')
 @allowed([
-  'Prod'
-  'Dev'
-  'Logging'
-  'Quarantine'
+  'prod' // production
+  'logs' // logging/monitoring
+  'quar' // quarantine
+  'sbox' // sandbox
 ])
-param workload string = 'Prod'
+param workload string = 'sbox'
 
 resource subscriptionAlias 'Microsoft.Subscription/aliases@2021-10-01' = {
   name: subscriptionAliasName

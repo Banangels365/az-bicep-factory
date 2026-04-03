@@ -8,9 +8,7 @@ param organizationName = 'acmy'
 param environment = 'sbox' // prod, logs, quar, sbox
 param location = 'caea' // canadacentral ou canadaeast
 
-// FIX : le RG doit exister avant le déploiement.
-// Les placeholders {environment} et {location} ont été remplacés par les valeurs réelles
-// correspondant aux paramètres ci-dessus. Ajustez si vous changez environment ou location.
+// Doit avoir été créé au préalable
 param connectivityResourceGroupName = 'rg-sbox-caea-networking'
 
 // Hub VNet addressing

@@ -2,9 +2,13 @@
 using './platform.bicep'
 
 // Organization configuration
-param organizationName = 'ACMY'
-param location = 'canadacentral'
-param environment = 'sandbox'
+param organizationName = 'acmy'
+param environment = 'sbox' // prod, logs, quar, sbox
+param location = 'caea' // canadacentral ou canadaeast
+
+// RG de la plateforme où seront créés les ressources transversales, de gouvernance, d’observabilité et d’administration communes à plusieurs environnements (prod, dev, sandbox, etc.).
+// telles que (log analytics, azure policies, diagnostic settings, actions Group, alerts, etc.).
+param platformResourceGroupName = 'rg-sbox-caea-platform'
 
 // liste des tags à appliquer à toutes les ressources
 param tags = {
@@ -25,25 +29,48 @@ param managementSubscriptionId = 'f3a6536e-1f68-4ca4-bb51-adf7822ec8bc' // Subsc
 // Liste des abonnements à créer
 param subscriptions = [
   {
-    alias: 'sub-prod-${organizationName}-01'
+    alias: 'sub-${environment}-${organizationName}-${location}-01'
     displayName: '${organizationName} Production Subscription 01'
     billingScope: '/subscriptions/${managementSubscriptionId}'
-    workload: 'Prod'
-    mgId: '${organizationName}-prod'
+    workload: 'sbox'
+    mgId: '${organizationName}-${environment}'
   }
   {
-    alias: 'sub-prod-${organizationName}-02'
+    alias: 'sub-${environment}-${organizationName}-${location}-02'
     displayName: '${organizationName} Production Subscription 02'
     billingScope: '/subscriptions/${managementSubscriptionId}'
-    workload: 'Prod'
-    mgId: '${organizationName}-prod'
+    workload: 'sbox'
+    mgId: '${organizationName}-${environment}'
   }
   {
-    alias: 'sub-logging-${organizationName}'
+    alias: 'sub-${environment}-${organizationName}-${location}-01'
     displayName: '${organizationName} Logging Subscription'
     billingScope: '/subscriptions/${managementSubscriptionId}'
-    workload: 'Logging'
-    mgId: '${organizationName}-logging'
+    workload: 'logs'
+    mgId: '${organizationName}-${environment}'
   }
   // Ajoutez d'autres
+]
+
+param resourceGroups = [
+  {
+    name: 'rg-${environment}-${location}-networking'
+    location: location
+    tags: tags
+  }
+  {
+    name: 'rg-${environment}-${location}-identity'
+    location: location
+    tags: tags
+  }
+  {
+    name: 'rg-${environment}-${location}-security'
+    location: location
+    tags: tags
+  }
+  {
+    name: 'rg-${environment}-${location}-monitoring'
+    location: location
+    tags: tags
+  }
 ]

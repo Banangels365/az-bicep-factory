@@ -1,35 +1,32 @@
 // platform-lz/main.bicep
-// Main orchestrator for Azure Landing Zone Platform deployment
+// Orchestrateur Bicep pour le déploiement de la plateforme de base (landing zone) dans Azure.
+// Ce template déploie la hiérarchie de groupes d'administration, crée les abonnements, associe les abonnements aux groupes de gestion, 
+// et configure les ressources de base pour la plateforme (ex: RG de management, Log Analytics, etc.). 
+// Il inclut également la définition de politiques personnalisées et d'initiatives, ainsi que leur assignation aux groupes de gestion appropriés.
 
 targetScope = 'managementGroup'
 
 @description('Organization name (used for naming)')
-param organizationName string = 'ACMY'
+param organizationName string
 
-@description('Azure region for platform resources')
+@description('Environment')
 @allowed([
-  'canadacentral'
-  'canadaeast'
-  'eastus'
-  'westus'
+  'prod' // production
+  'logs' // logging/monitoring
+  'quar' // quarantine
+  'sbox' // sandbox
 ])
-param location string = 'canadacentral'
+param environment string
 
-@description('Environment (used for tagging and naming)')
+@description('Azure region for resource deployment')
 @allowed([
-  'prod'
-  'dev'
-  'logging'
-  'quarantine'
-  'sandbox'
+  'cace' // canadacentral
+  'caea' // canadaeast
 ])
-param environment string = 'prod'
+param location string = 'caea'
 
 @description('billing scope ID for subscription creation')
 param managementSubscriptionId string
-
-// @description('Production subscription ID for resources')
-// param prodSubscriptionId string = ''
 
 @description('Liste des abonnements à créer')
 param subscriptions array = []
@@ -41,6 +38,12 @@ param tags object = {
   CostCenter: 'Platform'
   Owner: 'CloudOps'
 }
+
+@description('Platform Resource Group Name (for shared platform resources like Log Analytics, policies, etc.)')
+param platformResourceGroupName string
+
+@description('Liste des groupes de ressources à créer')
+param resourceGroups array = []
 
 // @description('Log Analytics retention in days')
 // @minValue(30)
@@ -64,7 +67,7 @@ param tags object = {
 
 // Variables
 var managementGroupPrefix = organizationName
-var resourceGroupName = 'rg-platform-management-${environment}'
+// var resourceGroupName = 'rg-platform-management-${environment}'
 // var logAnalyticsWorkspaceName = 'law-${organizationName}-platform-${environment}'
 
 // ============================================
@@ -73,7 +76,7 @@ var resourceGroupName = 'rg-platform-management-${environment}'
 
 // Root Management Group (Tenant Root Group is implicit)
 module rootMg './modules/management_group.bicep' = {
-  name: 'lab-root-mg'
+  name: 'deploy-root-mg'
   scope: tenant()
   params: {
     managementGroupId: '${managementGroupPrefix}-root'
@@ -85,7 +88,7 @@ module rootMg './modules/management_group.bicep' = {
 
 // Production Management Group
 module prodMg './modules/management_group.bicep' = {
-  name: 'Lab-prod-mg'
+  name: 'deploy-prod-mg'
   scope: tenant()
   params: {
     managementGroupId: '${managementGroupPrefix}-prod'
@@ -98,8 +101,8 @@ module prodMg './modules/management_group.bicep' = {
 }
 
 // Development Management Group
-// module devMg './platform-lz/management-group/main.bicep' = {
-//   name: 'Lab-dev-mg'
+// module devMg './modules/management_group.bicep' = {
+//   name: 'deploy-dev-mg'
 //   scope: tenant()
 //   params: {
 //     managementGroupId: '${managementGroupPrefix}-dev'
@@ -113,7 +116,7 @@ module prodMg './modules/management_group.bicep' = {
 
 // Logging Management Group
 module loggingMg './modules/management_group.bicep' = {
-  name: 'Lab-logging-mg'
+  name: 'deploy-logging-mg'
   scope: tenant()
   params: {
     managementGroupId: '${managementGroupPrefix}-logging'
@@ -127,7 +130,7 @@ module loggingMg './modules/management_group.bicep' = {
 
 // Quarantine Management Group
 module quarantineMg './modules/management_group.bicep' = {
-  name: 'Lab-quarantine-mg'
+  name: 'deploy-quarantine-mg'
   scope: tenant()
   params: {
     managementGroupId: '${managementGroupPrefix}-quarantine'
@@ -139,36 +142,11 @@ module quarantineMg './modules/management_group.bicep' = {
   ]
 }
 
-// Configuration des abonnements à créer
-// var subscriptionConfigs = [
-//   {
-//     alias: 'sub-prod-${organizationName}-01'
-//     displayName: '${organizationName} Production Subscription 01'
-//     billingScope: '/subscriptions/${managementSubscriptionId}'
-//     workload: 'Prod'
-//     mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
-//   }
-//   {
-//     alias: 'sub-prod-${organizationName}-02'
-//     displayName: '${organizationName} Production Subscription 02'
-//     billingScope: '/subscriptions/${managementSubscriptionId}'
-//     workload: 'Prod'
-//     mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-prod'
-//   }
-//   {
-//     alias: 'sub-logging-${organizationName}'
-//     displayName: '${organizationName} Logging Subscription'
-//     billingScope: '/subscriptions/${managementSubscriptionId}'
-//     workload: 'Logging'
-//     mgId: '/providers/Microsoft.Management/managementGroups/${managementGroupPrefix}-logging'
-//   }
-// ]
-
 // ============================================
 // SUBSCRIPTION CREATION
 // ============================================
 
-module subscriptionsModule './modules/subscription.bicep' = [
+module subscriptionsCreator './modules/subscription.bicep' = [
   for sub in subscriptions: {
     scope: tenant()
     params: {
@@ -191,11 +169,11 @@ module subscriptionAssociations './modules/subscription_to_mg_association.bicep'
   for (sub, i) in subscriptions: {
     scope: tenant()
     params: {
-      subscriptionId: subscriptionsModule[i].outputs.subscriptionId
+      subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
       managementGroupId: sub.mgId
     }
     dependsOn: [
-      subscriptionsModule[i]
+      subscriptionsCreator[i]
     ]
   }
 ]
@@ -203,6 +181,35 @@ module subscriptionAssociations './modules/subscription_to_mg_association.bicep'
 // ============================================
 // RESOURCES GROUP CREATION
 // ============================================
+
+// Resource Group for Platform Management
+module managementRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+  name: 'deploy-management-rg'
+  scope: subscription(managementSubscriptionId)
+  params: {
+    resourceGroupName: platformResourceGroupName
+    location: location
+    tags: tags
+  }
+  dependsOn: [
+    rootMg
+  ]
+}
+
+module resourceGroupsCreator './modules/resource_group.bicep' = [
+  for (rg, i) in resourceGroups: if (!empty(rg.subscriptionId)) {
+    name: 'deploy-${rg.name}-rg'
+    scope: subscription(rg.subscriptionId)
+    params: {
+      resourceGroupName: rg.name
+      location: rg.location
+      tags: rg.tags
+    }
+    dependsOn: [
+      subscriptionsCreator[i]
+    ]
+  }
+]
 
 // module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
 //   name: 'deploy-operations-rg'
@@ -282,17 +289,6 @@ module subscriptionAssociations './modules/subscription_to_mg_association.bicep'
 // ============================================
 // PLATFORM RESOURCES (Logging)
 // ============================================
-
-// Resource Group for Platform Management
-module managementRg 'br/public:avm/res/resources/resource-group:0.2.3' = {
-  name: 'deploy-management-rg'
-  scope: subscription(managementSubscriptionId)
-  params: {
-    name: resourceGroupName
-    location: location
-    tags: tags
-  }
-}
 
 // Log Analytics Workspace
 // module logAnalytics 'log-analytics-workspace/main.bicep' = {
@@ -586,9 +582,19 @@ output subscriptions array = [
   for (sub, i) in subscriptions: {
     alias: sub.alias
     displayName: sub.displayName
-    subscriptionId: subscriptionsModule[i].outputs.subscriptionId
+    subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
   }
 ]
+
+output resourceGroupIds array = [
+  for (rg, i) in resourceGroups: {
+    name: rg.name
+    subscriptionId: rg.subscriptionId
+    resourceGroupId: resourceGroupsCreator[i].?outputs.resourceGroupId ?? ''
+  }
+]
+
+output managementResourceGroupId string = managementRg.?outputs.resourceGroupId ?? ''
 
 // output logAnalyticsWorkspaceId string = logAnalytics.outputs.workspaceId
 // output logAnalyticsWorkspaceName string = logAnalytics.outputs.workspaceName

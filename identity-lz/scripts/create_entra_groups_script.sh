@@ -123,31 +123,6 @@ SECURITY_ADMINS_ID=$(create_or_update_group \
 # ---- Environment-specific Groups ----
 log_info "Creating Environment-specific Groups..."
 
-DEV_ADMINS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-Dev-Admins" \
-    "${ORGANIZATION_NAME}-dev-admins" \
-    "Administrators for development environment")
-
-DEV_CONTRIBUTORS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-Dev-Contributors" \
-    "${ORGANIZATION_NAME}-dev-contributors" \
-    "Contributors for development environment")
-
-DEV_READERS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-Dev-Readers" \
-    "${ORGANIZATION_NAME}-dev-readers" \
-    "Read-only access for development environment")
-
-STAGING_ADMINS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-Staging-Admins" \
-    "${ORGANIZATION_NAME}-staging-admins" \
-    "Administrators for staging environment")
-
-STAGING_CONTRIBUTORS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-Staging-Contributors" \
-    "${ORGANIZATION_NAME}-staging-contributors" \
-    "Contributors for staging environment")
-
 PROD_ADMINS_ID=$(create_or_update_group \
     "${ORGANIZATION_NAME}-Prod-Admins" \
     "${ORGANIZATION_NAME}-prod-admins" \
@@ -163,23 +138,54 @@ PROD_READERS_ID=$(create_or_update_group \
     "${ORGANIZATION_NAME}-prod-readers" \
     "Read-only access for production environment")
 
+
+LOGS_ADMINS_ID=$(create_or_update_group \
+    "${ORGANIZATION_NAME}-Logs-Admins" \
+    "${ORGANIZATION_NAME}-logs-admins" \
+    "Administrators for logging environment")
+
+LOGS_CONTRIBUTORS_ID=$(create_or_update_group \
+    "${ORGANIZATION_NAME}-Logs-Contributors" \
+    "${ORGANIZATION_NAME}-logs-contributors" \
+    "Contributors for logging environment")
+
+LOGS_READERS_ID=$(create_or_update_group \
+    "${ORGANIZATION_NAME}-Logs-Readers" \
+    "${ORGANIZATION_NAME}-logs-readers" \
+    "Read-only access for logging environment")
+
+QUARANTINE_ADMINS_ID=$(create_or_update_group \
+    "${ORGANIZATION_NAME}-Quarantine-Admins" \
+    "${ORGANIZATION_NAME}-quarantine-admins" \
+    "Administrators for quarantine environment")
+
+QUARANTINE_CONTRIBUTORS_ID=$(create_or_update_group \
+    "${ORGANIZATION_NAME}-Quarantine-Contributors" \
+    "${ORGANIZATION_NAME}-quarantine-contributors" \
+    "Contributors for quarantine environment")
+
+QUARANTINE_READERS_ID=$(create_or_update_group \
+    "${ORGANIZATION_NAME}-Quarantine-Readers" \
+    "${ORGANIZATION_NAME}-quarantine-readers" \
+    "Read-only access for quarantine environment")
+
 # ---- Application-specific Groups ----
-log_info "Creating Application-specific Groups..."
+# log_info "Creating Application-specific Groups..."
 
-APP_DEVELOPERS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-App-Developers" \
-    "${ORGANIZATION_NAME}-app-developers" \
-    "Application developers")
+# APP_DEVELOPERS_ID=$(create_or_update_group \
+#     "${ORGANIZATION_NAME}-App-Developers" \
+#     "${ORGANIZATION_NAME}-app-developers" \
+#     "Application developers")
 
-APP_DEPLOYERS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-App-Deployers" \
-    "${ORGANIZATION_NAME}-app-deployers" \
-    "Application deployment team")
+# APP_DEPLOYERS_ID=$(create_or_update_group \
+#     "${ORGANIZATION_NAME}-App-Deployers" \
+#     "${ORGANIZATION_NAME}-app-deployers" \
+#     "Application deployment team")
 
-DB_ADMINS_ID=$(create_or_update_group \
-    "${ORGANIZATION_NAME}-DB-Admins" \
-    "${ORGANIZATION_NAME}-db-admins" \
-    "Database administrators")
+# DB_ADMINS_ID=$(create_or_update_group \
+#     "${ORGANIZATION_NAME}-DB-Admins" \
+#     "${ORGANIZATION_NAME}-db-admins" \
+#     "Database administrators")
 
 # ---- Cost Management Groups ----
 log_info "Creating Cost Management Groups..."
@@ -213,17 +219,15 @@ cat > ./output/entra-groups.json <<EOF
   "platformContributors": "$PLATFORM_CONTRIBUTORS_ID",
   "networkAdmins": "$NETWORK_ADMINS_ID",
   "securityAdmins": "$SECURITY_ADMINS_ID",
-  "devAdmins": "$DEV_ADMINS_ID",
-  "devContributors": "$DEV_CONTRIBUTORS_ID",
-  "devReaders": "$DEV_READERS_ID",
-  "stagingAdmins": "$STAGING_ADMINS_ID",
-  "stagingContributors": "$STAGING_CONTRIBUTORS_ID",
   "prodAdmins": "$PROD_ADMINS_ID",
   "prodContributors": "$PROD_CONTRIBUTORS_ID",
   "prodReaders": "$PROD_READERS_ID",
-  "appDevelopers": "$APP_DEVELOPERS_ID",
-  "appDeployers": "$APP_DEPLOYERS_ID",
-  "dbAdmins": "$DB_ADMINS_ID",
+  "loggingAdmins": "$LOGS_ADMINS_ID",
+  "loggingContributors": "$LOGS_CONTRIBUTORS_ID",
+  "loggingReaders": "$LOGS_READERS_ID",
+  "quarantineAdmins": "$QUARANTINE_ADMINS_ID",
+  "quarantineContributors": "$QUARANTINE_CONTRIBUTORS_ID",
+  "quarantineReaders": "$QUARANTINE_READERS_ID",
   "costManagers": "$COST_MANAGERS_ID",
   "billingReaders": "$BILLING_READERS_ID"
 }
@@ -232,8 +236,9 @@ EOF
 # Export to Azure DevOps variables (if running in pipeline)
 if [ -n "$SYSTEM_TEAMFOUNDATIONCOLLECTIONURI" ]; then
     echo "##vso[task.setvariable variable=platformAdminsId;isOutput=true]$PLATFORM_ADMINS_ID"
-    echo "##vso[task.setvariable variable=devAdminsId;isOutput=true]$DEV_ADMINS_ID"
-    echo "##vso[task.setvariable variable=prodAdminsId;isOutput=true]$PROD_ADMINS_ID"
+    echo "##vso[task.setvariable variable=prodAdminsId;isOutput=true]$PROD_ADMINS_ID"    
+    echo "##vso[task.setvariable variable=devAdminsId;isOutput=true]$LOGS_ADMINS_ID"
+    echo "##vso[task.setvariable variable=quarantineAdminsId;isOutput=true]$QUARANTINE_ADMINS_ID"
 fi
 
 log_info "Group IDs exported to ./output/entra-groups.json"
