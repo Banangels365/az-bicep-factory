@@ -55,7 +55,7 @@ jobs:
             az deployment mg validate \
               --management-group-id $ROOT_MG_ID \
               --location $LOCATION \
-              --template-file platform.bicep \
+              --template-file platform-lz/platform.bicep \
               --parameters "$param" || true
           done
 
@@ -101,7 +101,7 @@ jobs:
           az deployment mg what-if \
             --management-group-id $ROOT_MG_ID \
             --location $LOCATION \
-            --template-file platform.bicep \
+            --template-file platform-lz/platform.bicep \
             --parameters platform-lz/platform.bicepparam
         continue-on-error: true
 
