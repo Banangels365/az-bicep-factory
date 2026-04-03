@@ -8,15 +8,22 @@ param organizationName string
 
 @description('Environment')
 @allowed([
-  'prod'
-  'logging'
-  'quarantine'
-  'sandbox'
+  'prod' // production
+  'logs' // logging/monitoring
+  'quar' // quarantine
+  'sbox' // sandbox
 ])
 param environment string
 
 @description('Azure region for hub resources')
-param location string = 'canadacentral'
+@allowed([
+  'cace' // canadacentral
+  'caea' // canadaeast
+])
+param location string = 'caea'
+
+@description('Connectivity Resource Group (must exist prior to deployment)')
+param connectivityResourceGroupName string
 
 @description('Hub VNet address prefix')
 param hubVnetAddressPrefix string = '10.0.0.0/16'
@@ -91,7 +98,7 @@ param tags object = {
 // VARIABLES
 // ============================================
 
-var resourceGroupName = 'rg-${organizationName}-hub-${environment}-${location}'
+// var resourceGroupName = connectivityResourceGroupName
 var hubVnetName = 'vnet-${organizationName}-hub-${environment}-${location}'
 var firewallName = 'afw-${organizationName}-hub-${environment}'
 var vpnGatewayName = 'vpngw-${organizationName}-hub-${environment}'
@@ -113,18 +120,18 @@ var rtManagementName = 'rt-hub-management-${environment}'
 // RESOURCE GROUP
 // ============================================
 
-resource connectivityResourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
-  name: resourceGroupName
-  location: location
-  tags: tags
-}
+// resource connectivityResourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
+//   name: resourceGroupName
+//   location: location
+//   tags: tags
+// }
 
 // ============================================
 // DDoS PROTECTION PLAN
 // ============================================
 
 module ddosProtection './modules/ddos_protection.bicep' = if (deployDdosProtection) {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-ddos-protection'
   params: {
     ddosProtectionPlanName: ddosProtectionPlanName
@@ -138,7 +145,7 @@ module ddosProtection './modules/ddos_protection.bicep' = if (deployDdosProtecti
 // ============================================
 
 module nsgManagement './modules/network_security_group.bicep' = {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-nsg-management'
   params: {
     nsgName: nsgManagementName
@@ -244,7 +251,7 @@ module nsgManagement './modules/network_security_group.bicep' = {
 // ============================================
 
 module pipVpnGateway './modules/public_ip.bicep' = if (deployVpnGateway) {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-pip-vpngw'
   params: {
     publicIpName: pipVpnGatewayName
@@ -259,7 +266,7 @@ module pipVpnGateway './modules/public_ip.bicep' = if (deployVpnGateway) {
 }
 
 module pipFirewall './modules/public_ip.bicep' = if (deployAzureFirewall) {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-pip-firewall'
   params: {
     publicIpName: pipFirewallName
@@ -274,14 +281,14 @@ module pipFirewall './modules/public_ip.bicep' = if (deployAzureFirewall) {
 }
 
 module pipBastion './modules/public_ip.bicep' = if (deployBastion) {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-pip-bastion'
   params: {
     publicIpName: pipBastionName
     location: location
     sku: 'Standard'
     allocationMethod: 'Static'
-    zones: availabilityZones // FIX: zones ajoutées pour cohérence HA
+    zones: availabilityZones // zones ajoutées pour cohérence HA
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
     enableDiagnostics: true
     tags: tags
@@ -297,7 +304,7 @@ module pipBastion './modules/public_ip.bicep' = if (deployBastion) {
 // ============================================
 
 module hubVnet './modules/virtual_network.bicep' = {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-hub-vnet'
   params: {
     vnetName: hubVnetName
@@ -344,8 +351,10 @@ module hubVnet './modules/virtual_network.bicep' = {
 // qui sera utilisée dans la route table (phase 2).
 // ============================================
 
+var pipFirewallId = deployAzureFirewall ? pipFirewall.outputs.publicIpId : '' // FIX: variable pour clarifier le passage du public IP au module Firewall
+
 module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall) {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-azure-firewall'
   params: {
     firewallName: firewallName
@@ -354,7 +363,7 @@ module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall)
     skuTier: firewallSkuTier
     subnetId: '${hubVnet.outputs.vnetId}/subnets/AzureFirewallSubnet'
     publicIpAddressIds: [
-      pipFirewall.outputs.publicIpId
+      pipFirewallId
     ]
     zones: availabilityZones
     enableDnsProxy: true
@@ -375,7 +384,7 @@ module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall)
 // ============================================
 
 module routeTableManagement './modules/route_table.bicep' = {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-rt-management'
   params: {
     routeTableName: rtManagementName
@@ -403,7 +412,7 @@ module routeTableManagement './modules/route_table.bicep' = {
 // ============================================
 
 module managementSubnet './modules/subnet.bicep' = {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-subnet-management-phase2'
   params: {
     vnetName: hubVnetName
@@ -424,7 +433,7 @@ module managementSubnet './modules/subnet.bicep' = {
 // ============================================
 
 module vpnGateway './modules/vpn_gateway.bicep' = if (deployVpnGateway) {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-vpn-gateway'
   params: {
     vpnGatewayName: vpnGatewayName
@@ -451,7 +460,7 @@ module vpnGateway './modules/vpn_gateway.bicep' = if (deployVpnGateway) {
 // ============================================
 
 module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
-  scope: connectivityResourceGroup
+  scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-bastion'
   params: {
     bastionName: bastionName
@@ -476,7 +485,7 @@ module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
 // OUTPUTS
 // ============================================
 
-output resourceGroupName string = connectivityResourceGroup.name
+// output resourceGroupName string = connectivityResourceGroup.name
 output hubVnetId string = hubVnet.outputs.vnetId
 output hubVnetName string = hubVnet.outputs.vnetName
 output hubVnetAddressPrefix string = hubVnetAddressPrefix
