@@ -102,7 +102,7 @@ jobs:
             --management-group-id $ROOT_MG_ID \
             --location $LOCATION \
             --template-file platform.bicep \
-            --parameters platform.bicepparam
+            --parameters platform-lz/platform.bicepparam
         continue-on-error: true
 
       # 🔎 What-If pour le déploiement RG

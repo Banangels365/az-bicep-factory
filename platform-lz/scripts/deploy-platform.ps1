@@ -52,8 +52,8 @@ $InformationPreference = 'Continue'
 # Path configuration
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PlatformPath = Join-Path $ScriptRoot "platform"
-$MainBicepFile = Join-Path $PlatformPath "main.bicep"
-$ParametersFile = Join-Path $PlatformPath "main.bicepparam"
+$MainBicepFile = Join-Path $PlatformPath "platform.bicep"
+$ParametersFile = Join-Path $PlatformPath "platform.bicepparam"
 
 # Deployment configuration
 $DeploymentName = "platform-deployment-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
@@ -75,10 +75,10 @@ function Write-Log {
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     
     switch ($Level) {
-        'Info'    { Write-Information "[$timestamp] [INFO] $Message" }
+        'Info' { Write-Information "[$timestamp] [INFO] $Message" }
         'Success' { Write-Host "[$timestamp] [SUCCESS] $Message" -ForegroundColor Green }
         'Warning' { Write-Warning "[$timestamp] [WARNING] $Message" }
-        'Error'   { Write-Error "[$timestamp] [ERROR] $Message" }
+        'Error' { Write-Error "[$timestamp] [ERROR] $Message" }
     }
 }
 
