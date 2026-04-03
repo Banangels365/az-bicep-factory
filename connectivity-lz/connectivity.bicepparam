@@ -7,7 +7,11 @@ using './connectivity.bicep'
 param organizationName = 'acmy'
 param environment = 'sbox' // prod, logs, quar, sbox
 param location = 'caea' // canadacentral ou canadaeast
-param connectivityResourceGroupName = 'rg-{environment}-{location}-networking' // le RG doit exister avant le déploiement
+
+// FIX : le RG doit exister avant le déploiement.
+// Les placeholders {environment} et {location} ont été remplacés par les valeurs réelles
+// correspondant aux paramètres ci-dessus. Ajustez si vous changez environment ou location.
+param connectivityResourceGroupName = 'rg-sbox-caea-networking'
 
 // Hub VNet addressing
 param hubVnetAddressPrefix = '10.0.0.0/16'
@@ -23,7 +27,7 @@ param deployBastion = true
 param deployDdosProtection = true // Doit être activé pour l'environnement Production
 
 // VPN Gateway configuration
-// FIX: VpnGw1AZ nécessite Generation2 — les deux paramètres sont alignés
+// VpnGw1AZ nécessite Generation2 — les deux paramètres sont alignés
 param vpnGatewaySku = 'VpnGw1AZ' // SKU zone-redondant recommandé pour prod
 param vpnGatewayGeneration = 'Generation2' // Obligatoire pour les SKUs AZ
 

@@ -98,7 +98,6 @@ param tags object = {
 // VARIABLES
 // ============================================
 
-// var resourceGroupName = connectivityResourceGroupName
 var hubVnetName = 'vnet-${organizationName}-hub-${environment}-${location}'
 var firewallName = 'afw-${organizationName}-hub-${environment}'
 var vpnGatewayName = 'vpngw-${organizationName}-hub-${environment}'
@@ -115,16 +114,6 @@ var pipBastionName = 'pip-bas-${environment}'
 
 // Route table names
 var rtManagementName = 'rt-hub-management-${environment}'
-
-// ============================================
-// RESOURCE GROUP
-// ============================================
-
-// resource connectivityResourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
-//   name: resourceGroupName
-//   location: location
-//   tags: tags
-// }
 
 // ============================================
 // DDoS PROTECTION PLAN
@@ -288,7 +277,7 @@ module pipBastion './modules/public_ip.bicep' = if (deployBastion) {
     location: location
     sku: 'Standard'
     allocationMethod: 'Static'
-    zones: availabilityZones // zones ajoutées pour cohérence HA
+    zones: availabilityZones
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
     enableDiagnostics: true
     tags: tags
@@ -311,7 +300,9 @@ module hubVnet './modules/virtual_network.bicep' = {
     location: location
     addressPrefixes: [hubVnetAddressPrefix]
     enableDdosProtection: deployDdosProtection
-    ddosProtectionPlanId: deployDdosProtection ? ddosProtection.outputs.ddosProtectionPlanId : ''
+    // FIX BCP318 : opérateur ?. pour accéder à l'output d'un module conditionnel.
+    // Si ddosProtection n'est pas déployé, l'expression retourne null, et ?? fournit ''.
+    ddosProtectionPlanId: ddosProtection.?outputs.ddosProtectionPlanId ?? ''
     subnets: [
       {
         name: 'GatewaySubnet'
@@ -340,9 +331,8 @@ module hubVnet './modules/virtual_network.bicep' = {
     enableDiagnostics: true
     tags: tags
   }
-  dependsOn: [
-    nsgManagement
-  ]
+  // dependsOn supprimé : nsgManagement.outputs.nsgId est référencé dans params.subnets
+  // → Bicep infère la dépendance implicitement (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -350,8 +340,6 @@ module hubVnet './modules/virtual_network.bicep' = {
 // Déployé après le VNet pour obtenir l'IP privée
 // qui sera utilisée dans la route table (phase 2).
 // ============================================
-
-var pipFirewallId = deployAzureFirewall ? pipFirewall.outputs.publicIpId : '' // FIX: variable pour clarifier le passage du public IP au module Firewall
 
 module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall) {
   scope: resourceGroup(connectivityResourceGroupName)
@@ -363,7 +351,7 @@ module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall)
     skuTier: firewallSkuTier
     subnetId: '${hubVnet.outputs.vnetId}/subnets/AzureFirewallSubnet'
     publicIpAddressIds: [
-      pipFirewallId
+      pipFirewall.?outputs.publicIpId ?? ''
     ]
     zones: availabilityZones
     enableDnsProxy: true
@@ -372,10 +360,8 @@ module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall)
     enableDiagnostics: true
     tags: tags
   }
-  dependsOn: [
-    hubVnet
-    pipFirewall
-  ]
+  // dependsOn supprimé : hubVnet.outputs.vnetId et pipFirewall.?outputs.publicIpId
+  // sont référencés dans params → dépendances implicites (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -389,20 +375,24 @@ module routeTableManagement './modules/route_table.bicep' = {
   params: {
     routeTableName: rtManagementName
     location: location
-    disableBgpRoutePropagation: true // FIX: true recommandé avec Azure Firewall (évite routes BGP conflictuelles)
+    disableBgpRoutePropagation: true
     routes: deployAzureFirewall
       ? [
           {
             name: 'DefaultToFirewall'
             addressPrefix: '0.0.0.0/0'
             nextHopType: 'VirtualAppliance'
-            nextHopIpAddress: azureFirewall.outputs.privateIpAddress
+            // FIX BCP318 : opérateur ?. sur le module conditionnel azureFirewall.
+            // Si deployAzureFirewall est false, cette branche du ternaire n'est jamais évaluée,
+            // mais Bicep analyse quand même l'expression → ?. + ?? nécessaires.
+            nextHopIpAddress: azureFirewall.?outputs.privateIpAddress ?? ''
           }
         ]
       : []
     tags: tags
   }
-  dependsOn: deployAzureFirewall ? [azureFirewall] : [] // FIX: dependsOn simplifié et valide
+  // dependsOn supprimé : azureFirewall.?outputs.privateIpAddress est référencé dans params.routes
+  // → dépendance implicite sur azureFirewall (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -421,11 +411,9 @@ module managementSubnet './modules/subnet.bicep' = {
     networkSecurityGroupId: nsgManagement.outputs.nsgId
     routeTableId: routeTableManagement.outputs.routeTableId
   }
-  dependsOn: [
-    hubVnet
-    routeTableManagement
-    nsgManagement
-  ]
+  // dependsOn supprimé : hubVnetName est un param string (pas un output),
+  // mais nsgManagement.outputs.nsgId et routeTableManagement.outputs.routeTableId
+  // sont référencés dans params → toutes les dépendances sont implicites (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -441,18 +429,17 @@ module vpnGateway './modules/vpn_gateway.bicep' = if (deployVpnGateway) {
     gatewaySku: vpnGatewaySku
     gatewayType: 'Vpn'
     vpnType: 'RouteBased'
-    vpnGatewayGeneration: vpnGatewayGeneration // FIX: paramétrisé (était hardcodé Generation1)
+    vpnGatewayGeneration: vpnGatewayGeneration
     subnetId: '${hubVnet.outputs.vnetId}/subnets/GatewaySubnet'
-    publicIpAddressId: pipVpnGateway.outputs.publicIpId
+    // FIX BCP318 : opérateur ?. sur le module conditionnel pipVpnGateway.
+    publicIpAddressId: pipVpnGateway.?outputs.publicIpId ?? ''
     enableBgp: false
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
     enableDiagnostics: true
     tags: tags
   }
-  dependsOn: [
-    hubVnet
-    pipVpnGateway
-  ]
+  // dependsOn supprimé : hubVnet.outputs.vnetId et pipVpnGateway.?outputs.publicIpId
+  // sont référencés dans params → dépendances implicites (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -467,7 +454,8 @@ module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
     location: location
     sku: 'Standard'
     subnetId: '${hubVnet.outputs.vnetId}/subnets/AzureBastionSubnet'
-    publicIpAddressId: pipBastion.outputs.publicIpId
+    // FIX BCP318 : opérateur ?. sur le module conditionnel pipBastion.
+    publicIpAddressId: pipBastion.?outputs.publicIpId ?? ''
     enableFileCopy: true
     enableTunneling: true
     scaleUnits: 2
@@ -475,17 +463,14 @@ module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
     enableDiagnostics: true
     tags: tags
   }
-  dependsOn: [
-    hubVnet // FIX: dépendance explicite sur le VNet ajoutée
-    pipBastion
-  ]
+  // dependsOn supprimé : hubVnet.outputs.vnetId et pipBastion.?outputs.publicIpId
+  // sont référencés dans params → dépendances implicites (no-unnecessary-dependson)
 }
 
 // ============================================
 // OUTPUTS
 // ============================================
 
-// output resourceGroupName string = connectivityResourceGroup.name
 output hubVnetId string = hubVnet.outputs.vnetId
 output hubVnetName string = hubVnet.outputs.vnetName
 output hubVnetAddressPrefix string = hubVnetAddressPrefix
@@ -495,8 +480,9 @@ output firewallSubnetId string = '${hubVnet.outputs.vnetId}/subnets/AzureFirewal
 output bastionSubnetId string = '${hubVnet.outputs.vnetId}/subnets/AzureBastionSubnet'
 output managementSubnetId string = '${hubVnet.outputs.vnetId}/subnets/snet-hub-management'
 
-output vpnGatewayId string = deployVpnGateway ? vpnGateway.outputs.vpnGatewayId : ''
-output azureFirewallId string = deployAzureFirewall ? azureFirewall.outputs.firewallId : ''
-output azureFirewallPrivateIp string = deployAzureFirewall ? azureFirewall.outputs.privateIpAddress : ''
-output bastionId string = deployBastion ? bastion.outputs.bastionId : ''
-output ddosProtectionPlanId string = deployDdosProtection ? ddosProtection.outputs.ddosProtectionPlanId : ''
+// FIX BCP318 : même pattern ?. ?? '' appliqué sur tous les outputs conditionnels.
+output vpnGatewayId string = vpnGateway.?outputs.vpnGatewayId ?? ''
+output azureFirewallId string = azureFirewall.?outputs.firewallId ?? ''
+output azureFirewallPrivateIp string = azureFirewall.?outputs.privateIpAddress ?? ''
+output bastionId string = bastion.?outputs.bastionId ?? ''
+output ddosProtectionPlanId string = ddosProtection.?outputs.ddosProtectionPlanId ?? ''
