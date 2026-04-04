@@ -50,7 +50,7 @@ jobs:
       - name: Validate parameter files for platform LZ (Management Group scope)
         run: |
           echo "=== Validating Parameter Files at MG scope ==="
-          for param in $(find . -name '*.bicepparam' -not -name 'platform.bicepparam'); do
+          for param in $(find . -name '*.bicepparam' -not -name 'platform-lz/platform.bicepparam'); do
             echo "Validating $param"
             az deployment mg validate \
               --management-group-id $ROOT_MG_ID \
