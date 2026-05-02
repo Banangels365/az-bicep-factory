@@ -2,9 +2,15 @@ name: ALZ - Platfform Validation
 
 on:
   push:
+    paths:
+      - 'platform-lz/**/*.bicep'
+      - 'platform-lz/**/*.bicepparam'
     branches-ignore:
       - main
   pull_request:
+    paths:
+      - 'platform-lz/**/*.bicep'
+      - 'platform-lz/**/*.bicepparam'
     branches-ignore:
       - main
 
