@@ -1,4 +1,4 @@
-name: Azure Landing Zone - Platfform Validation
+name: ALZ - Platfform Validation
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
   validate:
     name: Validate Bicep & Security
     runs-on: ubuntu-latest
-    environment: sandbox
+    environment: Sandbox
 
     env:
       LOCATION: canadaeast
