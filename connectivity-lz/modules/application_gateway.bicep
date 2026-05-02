@@ -5,7 +5,11 @@
 param applicationGatewayName string
 
 @description('Location for the application gateway')
-param location string = resourceGroup().location
+@allowed([
+  'cace' // canadacentral
+  'caea' // canadaeast
+])
+param location string = 'caea'
 
 @description('Application Gateway SKU')
 @allowed([
@@ -90,7 +94,7 @@ param logAnalyticsWorkspaceId string = ''
 // Application Gateway Resource
 resource applicationGateway 'Microsoft.Network/applicationGateways@2023-09-01' = {
   name: applicationGatewayName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   zones: !empty(zones) ? zones : null
   properties: {
