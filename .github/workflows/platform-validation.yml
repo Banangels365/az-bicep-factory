@@ -14,7 +14,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: ../platform-lz
+    working-directory: ./platform-lz
 
 jobs:
   validate:
