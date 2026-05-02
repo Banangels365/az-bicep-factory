@@ -1,4 +1,4 @@
-// platform-lz/main.bicepparam
+// platform-lz/platform.bicepparam
 using './platform.bicep'
 
 // Organization configuration
@@ -8,7 +8,7 @@ param location = 'caea' // canadacentral ou canadaeast
 
 // RG de la plateforme où seront créés les ressources transversales, de gouvernance, d’observabilité et d’administration communes à plusieurs environnements (prod, dev, sandbox, etc.).
 // telles que (log analytics, azure policies, diagnostic settings, actions Group, alerts, etc.).
-param platformResourceGroupName = 'rg-sbox-caea-platform'
+// param platformResourceGroupName = 'rg-sbox-caea-platform'
 
 // liste des tags à appliquer à toutes les ressources
 param tags = {
@@ -24,7 +24,7 @@ param tags = {
 // param enableSentinel = true
 
 // billing scope ID for subscription creation
-param managementSubscriptionId = 'f3a6536e-1f68-4ca4-bb51-adf7822ec8bc' // Subscription ID where the management group and billing scope are located
+var managementSubscriptionId = 'f3a6536e-1f68-4ca4-bb51-adf7822ec8bc' // Subscription ID where the management group and billing scope are located
 
 // Liste des abonnements à créer
 param subscriptions = [
@@ -54,7 +54,7 @@ param subscriptions = [
 
 param resourceGroups = [
   {
-    name: 'rg-${environment}-${location}-networking'
+    name: 'rg-${environment}-${location}-management'
     location: location
     tags: tags
   }
@@ -64,7 +64,7 @@ param resourceGroups = [
     tags: tags
   }
   {
-    name: 'rg-${environment}-${location}-security'
+    name: 'rg-${environment}-${location}-networking'
     location: location
     tags: tags
   }

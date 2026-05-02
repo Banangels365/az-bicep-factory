@@ -1,4 +1,4 @@
-name: Azure Landing Zone - PR Validation
+name: Azure Landing Zone - Platfform Validation
 
 on:
   push:
@@ -12,11 +12,15 @@ permissions:
   contents: read
   id-token: write
 
+defaults:
+  run:
+    working-directory: ../platform-lz
+
 jobs:
   validate:
     name: Validate Bicep & Security
     runs-on: ubuntu-latest
-    environment: Sandbox
+    environment: sandbox
 
     env:
       LOCATION: canadaeast
@@ -58,14 +62,14 @@ jobs:
 
 
       # 🔎 Validation des fichiers de paramètres pour la Gestion de la LZ Identity
-      - name: Validate parameter files for Identity LZ
-        run: |
-          echo "=== Validating Parameter Files for Identity LZ ==="
-            az deployment mg validate \
-              --management-group-id $ROOT_MG_ID \
-              --location $LOCATION \
-              --template-file identity-lz/identity.bicep \
-              --parameters identity-lz/identity.bicepparam || true
+      # - name: Validate parameter files for Identity LZ
+      #   run: |
+      #     echo "=== Validating Parameter Files for Identity LZ ==="
+      #       az deployment sub validate \
+      #         --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+      #         --location $LOCATION \
+      #         --template-file identity-lz/identity.bicep \
+      #         --parameters identity-lz/identity.bicepparam || true
 
 
       # 🔎 Validation des fichiers de paramètres pour la Gestion de la LZ Connectivity
@@ -86,13 +90,13 @@ jobs:
       #   run: |
       #     echo "=== Validating RG Deployment at Sub scope ==="
       #     az deployment sub validate \
-      #       --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+      #       --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \  
       #       --location $LOCATION \
       #       --template-file rg-deployment.bicep \
       #       --parameters rg-deployment.bicepparam || true
 
-      # 🔎 What-If au niveau du management group racine
-      - name: Management Group What-If
+      # 🔎 What-If déploiement des ressources Platform-LZ au niveau du management group racine
+      - name: Platform-LZ Resources Deployment What-If
         run: |
           az deployment mg what-if \
             --management-group-id $ROOT_MG_ID \
@@ -101,14 +105,14 @@ jobs:
             --parameters platform-lz/platform.bicepparam
         continue-on-error: true
 
-      # 🔎 What-If pour le déploiement RG
-      # - name: RG Deployment What-If
+      # 🔎 What-If pour le déploiement de la landing zone Identity-LZ
+      # - name: Identity-LZ Resources Deployment What-If
       #   run: |
       #     az deployment sub what-if \
       #       --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
       #       --location $LOCATION \
-      #       --template-file rg-deployment.bicep \
-      #       --parameters rg-deployment.bicepparam
+      #       --template-file identity-lz/identity.bicep \
+      #       --parameters identity-lz/identity.bicepparam
       #   continue-on-error: true
 
       # 🔐 PSRule for Azure

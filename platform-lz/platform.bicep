@@ -1,4 +1,4 @@
-// platform-lz/main.bicep
+// platform-lz/platform.bicep
 // Orchestrateur Bicep pour le déploiement de la plateforme de base (landing zone) dans Azure.
 // Ce template déploie la hiérarchie de groupes d'administration, crée les abonnements, associe les abonnements aux groupes de gestion, 
 // et configure les ressources de base pour la plateforme (ex: RG de management, Log Analytics, etc.). 
@@ -25,8 +25,8 @@ param environment string
 ])
 param location string = 'caea'
 
-@description('billing scope ID for subscription creation')
-param managementSubscriptionId string
+// @description('billing scope ID for subscription creation')
+// param managementSubscriptionId string
 
 @description('Liste des abonnements à créer')
 param subscriptions array = []
@@ -39,8 +39,8 @@ param tags object = {
   Owner: 'CloudOps'
 }
 
-@description('Platform Resource Group Name (for shared platform resources like Log Analytics, policies, etc.)')
-param platformResourceGroupName string
+// @description('Platform Resource Group Name (for shared platform resources like Log Analytics, policies, etc.)')
+// param platformResourceGroupName string
 
 @description('Liste des groupes de ressources à créer')
 param resourceGroups array = []
@@ -183,94 +183,48 @@ module subscriptionAssociations './modules/subscription_to_mg_association.bicep'
 // ============================================
 
 // Resource Group for Platform Management
-module managementRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
-  name: 'deploy-management-rg'
-  scope: subscription(managementSubscriptionId)
-  params: {
-    resourceGroupName: platformResourceGroupName
-    location: location
-    tags: tags
-  }
-  dependsOn: [
-    rootMg
-  ]
-}
+// module managementRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+//   name: 'deploy-management-rg'
+//   scope: subscription(managementSubscriptionId)
+//   params: {
+//     resourceGroupName: platformResourceGroupName
+//     location: location
+//     tags: tags
+//   }
+//   dependsOn: [
+//     rootMg
+//   ]
+// }
 
-module resourceGroupsCreator './modules/resource_group.bicep' = [
-  for (rg, i) in resourceGroups: if (!empty(rg.subscriptionId)) {
-    name: 'deploy-${rg.name}-rg'
-    scope: subscription(rg.subscriptionId)
-    params: {
+var subscriptionResourceGroupPairs = flatten([
+  for (sub, i) in subscriptions: [
+    for rg in resourceGroups: {
+      subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
+      subscriptionName: sub.name
       resourceGroupName: rg.name
       location: rg.location
       tags: rg.tags
     }
+  ]
+])
+
+module resourceGroupsCreator './modules/resource_group.bicep' = [
+  for pair in subscriptionResourceGroupPairs: {
+    name: 'deploy-${pair.resourceGroupName}-${pair.subscriptionName}'
+
+    scope: subscription(pair.subscriptionId)
+
+    params: {
+      resourceGroupName: pair.resourceGroupName
+      location: pair.location
+      tags: pair.tags
+    }
+
     dependsOn: [
-      subscriptionsCreator[i]
+      subscriptionsCreator
     ]
   }
 ]
-
-// module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-//   name: 'deploy-operations-rg'
-//   scope: subscription(prodSubscriptionId)
-//   params: {
-//     resourceGroupName: 'rg-${environment}-${location}-operations'
-//     location: location
-//     tags: tags
-//   }
-//   dependsOn: [
-//     rootMg
-//     prodMg
-//   ]
-// }
-
-// Note: RG creation for new subscriptions is commented out because subscription IDs are runtime outputs.
-// To create RGs in new subscriptions, deploy them separately after subscription creation.
-// Example: Use a separate Bicep template with scope subscription('<new-sub-id>') and call it post-deployment.
-
-// Anciens modules RG (remplacés par la boucle ci-dessus)
-// module NetworkingRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-//   name: 'deploy-networking-rg'
-//   scope: subscription(prodSubscriptionId)
-//   params: {
-//     resourceGroupName: 'rg-${environment}-${location}-networking'
-//     location: location
-//     tags: tags
-//   }
-//   dependsOn: [
-//     rootMg
-//     prodMg
-//   ]
-// }
-
-// module IdentityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-//   name: 'deploy-identity-rg'
-//   scope: subscription(prodSubscriptionId)
-//   params: {
-//     resourceGroupName: 'rg-${environment}-${location}-identity'
-//     location: location
-//     tags: tags
-//   }
-//   dependsOn: [
-//     rootMg
-//     prodMg
-//   ]
-// }
-
-// module SecurityRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-//   name: 'deploy-security-rg'
-//   scope: subscription(prodSubscriptionId)
-//   params: {
-//     resourceGroupName: 'rg-${environment}-${location}-security'
-//     location: location
-//     tags: tags
-//   }
-//   dependsOn: [
-//     rootMg
-//     prodMg
-//   ]
-// }
 
 // module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
 //   name: 'deploy-operations-rg'

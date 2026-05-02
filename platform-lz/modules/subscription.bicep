@@ -1,4 +1,4 @@
-// platform-lz/subscription/main.bicep
+// platform-lz/subscription.bicep
 // Subscription module for centralized subscription management
 
 targetScope = 'tenant'
