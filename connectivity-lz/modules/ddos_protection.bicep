@@ -5,7 +5,11 @@
 param ddosProtectionPlanName string
 
 @description('Location for the DDoS protection plan')
-param location string = resourceGroup().location
+@allowed([
+  'cace' // canadacentral
+  'caea' // canadaeast
+])
+param location string = 'caea'
 
 @description('Tags to apply to the DDoS protection plan')
 param tags object = {}
@@ -13,7 +17,7 @@ param tags object = {}
 // DDoS Protection Plan Resource
 resource ddosProtectionPlan 'Microsoft.Network/ddosProtectionPlans@2023-09-01' = {
   name: ddosProtectionPlanName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   properties: {}
 }
