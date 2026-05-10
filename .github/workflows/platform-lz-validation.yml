@@ -32,7 +32,7 @@ jobs:
 
     env:
       LOCATION: canadaeast
-      ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}   # ID du management group racine
+      ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
 
     steps:
       - name: Checkout repository
@@ -43,40 +43,43 @@ jobs:
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}          
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Install Bicep
         run: az bicep install
 
-      # 🔎 Build & Lint tous les fichiers Bicep
+      # 🔎 Build & Lint Bicep
       - name: Build & Lint all Bicep files
         run: |
           echo "=== Bicep Validation ==="
-          for file in $(find . -name '*.bicep' -not -path '*/\.*'); do
+          for file in $(find . -name '*.bicep' -not -path './.git/*'); do
             echo "Building $file"
             az bicep build --file "$file"
             az bicep lint --file "$file"
           done
 
-      # 🔎 Validation des fichiers de paramètres pour la Gestion de la LZ Platform
-      - name: Validate parameter files for platform LZ (Management Group scope)
+      # 🔎 Validation ARM au scope Management Group
+      - name: Validate Platform-LZ deployment (Management Group scope)
         run: |
-          echo "=== Validating Parameter Files for platform LZ ==="
-            az deployment mg validate \
-              --management-group-id $ROOT_MG_ID \
-              --location $LOCATION \
-              --template-file ./platform.bicep \
-              --parameters ./platform.bicepparam || true
-
-      # 🔎 What-If déploiement des ressources Platform-LZ au niveau du management group racine
-      - name: Platform-LZ Resources Deployment What-If
-        run: |
-          az deployment mg what-if \
+          echo "=== Validating Platform-LZ Deployment ==="
+          az deployment mg validate \
+            --name platform-lz-validation \
             --management-group-id $ROOT_MG_ID \
             --location $LOCATION \
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
-        continue-on-error: true
+
+      # 🔎 What-If propre et lisible
+      - name: Platform-LZ What-If (Management Group scope)
+        run: |
+          echo "=== What-If Platform-LZ ==="
+          az deployment mg what-if \
+            --name platform-lz-whatif \
+            --management-group-id $ROOT_MG_ID \
+            --location $LOCATION \
+            --template-file ./platform.bicep \
+            --parameters ./platform.bicepparam \
+            --what-if-result-format FullResourcePayloads
 
       # 🔐 PSRule for Azure
       - name: PSRule for Azure
@@ -85,7 +88,6 @@ jobs:
           modules: PSRule.Rules.Azure
           inputType: repository
           inputPath: .
-        continue-on-error: false
 
       # 🔐 Checkov
       - name: Run Checkov
