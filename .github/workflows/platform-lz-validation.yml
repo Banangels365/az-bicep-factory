@@ -12,6 +12,7 @@ on:
     paths:
       - 'platform-lz/**/*.bicep'
       - 'platform-lz/**/*.bicepparam'
+      - '.github/workflows/platform-lz-validation.yml'
     branches-ignore:
       - main
 
