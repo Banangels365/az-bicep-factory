@@ -7,7 +7,7 @@ param environment = 'sbox' // prod, dev, logs, quar, sbox
 param location = 'caea' // canadacentral ou canadaeast
 
 // billing scope ID for subscription creation
-param managementSubscriptionId = 'f3a6536e-1f68-4ca4-bb51-adf7822ec8bc'
+param managementSubscriptionId = '0061dc3e-7704-4778-bcda-b566d000d486'
 
 // liste des tags à appliquer à toutes les ressources
 param tags = {
