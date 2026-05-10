@@ -1,10 +1,11 @@
-name: ALZ - Platfform Validation
+name: ALZ - Platform-LZ Validation
 
 on:
   push:
     paths:
       - 'platform-lz/**/*.bicep'
       - 'platform-lz/**/*.bicepparam'
+      - '.github/workflows/platform-lz-validation.yml'
     branches-ignore:
       - main
   pull_request:
@@ -63,8 +64,8 @@ jobs:
             az deployment mg validate \
               --management-group-id $ROOT_MG_ID \
               --location $LOCATION \
-              --template-file platform.bicep \
-              --parameters platform.bicepparam || true
+              --template-file ./platform.bicep \
+              --parameters ./platform.bicepparam || true
 
       # 🔎 What-If déploiement des ressources Platform-LZ au niveau du management group racine
       - name: Platform-LZ Resources Deployment What-If
@@ -72,8 +73,8 @@ jobs:
           az deployment mg what-if \
             --management-group-id $ROOT_MG_ID \
             --location $LOCATION \
-            --template-file platform.bicep \
-            --parameters platform.bicepparam
+            --template-file ./platform.bicep \
+            --parameters ./platform.bicepparam
         continue-on-error: true
 
       # 🔐 PSRule for Azure
