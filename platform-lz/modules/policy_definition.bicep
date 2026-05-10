@@ -1,4 +1,4 @@
-// platform-lz/policy-definition/main.bicep
+// platform-lz/modules/policy_definition.bicep
 // Azure Policy Definition module
 
 targetScope = 'managementGroup'

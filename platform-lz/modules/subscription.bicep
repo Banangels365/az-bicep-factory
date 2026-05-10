@@ -1,25 +1,26 @@
-// platform-lz/subscription.bicep
+// platform-lz/modules/subscription.bicep
 // Subscription module for centralized subscription management
 
 targetScope = 'tenant'
 
-@description('Alias name for the subscription')
+@description('Alias pour le nom de l\'abonnement')
 param subscriptionAliasName string
 
-@description('Display name of the subscription')
+@description('Nom d\'affichage de l\'abonnement')
 param subscriptionDisplayName string
 
-@description('Billing scope ID')
+@description('ID du scope de facturation (Billing Scope) pour l\'abonnement')
 param billingScope string
 
-@description('Workload type: Prod, Dev, Logging, Quarantine')
+@description('Workload type: Prod, Dev, Logs, Quar ou Sbox')
 @allowed([
-  'prod' // production
-  'logs' // logging/monitoring
-  'quar' // quarantine
-  'sbox' // sandbox
+  'Prod' // production
+  'Dev' // development
+  'Logs' // logging/monitoring
+  'Quar' // quarantine
+  'Sbox' // sandbox
 ])
-param workload string = 'sbox'
+param workload string = 'Sbox'
 
 resource subscriptionAlias 'Microsoft.Subscription/aliases@2021-10-01' = {
   name: subscriptionAliasName

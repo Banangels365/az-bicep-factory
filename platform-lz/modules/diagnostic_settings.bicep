@@ -1,25 +1,25 @@
-// platform-lz/diagnostic-settings/main.bicep
+// platform-lz/modules/diagnostic_settings.bicep
 // Diagnostic Settings module for centralized logging
 
-@description('Name of the diagnostic setting')
+@description('Nom du paramètre de diagnostic')
 param diagnosticSettingName string = 'default-diagnostics'
 
-@description('Log Analytics Workspace resource ID')
+@description('ID du workspace Log Analytics pour les diagnostics') // Obligatoire si vous souhaitez envoyer les diagnostics à un workspace
 param workspaceId string
 
-@description('Storage Account resource ID (optional)')
+@description('ID du compte de stockage (optionnel)')
 param storageAccountId string = ''
 
-@description('Event Hub Authorization Rule ID (optional)')
+@description('ID de la règle d\'autorisation Hub Event (optionnel)')
 param eventHubAuthorizationRuleId string = ''
 
-@description('Event Hub name (optional)')
+@description('Nom du Hub Event (optionnel)')
 param eventHubName string = ''
 
-@description('Log categories to enable')
+@description('Catégories de journaux à activer')
 param logCategories array = []
 
-@description('Metric categories to enable')
+@description('Catégories de métriques à activer')
 param metricCategories array = [
   {
     category: 'AllMetrics'
@@ -51,8 +51,8 @@ resource diagnosticSetting 'Microsoft.Insights/diagnosticSettings@2021-05-01-pre
 }
 
 // Outputs
-@description('Diagnostic setting resource ID')
+@description('ID du paramètre de diagnostic')
 output diagnosticSettingId string = diagnosticSetting.id
 
-@description('Diagnostic setting name')
+@description('Nom du paramètre de diagnostic')
 output diagnosticSettingName string = diagnosticSetting.name

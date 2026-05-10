@@ -6,32 +6,30 @@
 
 targetScope = 'managementGroup'
 
-@description('Organization name (used for naming)')
+@description('Nom de l\'organisation')
 param organizationName string
 
-@description('Environment')
+@description('Environnement')
 @allowed([
   'prod' // production
+  'dev' // development
   'logs' // logging/monitoring
   'quar' // quarantine
   'sbox' // sandbox
 ])
 param environment string
 
-@description('Azure region for resource deployment')
+@description('Région Azure pour les ressources de la plateforme. Valeurs possibles : cace (canadacentral), caea (canadaeast)')
 @allowed([
   'cace' // canadacentral
   'caea' // canadaeast
 ])
 param location string = 'caea'
 
-// @description('billing scope ID for subscription creation')
-// param managementSubscriptionId string
+@description('billing scope ID for subscription creation')
+param managementSubscriptionId string
 
-@description('Liste des abonnements à créer')
-param subscriptions array = []
-
-@description('Tags to apply to all resources')
+@description('Tags à appliquer aux ressources')
 param tags object = {
   Environment: environment
   ManagedBy: 'Bicep'
@@ -41,9 +39,6 @@ param tags object = {
 
 // @description('Platform Resource Group Name (for shared platform resources like Log Analytics, policies, etc.)')
 // param platformResourceGroupName string
-
-@description('Liste des groupes de ressources à créer')
-param resourceGroups array = []
 
 // @description('Log Analytics retention in days')
 // @minValue(30)
@@ -66,7 +61,7 @@ param resourceGroups array = []
 // param loggingSubscriptionIds array = []
 
 // Variables
-var managementGroupPrefix = organizationName
+// var managementGroupPrefix = organizationName
 // var resourceGroupName = 'rg-platform-management-${environment}'
 // var logAnalyticsWorkspaceName = 'law-${organizationName}-platform-${environment}'
 
@@ -79,10 +74,10 @@ module rootMg './modules/management_group.bicep' = {
   name: 'deploy-root-mg'
   scope: tenant()
   params: {
-    managementGroupId: '${managementGroupPrefix}-root'
+    managementGroupId: '${organizationName}-root'
     displayName: '${organizationName} Root'
     parentManagementGroupId: 'Tenant Root Group' // Root management group ID (tenant root group)
-    // description: 'Root management group for ${organizationName}'
+    subscriptionIds: [] // No subscriptions directly under root MG
   }
 }
 
@@ -91,9 +86,10 @@ module prodMg './modules/management_group.bicep' = {
   name: 'deploy-prod-mg'
   scope: tenant()
   params: {
-    managementGroupId: '${managementGroupPrefix}-prod'
+    managementGroupId: '${organizationName}-prod'
     displayName: 'Production'
-    parentManagementGroupId: '${managementGroupPrefix}-root'
+    parentManagementGroupId: '${organizationName}-root'
+    subscriptionIds: [managementSubscriptionId] // Filter subscription IDs for prod MG
   }
   dependsOn: [
     rootMg
@@ -105,9 +101,9 @@ module prodMg './modules/management_group.bicep' = {
 //   name: 'deploy-dev-mg'
 //   scope: tenant()
 //   params: {
-//     managementGroupId: '${managementGroupPrefix}-dev'
+//     managementGroupId: '${organizationName}-dev'
 //     displayName: 'Development'
-//     parentManagementGroupId: '${managementGroupPrefix}-root'
+//     parentManagementGroupId: '${organizationName}-root'
 //   }
 //   dependsOn: [
 //     rootMg
@@ -119,9 +115,10 @@ module loggingMg './modules/management_group.bicep' = {
   name: 'deploy-logging-mg'
   scope: tenant()
   params: {
-    managementGroupId: '${managementGroupPrefix}-logging'
+    managementGroupId: '${organizationName}-logging'
     displayName: 'Logging'
-    parentManagementGroupId: '${managementGroupPrefix}-root'
+    parentManagementGroupId: '${organizationName}-root'
+    subscriptionIds: [] // Filter subscription IDs for logging MG
   }
   dependsOn: [
     rootMg
@@ -133,9 +130,10 @@ module quarantineMg './modules/management_group.bicep' = {
   name: 'deploy-quarantine-mg'
   scope: tenant()
   params: {
-    managementGroupId: '${managementGroupPrefix}-quarantine'
+    managementGroupId: '${organizationName}-quarantine'
     displayName: 'Quarantine'
-    parentManagementGroupId: '${managementGroupPrefix}-root'
+    parentManagementGroupId: '${organizationName}-root'
+    subscriptionIds: [] // Filter subscription IDs for quarantine MG
   }
   dependsOn: [
     rootMg
@@ -146,99 +144,97 @@ module quarantineMg './modules/management_group.bicep' = {
 // SUBSCRIPTION CREATION
 // ============================================
 
-module subscriptionsCreator './modules/subscription.bicep' = [
-  for sub in subscriptions: {
-    scope: tenant()
-    params: {
-      subscriptionAliasName: sub.alias
-      subscriptionDisplayName: sub.displayName
-      billingScope: sub.billingScope
-      workload: sub.workload
-    }
-    dependsOn: [
-      prodMg
-    ]
-  }
-]
+// module subscriptionsCreator './modules/subscription.bicep' = [
+//   for sub in subscriptions: {
+//     scope: tenant()
+//     params: {
+//       subscriptionAliasName: sub.alias
+//       subscriptionDisplayName: sub.displayName
+//       billingScope: sub.billingScope
+//       workload: sub.workload
+//     }
+//     dependsOn: [
+//       prodMg
+//     ]
+//   }
+// ]
 
 // ============================================
 // SUBSCRIPTION TO MANAGEMENT GROUP ASSOCIATIONS
 // ============================================
 
-module subscriptionAssociations './modules/subscription_to_mg_association.bicep' = [
-  for (sub, i) in subscriptions: {
-    scope: tenant()
-    params: {
-      subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
-      managementGroupId: sub.mgId
-    }
-    dependsOn: [
-      subscriptionsCreator[i]
-    ]
-  }
-]
+// module subscriptionAssociations './modules/subscription_to_mg_association.bicep' = [
+//   for (sub, i) in subscriptions: {
+//     scope: tenant()
+//     params: {
+//       subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
+//       managementGroupId: sub.mgId
+//     }
+//     dependsOn: [
+//       subscriptionsCreator[i]
+//     ]
+//   }
+// ]
 
 // ============================================
 // RESOURCES GROUP CREATION
 // ============================================
 
-// Resource Group for Platform Management
-// module managementRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
-//   name: 'deploy-management-rg'
-//   scope: subscription(managementSubscriptionId)
-//   params: {
-//     resourceGroupName: platformResourceGroupName
-//     location: location
-//     tags: tags
-//   }
-//   dependsOn: [
-//     rootMg
-//   ]
-// }
-
-var subscriptionResourceGroupPairs = flatten([
-  for (sub, i) in subscriptions: [
-    for rg in resourceGroups: {
-      subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
-      subscriptionName: sub.name
-      resourceGroupName: rg.name
-      location: rg.location
-      tags: rg.tags
-    }
-  ]
-])
-
-module resourceGroupsCreator './modules/resource_group.bicep' = [
-  for pair in subscriptionResourceGroupPairs: {
-    name: 'deploy-${pair.resourceGroupName}-${pair.subscriptionName}'
-
-    scope: subscription(pair.subscriptionId)
-
-    params: {
-      resourceGroupName: pair.resourceGroupName
-      location: pair.location
-      tags: pair.tags
-    }
-
-    dependsOn: [
-      subscriptionsCreator
-    ]
+// Resource Group for Platform Management Resources (e.g. Log Analytics, policies, etc.)
+module managementRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+  name: 'deploy-management-rg'
+  scope: subscription(managementSubscriptionId)
+  params: {
+    resourceGroupName: 'rg-${organizationName}-${environment}-${location}-management'
+    location: location
+    tags: tags
   }
-]
+  dependsOn: [
+    rootMg
+  ]
+}
 
-// module OperationsRg './platform-lz/resource-group/main.bicep' = if (!empty(prodSubscriptionId)) {
-//   name: 'deploy-operations-rg'
-//   scope: subscription(prodSubscriptionId)
-//   params: {
-//     resourceGroupName: 'rg-${environment}-${location}-operations'
-//     location: location
-//     tags: tags
-//   }
-//   dependsOn: [
-//     rootMg
-//     prodMg
-//   ]
-// }
+// Resource Groups for identity and access management (e.g. Privileged Identity Management, etc.)
+module identityRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+  name: 'deploy-identity-rg'
+  scope: subscription(managementSubscriptionId)
+  params: {
+    resourceGroupName: 'rg-${organizationName}-${environment}-${location}-identity'
+    location: location
+    tags: tags
+  }
+  dependsOn: [
+    rootMg
+  ]
+}
+
+// Resource Group for networking resources (e.g. Virtual Networks, Subnets, etc.)
+module networkingRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+  name: 'deploy-networking-rg'
+  scope: subscription(managementSubscriptionId)
+  params: {
+    resourceGroupName: 'rg-${organizationName}-${environment}-${location}-networking'
+    location: location
+    tags: tags
+  }
+  dependsOn: [
+    rootMg
+  ]
+}
+
+// Resource Group for Monitoring resources (e.g. Azure Monitor, Log Analytics, etc.)
+module monitoringRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+  name: 'deploy-monitoring-rg'
+  scope: subscription(managementSubscriptionId)
+  params: {
+    resourceGroupName: 'rg-${organizationName}-${environment}-${location}-monitoring'
+    location: location
+    tags: tags
+  }
+  dependsOn: [
+    rootMg
+  ]
+}
 
 // ============================================
 // PLATFORM RESOURCES (Logging)
@@ -531,22 +527,6 @@ output managementGroupIds object = {
   logging: loggingMg.outputs.managementGroupId
   quarantine: quarantineMg.outputs.managementGroupId
 }
-
-output subscriptions array = [
-  for (sub, i) in subscriptions: {
-    alias: sub.alias
-    displayName: sub.displayName
-    subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
-  }
-]
-
-output resourceGroupIds array = [
-  for (rg, i) in resourceGroups: {
-    name: rg.name
-    subscriptionId: rg.subscriptionId
-    resourceGroupId: resourceGroupsCreator[i].?outputs.resourceGroupId ?? ''
-  }
-]
 
 output managementResourceGroupId string = managementRg.?outputs.resourceGroupId ?? ''
 

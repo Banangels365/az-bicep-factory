@@ -1,15 +1,19 @@
-// platform-lz/log-analytics-workspace/main.bicep
+// platform-lz/modules/log_analytics_workspace.bicep
 // Log Analytics Workspace module for centralized logging
 
-@description('Log Analytics Workspace name')
+@description('Nom du workspace Log Analytics')
 @minLength(4)
 @maxLength(63)
 param workspaceName string
 
-@description('Location for the workspace')
-param location string = resourceGroup().location
+@description('Emplacement du workspace. Valeurs possibles : cace (canadacentral), caea (canadaeast)')
+@allowed([
+  'cace' // canadacentral
+  'caea' // canadaeast
+])
+param location string = 'caea'
 
-@description('Workspace SKU')
+@description('SKU du workspace')
 @allowed([
   'Free'
   'Standard'
@@ -21,34 +25,38 @@ param location string = resourceGroup().location
 ])
 param sku string = 'PerGB2018'
 
-@description('Data retention in days (30-730 days)')
+@description('Rétention des données en jours (30-730)')
 @minValue(30)
 @maxValue(730)
 param retentionInDays int = 90
 
-@description('Daily ingestion limit in GB (0 means no limit)')
+@description('Limite quotidienne de données en GB (0 pour illimité)')
 @minValue(0)
 param dailyQuotaGb int = 0
 
-@description('Enable public network access')
+@description('Activer l\'accès au réseau public pour l\'ingestion')
+@allowed([
+  'Enabled'
+  'Disabled'
+])
 param publicNetworkAccessForIngestion string = 'Enabled'
 
-@description('Enable public network access for query')
+@description('Activer l\'accès au réseau public pour les requêtes')
 param publicNetworkAccessForQuery string = 'Enabled'
 
-@description('Tags to apply to the workspace')
+@description('Tags pour le workspace')
 param tags object = {}
 
-@description('Enable Sentinel on this workspace')
+@description('Activer la solution Sentinel pour ce workspace')
 param enableSentinel bool = false
 
-@description('Solutions to deploy (e.g., SecurityInsights, Updates, ChangeTracking)')
+@description('Solutions à déployer dans le workspace (ex: Security, AzureActivity, etc.)')
 param solutions array = []
 
 // Log Analytics Workspace Resource
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: workspaceName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   properties: {
     sku: {
@@ -69,7 +77,7 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09
 // Sentinel Solution (if enabled)
 resource sentinelSolution 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = if (enableSentinel) {
   name: 'SecurityInsights(${workspaceName})'
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   plan: {
     name: 'SecurityInsights(${workspaceName})'
@@ -86,7 +94,7 @@ resource sentinelSolution 'Microsoft.OperationsManagement/solutions@2015-11-01-p
 resource additionalSolutions 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = [
   for solution in solutions: {
     name: '${solution}(${workspaceName})'
-    location: location
+    location: location == 'caea' ? 'canadaeast' : 'canadacentral'
     tags: tags
     plan: {
       name: '${solution}(${workspaceName})'
@@ -101,11 +109,11 @@ resource additionalSolutions 'Microsoft.OperationsManagement/solutions@2015-11-0
 ]
 
 // Outputs
-@description('Log Analytics Workspace resource ID')
+@description('ID du workspace Log Analytics')
 output workspaceId string = logAnalyticsWorkspace.id
 
-@description('Log Analytics Workspace name')
+@description('Nom du workspace Log Analytics')
 output workspaceName string = logAnalyticsWorkspace.name
 
-@description('Log Analytics Workspace customer ID')
+@description('ID du client du workspace Log Analytics')
 output customerId string = logAnalyticsWorkspace.properties.customerId
