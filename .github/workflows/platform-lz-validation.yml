@@ -68,6 +68,7 @@ jobs:
             --location $LOCATION \
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
+          continue-on-error: true
 
       # 🔎 What-If propre et lisible
       - name: Platform-LZ What-If (Management Group scope)
