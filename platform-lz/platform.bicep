@@ -59,7 +59,7 @@ module rootMg './modules/management_group.bicep' = {
   params: {
     managementGroupId: '${organizationName}-root'
     displayName: '${organizationName} Root'
-    parentManagementGroupId: 'Tenant Root Group' // Root management group ID (tenant root group)
+    parentManagementGroupId: '' // Leave empty for root MG
     subscriptionIds: [] // No subscriptions directly under root MG
   }
 }
