@@ -4,7 +4,7 @@
 // et configure les ressources de base pour la plateforme (ex: RG de management, Log Analytics, etc.). 
 // Il inclut également la définition de politiques personnalisées et d'initiatives, ainsi que leur assignation aux groupes de gestion appropriés.
 
-targetScope = 'managementGroup'
+targetScope = 'tenant'
 
 @description('Nom de l\'organisation')
 param organizationName string
