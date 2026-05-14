@@ -79,8 +79,7 @@ jobs:
             --management-group-id $ROOT_MG_ID \
             --location $LOCATION \
             --template-file ./platform.bicep \
-            --parameters ./platform.bicepparam \
-            --what-if-result-format FullResourcePayloads
+            --parameters ./platform.bicepparam 
 
       # 🔐 PSRule for Azure
       - name: PSRule for Azure
