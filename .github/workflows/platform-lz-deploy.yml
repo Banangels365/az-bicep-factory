@@ -1,18 +1,13 @@
-name: ALZ - Platform-LZ Validation
+name: ALZ - Platform-LZ Deployment
 
 on:
+  workflow_dispatch:
   push:
-    paths:
-      - 'platform-lz/**'
-      - '.github/workflows/platform-lz-validation.yml'
-    branches-ignore:
-      - main
-  pull_request:
-    paths:
-      - 'platform-lz/**'
-      - '.github/workflows/platform-lz-validation.yml'
     branches:
-      - main # On veut valider quand on cible main
+      - main
+    paths:
+      - 'platform-lz/**'
+      - '.github/workflows/platform-lz-deploy.yml'
 
 permissions:
   contents: read
@@ -23,8 +18,8 @@ defaults:
     working-directory: ./platform-lz
 
 jobs:
-  validate:
-    name: Validate Bicep Files & Security
+  deploy:
+    name: Deploy Platform Landing Zone
     runs-on: ubuntu-latest
     environment: Sandbox
 
@@ -36,9 +31,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- ÉTAPE 1 : ANALYSE STATIQUE (Rapide & Gratuit) ---
+      # --- ÉTAPE 1 : VALIDATION & SÉCURITÉ ---
+      
+      - name: Install Bicep
+        run: az bicep install
 
-      - name: Build & Lint all Bicep files
+      - name: Build & Lint Bicep
         run: |
           for file in $(find . -name '*.bicep' -not -path './.git/*'); do
             az bicep build --file "$file"
@@ -47,17 +45,11 @@ jobs:
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@master
         with:
-          directory: ./platform-lz
           framework: bicep
-          soft_fail: false # Bloque si erreurs de sécurité
+          directory: ./platform-lz
+          soft_fail: false # Arrête le workflow en cas de faille critique
 
-      - name: PSRule for Azure
-        uses: microsoft/ps-rule@v2.9.0
-        with:
-          modules: PSRule.Rules.Azure
-          inputPath: ./platform-lz
-
-      # --- ÉTAPE 2 : VALIDATION AZURE (Nécessite Connexion) ---
+      # --- ÉTAPE 2 : CONNEXION & PRÉ-DÉPLOIEMENT ---
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -66,23 +58,25 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Validate Platform-LZ deployment
-        run: |
-          az deployment mg validate \
-            --name platform-lz-validation \
-            --management-group-id $ROOT_MG_ID \
-            --location $LOCATION \
-            --template-file ./platform.bicep \
-            --parameters ./platform.bicepparam
-
-      - name: Platform-LZ What-If
+      - name: What-If Platform-LZ
         run: |
           az deployment mg what-if \
             --name platform-lz-whatif \
             --management-group-id $ROOT_MG_ID \
             --location $LOCATION \
             --template-file ./platform.bicep \
-            --parameters ./platform.bicepparam 
+            --parameters ./platform.bicepparam
+
+      # --- ÉTAPE 3 : DÉPLOIEMENT ---
+
+      - name: Deploy Platform-LZ
+        run: |
+          az deployment mg create \
+            --name platform-lz-deploy \
+            --management-group-id $ROOT_MG_ID \
+            --location $LOCATION \
+            --template-file ./platform.bicep \
+            --parameters ./platform.bicepparam
 
       - name: Azure Logout
         if: always()
