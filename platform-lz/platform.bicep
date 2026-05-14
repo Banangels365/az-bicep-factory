@@ -4,7 +4,7 @@
 // et configure les ressources de base pour la plateforme (ex: RG de management, Log Analytics, etc.). 
 // Il inclut également la définition de politiques personnalisées et d'initiatives, ainsi que leur assignation aux groupes de gestion appropriés.
 
-targetScope = 'tenant'
+targetScope = 'managementGroup'
 
 @description('Nom de l\'organisation')
 param organizationName string
@@ -37,9 +37,6 @@ param tags object = {
   Owner: 'CloudOps'
 }
 
-// @description('Platform Resource Group Name (for shared platform resources like Log Analytics, policies, etc.)')
-// param platformResourceGroupName string
-
 // @description('Log Analytics retention in days')
 // @minValue(30)
 // @maxValue(730)
@@ -48,21 +45,7 @@ param tags object = {
 // @description('Enable Microsoft Sentinel')
 // param enableSentinel bool = true
 
-// @description('Subscription ID for platform management resources')
-// param managementSubscriptionId string
-
-// @description('Prod subscription IDs to associate')
-// param prodSubscriptionIds array = []
-
-// @description('Quarantine subscription IDs to associate')
-// param quarantineSubscriptionIds array = []
-
-// @description('Logging subscription IDs to associate')
-// param loggingSubscriptionIds array = []
-
 // Variables
-// var managementGroupPrefix = organizationName
-// var resourceGroupName = 'rg-platform-management-${environment}'
 // var logAnalyticsWorkspaceName = 'law-${organizationName}-platform-${environment}'
 
 // ============================================
@@ -139,42 +122,6 @@ module quarantineMg './modules/management_group.bicep' = {
     rootMg
   ]
 }
-
-// ============================================
-// SUBSCRIPTION CREATION
-// ============================================
-
-// module subscriptionsCreator './modules/subscription.bicep' = [
-//   for sub in subscriptions: {
-//     scope: tenant()
-//     params: {
-//       subscriptionAliasName: sub.alias
-//       subscriptionDisplayName: sub.displayName
-//       billingScope: sub.billingScope
-//       workload: sub.workload
-//     }
-//     dependsOn: [
-//       prodMg
-//     ]
-//   }
-// ]
-
-// ============================================
-// SUBSCRIPTION TO MANAGEMENT GROUP ASSOCIATIONS
-// ============================================
-
-// module subscriptionAssociations './modules/subscription_to_mg_association.bicep' = [
-//   for (sub, i) in subscriptions: {
-//     scope: tenant()
-//     params: {
-//       subscriptionId: subscriptionsCreator[i].outputs.subscriptionId
-//       managementGroupId: sub.mgId
-//     }
-//     dependsOn: [
-//       subscriptionsCreator[i]
-//     ]
-//   }
-// ]
 
 // ============================================
 // RESOURCES GROUP CREATION
