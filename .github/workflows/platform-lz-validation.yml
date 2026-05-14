@@ -1,0 +1,89 @@
+name: ALZ - Platform-LZ Validation
+
+on:
+  push:
+    paths:
+      - 'platform-lz/**'
+      - '.github/workflows/platform-lz-validation.yml'
+    branches-ignore:
+      - main
+  pull_request:
+    paths:
+      - 'platform-lz/**'
+      - '.github/workflows/platform-lz-validation.yml'
+    branches:
+      - main # On veut valider quand on cible main
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    working-directory: ./platform-lz
+
+jobs:
+  validate:
+    name: Validate Bicep Files & Security
+    runs-on: ubuntu-latest
+    environment: Sandbox
+
+    env:
+      LOCATION: canadaeast
+      ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- ÉTAPE 1 : ANALYSE STATIQUE (Rapide & Gratuit) ---
+
+      - name: Build & Lint all Bicep files
+        run: |
+          for file in $(find . -name '*.bicep' -not -path './.git/*'); do
+            az bicep build --file "$file"
+          done
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ./platform-lz
+          framework: bicep
+          soft_fail: false # Bloque si erreurs de sécurité
+
+      - name: PSRule for Azure
+        uses: microsoft/ps-rule@v2.9.0
+        with:
+          modules: PSRule.Rules.Azure
+          inputPath: ./platform-lz
+
+      # --- ÉTAPE 2 : VALIDATION AZURE (Nécessite Connexion) ---
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate Platform-LZ deployment
+        run: |
+          az deployment mg validate \
+            --name platform-lz-validation \
+            --management-group-id $ROOT_MG_ID \
+            --location $LOCATION \
+            --template-file ./platform.bicep \
+            --parameters ./platform.bicepparam
+
+      - name: Platform-LZ What-If
+        run: |
+          az deployment mg what-if \
+            --name platform-lz-whatif \
+            --management-group-id $ROOT_MG_ID \
+            --location $LOCATION \
+            --template-file ./platform.bicep \
+            --parameters ./platform.bicepparam 
+
+      - name: Azure Logout
+        if: always()
+        run: az logout

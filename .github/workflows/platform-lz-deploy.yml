@@ -1,0 +1,83 @@
+name: ALZ - Platform-LZ Deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'platform-lz/**'
+      - '.github/workflows/platform-lz-deploy.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    working-directory: ./platform-lz
+
+jobs:
+  deploy:
+    name: Deploy Platform Landing Zone
+    runs-on: ubuntu-latest
+    environment: Sandbox
+
+    env:
+      LOCATION: canadaeast
+      ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- ÉTAPE 1 : VALIDATION & SÉCURITÉ ---
+      
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Build & Lint Bicep
+        run: |
+          for file in $(find . -name '*.bicep' -not -path './.git/*'); do
+            az bicep build --file "$file"
+          done
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: bicep
+          directory: ./platform-lz
+          soft_fail: false # Arrête le workflow en cas de faille critique
+
+      # --- ÉTAPE 2 : CONNEXION & PRÉ-DÉPLOIEMENT ---
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-If Platform-LZ
+        run: |
+          az deployment mg what-if \
+            --name platform-lz-whatif \
+            --management-group-id $ROOT_MG_ID \
+            --location $LOCATION \
+            --template-file ./platform.bicep \
+            --parameters ./platform.bicepparam
+
+      # --- ÉTAPE 3 : DÉPLOIEMENT ---
+
+      - name: Deploy Platform-LZ
+        run: |
+          az deployment mg create \
+            --name platform-lz-deploy \
+            --management-group-id $ROOT_MG_ID \
+            --location $LOCATION \
+            --template-file ./platform.bicep \
+            --parameters ./platform.bicepparam
+
+      - name: Azure Logout
+        if: always()
+        run: az logout
