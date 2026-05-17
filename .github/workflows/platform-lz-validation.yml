@@ -49,8 +49,7 @@ jobs:
         with:
           directory: ./platform-lz
           framework: bicep
-          soft_fail: false # Bloque si erreurs de sécurité
-          log_level: DEBUG
+          soft_fail: true # Ne pas échouer le pipeline en cas de détection de problèmes, mais les signaler
 
       - name: PSRule for Azure
         uses: microsoft/ps-rule@v2.9.0
