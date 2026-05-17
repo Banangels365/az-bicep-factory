@@ -74,6 +74,7 @@ resource policyDefinitionsResources 'Microsoft.Authorization/policyDefinitions@2
 resource initiativeCustomPoliciesTags 'Microsoft.Authorization/policySetDefinitions@2021-06-01' = {
   name: initiativeCustomPoliciesName
   properties: {
+    policyType: 'Custom' // ← ADD THIS
     displayName: initiativeCustomPoliciesDisplayName
     metadata: { category: 'Tags', version: '1.0.0' }
     policyDefinitions: [

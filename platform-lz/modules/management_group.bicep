@@ -22,13 +22,13 @@ resource managementGroup 'Microsoft.Management/managementGroups@2023-04-01' = {
   name: managementGroupId
   properties: {
     displayName: displayName
-    details: !empty(parentManagementGroupId)
+    details: !empty(parentManagementGroupId) // ← Rendez la STRUCTURE entière conditionnelle
       ? {
           parent: {
             id: tenantResourceId('Microsoft.Management/managementGroups', parentManagementGroupId)
           }
         }
-      : {}
+      : {} // ← Objet vide au lieu de null
   }
 }
 

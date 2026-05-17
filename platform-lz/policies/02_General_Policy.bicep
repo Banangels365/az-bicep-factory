@@ -76,7 +76,7 @@ param assignmentDisplayName string //= '02-General Assignment'
 // 1) Allowed locations
 // 2) Audit resource location matches resource group location
 
-resource initiative 'Microsoft.Authorization/policySetDefinitions@2021-06-01' = {
+resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = {
   name: initiativeName
   properties: {
     displayName: initiativeDisplayName
