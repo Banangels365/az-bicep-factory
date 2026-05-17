@@ -25,6 +25,8 @@ defaults:
 jobs:
   validate:
     name: Validate Bicep Files & Security
+    # Ne lance le push que s'il n'y a pas de PR associée, sinon laisse l'événement pull_request gérer
+    if: github.event_name != 'push' || github.event.pull_request == null
     runs-on: ubuntu-latest
     environment: Sandbox
 
@@ -32,11 +34,12 @@ jobs:
       LOCATION: canadaeast
       ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
 
+      
+    # --- ÉTAPE 1 : ANALYSE STATIQUE (Rapide & Gratuit) ---
+    # Remarque: les en-têtes 'Step X' ont été commentés car ils créaient des clés YAML invalides
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # --- ÉTAPE 1 : ANALYSE STATIQUE (Rapide & Gratuit) ---
 
       - name: Build & Lint all Bicep files
         run: |
@@ -58,7 +61,6 @@ jobs:
           inputPath: ./platform-lz
 
       # --- ÉTAPE 2 : VALIDATION AZURE (Nécessite Connexion) ---
-
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
@@ -66,6 +68,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # --- Step 3: Validate & What-If ---
       - name: Validate Platform-LZ deployment
         run: |
           az deployment mg validate \
@@ -85,8 +88,27 @@ jobs:
             --parameters ./platform.bicepparam \
             --output json > whatif-result.json
 
+          echo "=== Contenu de whatif-result.json ==="
+          cat whatif-result.json
+          echo "=== Fin ==="
+
+      # --- Step 4: Generate Change Summary Report ---
       - name: Generate Change Summary Report
         run: |
+
+          # Vérifier que le fichier existe
+          if [ ! -f whatif-result.json ]; then
+           echo "❌ Erreur : whatif-result.json n'existe pas!"
+           exit 1
+          fi
+    
+          # Vérifier que c'est du JSON valide
+          if ! jq empty whatif-result.json 2>/dev/null; then
+           echo "❌ Erreur : whatif-result.json n'est pas du JSON valide!"
+           cat whatif-result.json
+           exit 1
+          fi
+
           pwsh -Command {
             $whatIfOutput = Get-Content -Path whatif-result.json | ConvertFrom-Json
             $changes = $whatIfOutput.changes | Select-Object -Property resourceId, changeType
