@@ -11,11 +11,11 @@ param managementSubscriptionId = '0061dc3e-7704-4778-bcda-b566d000d486'
 
 // liste des tags à appliquer à toutes les ressources
 param tags = {
+  Application: 'Platform-LZ'
   Environment: 'sandbox'
-  ManagedBy: 'Bicep'
-  CostCenter: 'IT-Platform'
-  Owner: 'CloudOps-Team'
-  DataClassification: 'Internal'
+  CreeLe: '2026-05-17'
+  CreePar: 'CloudOps-Team'
+  Criticite: 'Moyen'
 }
 
 // Logging configuration

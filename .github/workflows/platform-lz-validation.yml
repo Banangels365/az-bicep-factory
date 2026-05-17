@@ -26,7 +26,7 @@ jobs:
   validate:
     name: Validate Bicep Files & Security
     # Ne lance le push que s'il n'y a pas de PR associée, sinon laisse l'événement pull_request gérer
-    if: github.event_name != 'push' || github.event.pull_request == null
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.pull_request == null)
     runs-on: ubuntu-latest
     environment: Sandbox
 
