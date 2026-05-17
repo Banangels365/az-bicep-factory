@@ -133,7 +133,7 @@ param initiativeCustomPoliciesDisplayName string
 param initiativeBuiltinPoliciesName string
 param initiativeBuiltinPoliciesDisplayName string
 param customPoliciesTags array = []
-param builtinPolicieTags array = []
+param builtinPoliciesTags array = []
 module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
   name: 'deploy-01-tagging-policy'
   scope: subscription(managementSubscriptionId)
@@ -143,7 +143,7 @@ module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
     initiativeBuiltinPoliciesName: initiativeBuiltinPoliciesName
     initiativeBuiltinPoliciesDisplayName: initiativeBuiltinPoliciesDisplayName
     customPoliciesTags: customPoliciesTags
-    builtinPolicieTags: builtinPolicieTags
+    builtinPoliciesTags: builtinPoliciesTags
   }
 }
 

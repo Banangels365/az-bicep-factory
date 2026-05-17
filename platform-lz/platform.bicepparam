@@ -72,7 +72,7 @@ On peut ajouter autant de tags que nécessaire dans cette liste, avec les propri
 - nonComplianceMessage : le message de non-conformité affiché lorsque la policy n'est pas respectée
 */
 
-param builtinPolicieTags = [
+param builtinPoliciesTags = [
   {
     name: 'Application'
     type: 'requiredOnResourceGroup'
