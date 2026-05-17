@@ -46,7 +46,6 @@ jobs:
           for file in $(find . -name '*.bicep' -not -path './.git/*'); do
             az bicep build --file "$file"
           done
-
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@master
         with:
@@ -78,131 +77,111 @@ jobs:
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
 
-      # --- Step 3.1: Generate Change Summary Report from What-If ---
-      - name: Generate Change Summary Report
-        shell: pwsh
+      # - name: Platform-LZ What-If
+      #   run: |
+      #     az deployment mg what-if \
+      #       --name platform-lz-whatif \
+      #       --management-group-id $ROOT_MG_ID \
+      #       --location $LOCATION \
+      #       --template-file ./platform.bicep \
+      #       --parameters ./platform.bicepparam \
+      #       --output json > whatif-result.json
+      #     echo "=== Contenu de whatif-result.json ==="
+      #     cat whatif-result.json
+      #     echo "=== Fin ==="
+
+      # --- Step 4: Generate Change Summary Report ---
+      - name: Generate Change Summary (no file)
         run: |
-          # Exécuter what-if et capturer directement la sortie JSON en PowerShell
-          $whatIfJson = az deployment mg what-if `
-            --name platform-lz-whatif `
-            --management-group-id $env:ROOT_MG_ID `
-            --location $env:LOCATION `
-            --template-file ./platform.bicep `
-            --parameters ./platform.bicepparam `
-            --output json 2>&1
+          pwsh -Command {
+            $json = az deployment mg what-if `
+              --name platform-lz-whatif `
+              --management-group-id $env:ROOT_MG_ID `
+              --location $env:LOCATION `
+              --template-file ./platform.bicep `
+              --parameters ./platform.bicepparam `
+              --query "changes" `
+              --output json | ConvertFrom-Json
 
-          # Vérifier si la commande a réussi
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ Erreur lors de l'exécution de what-if:" -ForegroundColor Red
-            Write-Host $whatIfJson
-            exit 1
+            $created  = ($json | Where-Object changeType -eq "Create").Count
+            $deleted  = ($json | Where-Object changeType -eq "Delete").Count
+            $modified = ($json | Where-Object changeType -eq "Modify").Count
+            $nochange = ($json | Where-Object changeType -eq "NoChange").Count
+
+            Write-Host "=== Résumé des changements ==="
+            Write-Host "Créés     : $created"
+            Write-Host "Supprimés : $deleted"
+            Write-Host "Modifiés  : $modified"
+            Write-Host "Inchangés : $nochange"
           }
 
-          # Extraire uniquement le JSON valide (élimine les notes/avertissements)
-          try {
-            # Chercher le début du JSON (première accolade)
-            $jsonStart = $whatIfJson.IndexOf('{' )
-            if ($jsonStart -eq -1) {
-              throw "Aucun JSON trouvé dans la sortie"
-            }
-            $jsonOnly = $whatIfJson.Substring($jsonStart)
-            $whatIfOutput = $jsonOnly | ConvertFrom-Json
-          } catch {
-            Write-Host "❌ Erreur : Impossible de parser le JSON" -ForegroundColor Red
-            Write-Host "Sortie reçue:" -ForegroundColor Yellow
-            Write-Host $whatIfJson
-            exit 1
-          }
 
-          # Extraire et traiter les changements
-          $changes = $whatIfOutput.changes | Select-Object -Property resourceId, changeType
 
-          # Comptage des changements
-          $created = ($changes | Where-Object { $_.changeType -eq 'Create' } | Measure-Object).Count
-          $deleted = ($changes | Where-Object { $_.changeType -eq 'Delete' } | Measure-Object).Count
-          $modified = ($changes | Where-Object { $_.changeType -eq 'Modify' } | Measure-Object).Count
-          $nochange = ($changes | Where-Object { $_.changeType -eq 'NoChange' } | Measure-Object).Count
+      # - name: Generate Change Summary Report
+      #   run: |
+      #     # Vérifier que le fichier existe
+      #     if [ ! -f whatif-result.json ]; then
+      #      echo "❌ Erreur : whatif-result.json n'existe pas!"
+      #      exit 1
+      #     fi
+    
+      #     # Vérifier que c'est du JSON valide
+      #     if ! jq empty whatif-result.json 2>/dev/null; then
+      #      echo "❌ Erreur : whatif-result.json n'est pas du JSON valide!"
+      #      cat whatif-result.json
+      #      exit 1
+      #     fi
 
-          # Affichage du rapport dans la console
-          Write-Host "" -ForegroundColor Green
-          Write-Host "╔═════════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-          Write-Host "║        📊 RÉSUMÉ DES CHANGEMENTS - PLATEFORME-LZ              ║" -ForegroundColor Green
-          Write-Host "╠═════════════════════════════════════════════════════════════════╣" -ForegroundColor Green
-          Write-Host "║ ✅ Ressources créées       : $($created.ToString().PadRight(39)) ║" -ForegroundColor Green
-          Write-Host "║ ❌ Ressources supprimées   : $($deleted.ToString().PadRight(39)) ║" -ForegroundColor Green
-          Write-Host "║ ✏️  Ressources modifiées   : $($modified.ToString().PadRight(39)) ║" -ForegroundColor Green
-          Write-Host "║ ➡️  Ressources inchangées  : $($nochange.ToString().PadRight(39)) ║" -ForegroundColor Green
-          Write-Host "╠═════════════════════════════════════════════════════════════════╣" -ForegroundColor Green
-          Write-Host "║ 📦 TOTAL RESSOURCES        : $($changes.Count.ToString().PadRight(39)) ║" -ForegroundColor Green
-          Write-Host "╚═════════════════════════════════════════════════════════════════╝" -ForegroundColor Green
-          Write-Host ""
+      #     pwsh -Command {
+      #       $whatIfOutput = Get-Content -Path whatif-result.json | ConvertFrom-Json
+      #       $changes = $whatIfOutput.changes | Select-Object -Property resourceId, changeType
 
-          # Tableau détaillé des changements
-          Write-Host "📋 DÉTAIL DES RESSOURCES PAR TYPE :" -ForegroundColor Cyan
-          Write-Host ""
+      #       # Comptage des changements
+      #       $created = $changes | Where-Object { $_.changeType -eq 'Create' } | Measure-Object | Select-Object -ExpandProperty Count
+      #       $deleted = $changes | Where-Object { $_.changeType -eq 'Delete' } | Measure-Object | Select-Object -ExpandProperty Count
+      #       $modified = $changes | Where-Object { $_.changeType -eq 'Modify' } | Measure-Object | Select-Object -ExpandProperty Count
+      #       $nochange = $changes | Where-Object { $_.changeType -eq 'NoChange' } | Measure-Object | Select-Object -ExpandProperty Count
 
-          if ($created -gt 0) {
-            Write-Host "✅ CRÉÉES ($created) :" -ForegroundColor Green
-            $changes | Where-Object { $_.changeType -eq 'Create' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-          }
+      #       # Affichage du rapport
+      #       Write-Host "╔═════════════════════════════════════════════════════════════════╗"
+      #       Write-Host "║        📊 RÉSUMÉ DES CHANGEMENTS - PLATEFORME-LZ              ║"
+      #       Write-Host "╠═════════════════════════════════════════════════════════════════╣"
+      #       Write-Host "║ ✅ Ressources créées       : $($created.ToString().PadRight(39)) ║"
+      #       Write-Host "║ ❌ Ressources supprimées   : $($deleted.ToString().PadRight(39)) ║"
+      #       Write-Host "║ ✏️  Ressources modifiées   : $($modified.ToString().PadRight(39)) ║"
+      #       Write-Host "║ ➡️  Ressources inchangées  : $($nochange.ToString().PadRight(39)) ║"
+      #       Write-Host "╠═════════════════════════════════════════════════════════════════╣"
+      #       Write-Host "║ 📦 TOTAL RESSOURCES        : $($changes.Count.ToString().PadRight(39)) ║"
+      #       Write-Host "╚═════════════════════════════════════════════════════════════════╝"
 
-          if ($modified -gt 0) {
-            Write-Host "✏️  MODIFIÉES ($modified) :" -ForegroundColor Yellow
-            $changes | Where-Object { $_.changeType -eq 'Modify' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-          }
+      #       # Tableau détaillé des changements
+      #       Write-Host ""
+      #       Write-Host "📋 DÉTAIL DES RESSOURCES PAR TYPE :"
+      #       Write-Host ""
 
-          if ($deleted -gt 0) {
-            Write-Host "❌ SUPPRIMÉES ($deleted) :" -ForegroundColor Red
-            $changes | Where-Object { $_.changeType -eq 'Delete' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-          }
+      #       if ($created -gt 0) {
+      #         Write-Host "✅ CRÉÉES ($created) :"
+      #         $changes | Where-Object { $_.changeType -eq 'Create' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
+      #       }
 
-          if ($nochange -gt 0) {
-            Write-Host "➡️  INCHANGÉES (Aperçu - $nochange) :" -ForegroundColor Cyan
-            $changes | Where-Object { $_.changeType -eq 'NoChange' } | Select-Object -First 5 | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-            if ($nochange -gt 5) {
-              Write-Host "   ... et $($nochange - 5) autres ressources inchangées" -ForegroundColor Cyan
-            }
-          }
+      #       if ($modified -gt 0) {
+      #         Write-Host "✏️  MODIFIÉES ($modified) :"
+      #         $changes | Where-Object { $_.changeType -eq 'Modify' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
+      #       }
 
-          # Écrire un résumé Markdown dans GITHUB_STEP_SUMMARY pour l'affichage dans l'UI
-          $markdownSummary = @"
+      #       if ($deleted -gt 0) {
+      #         Write-Host "❌ SUPPRIMÉES ($deleted) :"
+      #         $changes | Where-Object { $_.changeType -eq 'Delete' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
+      #       }
 
-          ## 📊 Résumé des Changements - Platform-LZ
-
-          | Type | Nombre |
-          |------|--------|
-          | ✅ Créées | $created |
-          | ❌ Supprimées | $deleted |
-          | ✏️ Modifiées | $modified |
-          | ➡️ Inchangées | $nochange |
-          | **📦 Total** | **$($changes.Count)** |
-          
-          "@
-
-          if ($created -gt 0) {
-            $markdownSummary += "`n### ✅ Ressources Créées ($created)\`n"
-            $changes | Where-Object { $_.changeType -eq 'Create' } | ForEach-Object {
-              $markdownSummary += "- \`$($_.resourceId)\`  \`n"
-            }
-          }
-
-          if ($modified -gt 0) {
-            $markdownSummary += "`n### ✏️ Ressources Modifiées ($modified)\`n"
-            $changes | Where-Object { $_.changeType -eq 'Modify' } | ForEach-Object {
-              $markdownSummary += "- \`$($_.resourceId)\`  \`n"
-            }
-          }
-
-          if ($deleted -gt 0) {
-            $markdownSummary += "`n### ❌ Ressources Supprimées ($deleted)\`n"
-            $changes | Where-Object { $_.changeType -eq 'Delete' } | ForEach-Object {
-              $markdownSummary += "- \`$($_.resourceId)\`  \`n"
-            }
-          }
-
-          # Ajouter le résumé à GITHUB_STEP_SUMMARY
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $markdownSummary
-          Write-Host "`n✅ Résumé écrit dans GITHUB_STEP_SUMMARY" -ForegroundColor Green
+      #       if ($nochange -gt 0) {
+      #         Write-Host "➡️  INCHANGÉES (Aperçu - $nochange) :"
+      #         $changes | Where-Object { $_.changeType -eq 'NoChange' } | Select-Object -First 5 | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
+      #         if ($nochange -gt 5) {
+      #           Write-Host "   ... et $($nochange - 5) autres ressources inchangées"
+      #         }
+      #       }
+      #     }
 
       - name: Azure Logout
         if: always()
