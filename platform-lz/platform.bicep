@@ -1,8 +1,5 @@
 // platform-lz/platform.bicep
 // Orchestrateur Bicep pour le déploiement de la plateforme de base (landing zone) dans Azure.
-// Ce template déploie la hiérarchie de groupes d'administration, crée les abonnements, associe les abonnements aux groupes de gestion, 
-// et configure les ressources de base pour la plateforme (ex: RG de management, Log Analytics, etc.). 
-// Il inclut également la définition de politiques personnalisées et d'initiatives, ainsi que leur assignation aux groupes de gestion appropriés.
 
 targetScope = 'managementGroup'
 
@@ -42,7 +39,7 @@ param tags object = {
 // @maxValue(730)
 // param logRetentionDays int = 90
 
-// @description('Enable Microsoft Sentinel')
+// @description('Activer Microsoft Sentinel')
 // param enableSentinel bool = true
 
 // Variables
@@ -121,6 +118,169 @@ module quarantineMg './modules/management_group.bicep' = {
   dependsOn: [
     rootMg
   ]
+}
+
+// ============================================
+// POLICY INITIATIVES AND ASSIGNMENTS
+// ============================================
+
+//---------------------------------
+// 01-Tagging-Policy Creation
+//---------------------------------
+
+param initiativeCustomPoliciesName string
+param initiativeCustomPoliciesDisplayName string
+param initiativeBuiltinPoliciesName string
+param initiativeBuiltinPoliciesDisplayName string
+param customPoliciesTags array = []
+param builtinPolicieTags array = []
+module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
+  name: 'deploy-01-tagging-policy'
+  //scope: managementGroup()
+  params: {
+    initiativeCustomPoliciesName: initiativeCustomPoliciesName
+    initiativeCustomPoliciesDisplayName: initiativeCustomPoliciesDisplayName
+    initiativeBuiltinPoliciesName: initiativeBuiltinPoliciesName
+    initiativeBuiltinPoliciesDisplayName: initiativeBuiltinPoliciesDisplayName
+    customPoliciesTags: customPoliciesTags
+    builtinPolicieTags: builtinPolicieTags
+  }
+}
+
+//---------------------------------
+// 02-General-Policy Creation
+//---------------------------------
+
+param initiativeName02 string //= '02-General Initiative'
+param assignmentName02 string //= '02-General-Assignment'
+param initiativeDisplayName02 string //= '02-General Initiative'
+param assignmentDisplayName02 string //= '02-General Assignment'
+param allowedLocations array = []
+
+module generalPolicy './policies/02_General_Policy.bicep' = {
+  name: 'deploy-02-general-policy'
+  //scope: managementGroup()
+  params: {
+    initiativeName: initiativeName02
+    assignmentName: assignmentName02
+    initiativeDisplayName: initiativeDisplayName02
+    assignmentDisplayName: assignmentDisplayName02
+    allowedLocations: allowedLocations
+  }
+}
+
+// ---------------------------
+// 03-network-Policy Creation
+// ---------------------------
+
+param initiativeName03 string //='03-network-Initiative'
+param assignmentName03 string //='03-network-Assignment' //ne doit pas depasse 24 
+param assignmentDisplayName03 string //= '03-network-Assignment'
+param initiativeDisplayName03 string //= '03-network-Initiative'
+param initiativeCategory string //=  'General'
+param enforcementMode string //= 'Default'
+
+module networkPolicy './policies/03_Network_Policy.bicep' = {
+  name: 'deploy-03-network-policy'
+  //scope: subscription()
+  params: {
+    initiativeName: initiativeName03
+    assignmentName: assignmentName03
+    initiativeDisplayName: initiativeDisplayName03
+    assignmentDisplayName: assignmentDisplayName03
+    initiativeCategory: initiativeCategory
+    enforcementMode: enforcementMode
+  }
+}
+
+// ---------------------------
+// 04-keyVault-Policy Creation
+// ---------------------------
+
+param initiativeName04 string //= '04-Keyvault-RBAC-Initiative'
+param assignmentName04 string //= '04-Key-RBAC-Assignment' //ne doit pas depasse 24 characteres
+param initiativeDisplayName04 string //= '04-Keyvault-RBAC-Initiative'
+param assignmentDisplayName04 string //= '04-Keyvault-RBAC-Assignment'
+param kvRbacEffect string //= 'Audit'
+
+module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
+  name: 'deploy-04-keyVault-policy'
+  //scope: subscription()
+  params: {
+    initiativeName: initiativeName04
+    assignmentName: assignmentName04
+    initiativeDisplayName: initiativeDisplayName04
+    assignmentDisplayName: assignmentDisplayName04
+    kvRbacEffect: kvRbacEffect
+  }
+}
+
+// ---------------------------
+// 05-VM-Policy Creation
+// ---------------------------
+
+param initiativeName05 string //= '05-VM-Initiative'
+param assignmentName05 string //= '05-VM-Assignment' //ne doit pas depasse 24 characteres
+param initiativeDisplayName05 string //= '05-VM Initiative'
+param assignmentDisplayName05 string //= '05-VM Assignment'
+
+// Liste d’exemple des SKUs autorisés
+param allowedVmSkus array /*= [
+  'Standard_B2s'
+  'Standard_DS1_v2'
+  'Standard_DS2_v2'
+]*/
+
+// Azure Backup (Audit) — tu peux commenter cette ligne pour utiliser la defaultValue de l’initiative
+// param backupEffect = 'AuditIfNotExists'
+// Pour désactiver l’audit (temporairement) :
+param backupEffect string = 'Disabled'
+
+module vmPolicy './policies/05_VM_Policy.bicep' = {
+  name: 'deploy-05-vm-policy'
+  //scope: subscription()
+  params: {
+    initiativeName: initiativeName05
+    assignmentName: assignmentName05
+    initiativeDisplayName: initiativeDisplayName05
+    assignmentDisplayName: assignmentDisplayName05
+    allowedVmSkus: allowedVmSkus
+    backupEffect: backupEffect
+  }
+}
+
+// ----------------------------------
+// 06-StorageAccount-Policy Creation
+// ----------------------------------
+
+param initiativeName06 string //= '06-StorageAccountInitiative'
+param assignmentName06 string //= '06-StorageAccountAssign' //ne doit pas depasse 24 characteres
+param initiativeDisplayName06 string //= '06-StorageAccount Initiative' // The policy assignment name length must not exceed '24' characters
+param assignmentDisplayName06 string //= '06-StorageAccount Assignment'
+
+// région pour la Managed Identity de l’assignation (utile si un effet Modify est actif).
+param assignmentLocation string //= 'canadacentral'
+
+// Effects au choix
+param secureTransferEffect string //= 'Modify'   // ou 'Disabled'
+param tlsEffect string //= 'Audit'    // 'Audit' | 'Deny' | 'Disabled'
+param minimumTlsVersion string //= 'TLS1_2'   // 'TLS1_0' | 'TLS1_1' | 'TLS1_2'
+param publicAccessEffect string //= 'Deny'     // 'Audit' | 'Deny' | 'Disabled'
+
+module storageAccount './policies/06_StorageAccount_Policy.bicep' = {
+  name: 'deploy-06-storageaccount-policy'
+  //scope: subscription()
+  params: {
+    initiativeName: initiativeName06
+    assignmentName: assignmentName06
+    initiativeDisplayName: initiativeDisplayName06
+    assignmentDisplayName: assignmentDisplayName06
+    assignmentLocation: assignmentLocation
+    minimumTlsVersion: minimumTlsVersion
+    publicAccessEffect: publicAccessEffect
+    secureTransferEffect: secureTransferEffect
+    tlsEffect: tlsEffect
+  }
 }
 
 // ============================================
@@ -214,257 +374,6 @@ module monitoringRg './modules/resource_group.bicep' = if (!empty(managementSubs
 // }
 
 // ============================================
-// POLICY DEFINITIONS
-// ============================================
-
-// Custom Policy: Require tags on resources
-// module requireTagsPolicy 'policy-definition/main.bicep' = {
-//   name: 'deploy-require-tags-policy'
-//   scope: managementGroup('${managementGroupPrefix}-root')
-//   params: {
-//     policyName: 'require-mandatory-tags'
-//     displayName: 'Require mandatory tags on resources'
-//     policyDescription: 'Enforces the existence of mandatory tags on all resources'
-//     mode: 'Indexed'
-//     metadata: {
-//       version: '1.0.0'
-//       category: 'Tags'
-//     }
-//     parameters: {
-//       tagNames: {
-//         type: 'Array'
-//         metadata: {
-//           displayName: 'Tag Names'
-//           description: 'List of mandatory tag names'
-//         }
-//       }
-//     }
-//     policyRule: {
-//       if: {
-//         anyOf: [
-//           {
-//             field: 'tags'
-//             exists: false
-//           }
-//           {
-//             count: {
-//               field: 'tags[*]'
-//               where: {
-//                 field: 'tags[*]'
-//                 in: '[parameters(\'tagNames\')]'
-//               }
-//             }
-//             less: '[length(parameters(\'tagNames\'))]'
-//           }
-//         ]
-//       }
-//       then: {
-//         effect: 'deny'
-//       }
-//     }
-//   }
-//   dependsOn: [
-//     rootMg
-//   ]
-// }
-
-// Custom Policy: Allowed locations
-// module allowedLocationsPolicy 'policy-definition/main.bicep' = {
-//   name: 'deploy-allowed-locations-policy'
-//   scope: managementGroup('${managementGroupPrefix}-root')
-//   params: {
-//     policyName: 'allowed-locations-custom'
-//     displayName: 'Allowed locations for resources'
-//     policyDescription: 'Restricts resource deployment to specific Azure regions'
-//     mode: 'Indexed'
-//     metadata: {
-//       version: '1.0.0'
-//       category: 'General'
-//     }
-//     parameters: {
-//       allowedLocations: {
-//         type: 'Array'
-//         metadata: {
-//           displayName: 'Allowed locations'
-//           description: 'The list of allowed locations for resources'
-//           strongType: 'location'
-//         }
-//       }
-//     }
-//     policyRule: {
-//       if: {
-//         allOf: [
-//           {
-//             field: 'location'
-//             notIn: '[parameters(\'allowedLocations\')]'
-//           }
-//           {
-//             field: 'type'
-//             notEquals: 'Microsoft.AzureActiveDirectory/b2cDirectories'
-//           }
-//         ]
-//       }
-//       then: {
-//         effect: 'deny'
-//       }
-//     }
-//   }
-//   dependsOn: [
-//     rootMg
-//   ]
-// }
-
-// ============================================
-// POLICY INITIATIVE (Policy Set)
-// ============================================
-
-// Landing Zone Baseline Initiative
-// module lzBaselineInitiative 'policy-initiative/main.bicep' = {
-//   name: 'deploy-lz-baseline-initiative'
-//   scope: managementGroup('${managementGroupPrefix}-root')
-//   params: {
-//     initiativeName: 'landing-zone-baseline'
-//     displayName: 'Landing Zone Baseline Policies'
-//     initiativeDescription: 'Baseline security and governance policies for landing zones'
-//     metadata: {
-//       version: '1.0.0'
-//       category: 'Landing Zone'
-//     }
-//     parameters: {
-//       allowedLocations: {
-//         type: 'Array'
-//         metadata: {
-//           displayName: 'Allowed locations'
-//           description: 'The list of allowed locations for resources'
-//         }
-//         defaultValue: [
-//           'canadacentral'
-//           'canadaeast'
-//         ]
-//       }
-//       tagNames: {
-//         type: 'Array'
-//         metadata: {
-//           displayName: 'Required tag names'
-//           description: 'List of mandatory tags'
-//         }
-//         defaultValue: [
-//           'Environment'
-//           'CostCenter'
-//           'Owner'
-//         ]
-//       }
-//     }
-//     policyDefinitions: [
-//       {
-//         policyDefinitionId: requireTagsPolicy.outputs.policyDefinitionId
-//         parameters: {
-//           tagNames: {
-//             value: '[parameters(\'tagNames\')]'
-//           }
-//         }
-//         groupNames: []
-//       }
-//       {
-//         policyDefinitionId: allowedLocationsPolicy.outputs.policyDefinitionId
-//         parameters: {
-//           allowedLocations: {
-//             value: '[parameters(\'allowedLocations\')]'
-//           }
-//         }
-//         groupNames: []
-//       }
-//       {
-//         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/0a914e76-4921-4c19-b460-a2d36003525a'
-//         parameters: {}
-//         groupNames: []
-//       }
-//     ]
-//   }
-//   dependsOn: [
-//     // requireTagsPolicy
-//     // allowedLocationsPolicy
-//   ]
-// }
-
-// ============================================
-// POLICY ASSIGNMENTS
-// ============================================
-
-// Assign baseline policies to Production Landing Zone
-// module prodPolicyAssignment 'policy-assignment/main.bicep' = {
-//   name: 'deploy-prod-policy-assignment'
-//   scope: managementGroup('${managementGroupPrefix}-prod')
-//   params: {
-//     assignmentName: 'prod-baseline-policies'
-//     displayName: 'Production Baseline Policies'
-//     assignmentDescription: 'Baseline policies for production workloads'
-//     policyDefinitionId: lzBaselineInitiative.outputs.initiativeId
-//     identityType: 'SystemAssigned'
-//     location: location
-//     enforcementMode: 'Default'
-//     parameters: {
-//       allowedLocations: {
-//         value: [
-//           'canadacentral'
-//           'canadaeast'
-//         ]
-//       }
-//       tagNames: {
-//         value: [
-//           'Environment'
-//           'CostCenter'
-//           'Owner'
-//           'ApplicationId'
-//         ]
-//       }
-//     }
-//     nonComplianceMessages: [
-//       {
-//         message: 'Resources must comply with production baseline policies'
-//       }
-//     ]
-//   }
-//   dependsOn: [
-//     prodMg
-//     lzBaselineInitiative
-//   ]
-// }
-
-// Assign baseline policies to Dev/Staging (audit mode)
-// module devPolicyAssignment 'policy-assignment/main.bicep' = {
-//   name: 'deploy-dev-policy-assignment'
-//   scope: managementGroup('${managementGroupPrefix}-dev')
-//   params: {
-//     assignmentName: 'dev-baseline-policies'
-//     displayName: 'Development Baseline Policies'
-//     assignmentDescription: 'Baseline policies for development workloads (audit only)'
-//     policyDefinitionId: lzBaselineInitiative.outputs.initiativeId
-//     identityType: 'SystemAssigned'
-//     location: location
-//     enforcementMode: 'DoNotEnforce'
-//     parameters: {
-//       allowedLocations: {
-//         value: [
-//           'canadacentral'
-//           'canadaeast'
-//         ]
-//       }
-//       tagNames: {
-//         value: [
-//           'Environment'
-//           'CostCenter'
-//         ]
-//       }
-//     }
-//   }
-//   dependsOn: [
-//     devMg
-//     // lzBaselineInitiative
-//   ]
-// }
-
-// ============================================
 // OUTPUTS
 // ============================================
 
@@ -475,7 +384,22 @@ output managementGroupIds object = {
   quarantine: quarantineMg.outputs.managementGroupId
 }
 
-output managementResourceGroupId string = managementRg.?outputs.resourceGroupId ?? ''
+output resourceGroupIds object = {
+  management: managementRg.?outputs.resourceGroupId ?? ''
+  identity: identityRg.?outputs.resourceGroupId ?? ''
+  networking: networkingRg.?outputs.resourceGroupId ?? ''
+  monitoring: monitoringRg.?outputs.resourceGroupId ?? ''
+}
+
+output policyInitiatives object = {
+  taggingCustom: taggingPolicy.outputs.initiativeCustomPoliciesTagsId
+  taggingBuiltin: taggingPolicy.outputs.initiativeBuiltinPoliciesTagsId
+  general: generalPolicy.outputs.initiativeId
+  network: networkPolicy.outputs.initiativeId
+  keyVault: keyVaultPolicy.outputs.initiativeId
+  vm: vmPolicy.outputs.initiativeId
+  storageAccount: storageAccount.outputs.initiativeId
+}
 
 // output logAnalyticsWorkspaceId string = logAnalytics.outputs.workspaceId
 // output logAnalyticsWorkspaceName string = logAnalytics.outputs.workspaceName
