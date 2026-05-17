@@ -14,7 +14,7 @@ Ce BICEP créer 2 initiative qui force des tags sur des resources groups.
 
 */
 
-targetScope = 'managementGroup'
+targetScope = 'subscription' // Ce template s'applique à un abonnement Azure
 
 @description('Région utilisée pour assignation des politiques au niveau du management group')
 param location string = deployment().location
@@ -103,7 +103,7 @@ resource initiativeBuiltinPoliciesTags 'Microsoft.Authorization/policySetDefinit
           : inheritTagFromResourceGroupIfMissingId
         parameters: {
           tagName: {
-            value: tag.name
+            value: tag.Name
           }
         }
       }

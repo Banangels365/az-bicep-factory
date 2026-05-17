@@ -136,7 +136,7 @@ param customPoliciesTags array = []
 param builtinPolicieTags array = []
 module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
   name: 'deploy-01-tagging-policy'
-  //scope: managementGroup()
+  scope: subscription(managementSubscriptionId)
   params: {
     initiativeCustomPoliciesName: initiativeCustomPoliciesName
     initiativeCustomPoliciesDisplayName: initiativeCustomPoliciesDisplayName
@@ -159,7 +159,7 @@ param allowedLocations array = []
 
 module generalPolicy './policies/02_General_Policy.bicep' = {
   name: 'deploy-02-general-policy'
-  //scope: managementGroup()
+  scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: initiativeName02
     assignmentName: assignmentName02
@@ -182,7 +182,7 @@ param enforcementMode string //= 'Default'
 
 module networkPolicy './policies/03_Network_Policy.bicep' = {
   name: 'deploy-03-network-policy'
-  //scope: subscription()
+  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: initiativeName03
     assignmentName: assignmentName03
@@ -205,7 +205,7 @@ param kvRbacEffect string //= 'Audit'
 
 module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
   name: 'deploy-04-keyVault-policy'
-  //scope: subscription()
+  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: initiativeName04
     assignmentName: assignmentName04
@@ -238,7 +238,7 @@ param backupEffect string = 'Disabled'
 
 module vmPolicy './policies/05_VM_Policy.bicep' = {
   name: 'deploy-05-vm-policy'
-  //scope: subscription()
+  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: initiativeName05
     assignmentName: assignmentName05
@@ -269,7 +269,7 @@ param publicAccessEffect string //= 'Deny'     // 'Audit' | 'Deny' | 'Disabled'
 
 module storageAccount './policies/06_StorageAccount_Policy.bicep' = {
   name: 'deploy-06-storageaccount-policy'
-  //scope: subscription()
+  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: initiativeName06
     assignmentName: assignmentName06

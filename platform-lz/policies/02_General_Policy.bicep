@@ -21,7 +21,7 @@ Sans modifier le Bicep quand tu changes les policies : tu ne fais que passer des
 // ------------------------------------------------------------
 // Déploiement au niveau de l'abonnement
 // ------------------------------------------------------------
-targetScope = 'managementGroup' // Ce template s'applique à un abonnement Azure
+targetScope = 'subscription' // Ce template s'applique à un abonnement Azure
 
 // ------------------------------------------------------------
 // Paramètres personnalisables
@@ -34,6 +34,11 @@ param initiativeName string //= '02-General-Initiative' // Doit être unique dan
 // Nom interne de l’assignation
 ///@description('Nom de l’assignation de l’initiative.')
 param assignmentName string //= '02-General-Assignment'
+
+// NOTE: This template is deployed at subscription scope. The assignment will
+// be created in the same subscription as the deployment. Do not pass a
+// different subscriptionId here (to target another subscription you must use
+// a module deployed to that subscription).
 
 // Emplacements autorisés (Canada Central et Canada East par défaut)
 @description('Liste des emplacements autorisés.')
@@ -60,6 +65,9 @@ param initiativeDisplayName string //= '02-General Initiative'
 
 @description('Nom lisible pour l\'assignation.')
 param assignmentDisplayName string //= '02-General Assignment'
+
+// @description('ID de l’abonnement cible pour l\'assignation. Doit être le même que celui du scope de déploiement.')
+// param subscriptionId string = subscription().subscriptionId
 
 // ------------------------------------------------------------
 // Création de l’initiative (Policy Set Definition)
@@ -138,7 +146,7 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2021-06-01' = 
 // ------------------------------------------------------------
 resource initiativeAssignment 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
   name: assignmentName
-  //scope: subscription()
+  // scope: subscription(subscriptionId)
   properties: {
     displayName: assignmentDisplayName
     description: '02-General Assign to 02-General initiative'
