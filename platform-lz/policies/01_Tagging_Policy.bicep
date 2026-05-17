@@ -14,46 +14,63 @@ Ce BICEP créer 2 initiative qui force des tags sur des resources groups.
 
 */
 
-targetScope = 'subscription' // Ce template s'applique à un abonnement Azure
+targetScope = 'subscription'
 
 @description('Région utilisée pour assignation des politiques au niveau du management group')
 param location string = deployment().location
+
+// -------------------------------
+// Typage strict des paramètres
+// -------------------------------
+type CustomTagPolicy = {
+  name: string
+  displayName: string
+  field: string
+  allowedValues: array
+  nonComplianceMessage: string
+}
+
+type BuiltinTagPolicy = {
+  Name: string
+  type: string // "requiredOnResourceGroup" ou "inheritFromResourceGroup"
+}
 
 param initiativeCustomPoliciesName string
 param initiativeCustomPoliciesDisplayName string
 param initiativeBuiltinPoliciesName string
 param initiativeBuiltinPoliciesDisplayName string
-param customPoliciesTags array = []
-param builtinPolicieTags array = []
 
-// var requireTagOnResourcesId      = '/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b590-94f262ecfa99'
+param customPoliciesTags array = [] // array<CustomTagPolicy>
+param builtinPoliciesTags array = [] // array<BuiltinTagPolicy>
+
+// -------------------------------
+// Built-in Policy Definition IDs
+// -------------------------------
 var requireTagOnResourceGroupsId = '/providers/Microsoft.Authorization/policyDefinitions/96670d01-0a4d-4649-9c89-2d3abc0a5025'
 var inheritTagFromResourceGroupIfMissingId = '/providers/Microsoft.Authorization/policyDefinitions/ea3f2387-9b95-492a-a190-fcdc54f7b070'
 
-// 
-
-/*
-  1) Définition des Policy Definitions
-     - Ajout de la contrainte sur le type pour viser uniquement les Resource Groups
-*/
+// ======================================================================
+// 1) Policy Definitions Custom
+// ======================================================================
 resource policyDefinitionsResources 'Microsoft.Authorization/policyDefinitions@2021-06-01' = [
   for (policy, index) in customPoliciesTags: {
     name: policy.name
     properties: {
       displayName: policy.displayName
-      metadata: { category: 'Tags', version: '1.0.0' }
+      metadata: {
+        category: 'Tags'
+        version: '1.0.0'
+      }
       policyType: 'Custom'
       mode: 'All'
       parameters: {}
       policyRule: {
         if: {
           allOf: [
-            // Filtre: n'évaluer que les groupes de ressources
             {
               field: 'type'
               equals: 'Microsoft.Resources/subscriptions/resourceGroups'
             }
-            // Validation du tag
             {
               field: policy.field
               notIn: policy.allowedValues
@@ -68,40 +85,50 @@ resource policyDefinitionsResources 'Microsoft.Authorization/policyDefinitions@2
   }
 ]
 
-/*
-  2) Initiative qui regroupe les policy definitions ci-dessus
-*/
+// ======================================================================
+// 2) Initiative Custom regroupant les Policy Definitions Custom
+// ======================================================================
 resource initiativeCustomPoliciesTags 'Microsoft.Authorization/policySetDefinitions@2021-06-01' = {
   name: initiativeCustomPoliciesName
   properties: {
-    policyType: 'Custom' // ← ADD THIS
+    policyType: 'Custom'
     displayName: initiativeCustomPoliciesDisplayName
-    metadata: { category: 'Tags', version: '1.0.0' }
+    metadata: {
+      category: 'Tags'
+      version: '1.0.0'
+    }
     policyDefinitions: [
       for (policy, index) in customPoliciesTags: {
         policyDefinitionReferenceId: 'require-${policy.name}'
-        policyDefinitionId: policyDefinitionsResources[index].id // Use symbolic reference
+        policyDefinitionId: policyDefinitionsResources[index].id
         parameters: {}
       }
     ]
   }
 }
 
+// ======================================================================
+// 3) Initiative Built-in regroupant les Policy Definitions Built-in
+// ======================================================================
 resource initiativeBuiltinPoliciesTags 'Microsoft.Authorization/policySetDefinitions@2021-06-01' = {
   name: initiativeBuiltinPoliciesName
   properties: {
     policyType: 'Custom'
     displayName: initiativeBuiltinPoliciesDisplayName
-    metadata: { category: 'Tags', version: '1.0.0' }
-    // 👇 Aucun 'parameters' de niveau initiative
+    metadata: {
+      category: 'Tags'
+      version: '1.0.0'
+    }
     policyDefinitions: [
-      for (tag, index) in builtinPolicieTags: {
+      for (tag, index) in builtinPoliciesTags: {
         policyDefinitionReferenceId: tag.type == 'requiredOnResourceGroup'
           ? 'require-${tag.Name}-tag-on-rg'
-          : 'Inherit-${tag.Name}-tag-from-rg'
+          : 'inherit-${tag.Name}-tag-from-rg'
+
         policyDefinitionId: tag.type == 'requiredOnResourceGroup'
           ? requireTagOnResourceGroupsId
           : inheritTagFromResourceGroupIfMissingId
+
         parameters: {
           tagName: {
             value: tag.Name
@@ -112,11 +139,9 @@ resource initiativeBuiltinPoliciesTags 'Microsoft.Authorization/policySetDefinit
   }
 }
 
-// /providers/Microsoft.Management/managementGroups/4e504624-9abd-4371-aa47-31f0626f32d0/providers/Microsoft.Authorization/policyDefinitions/tagEnvironnement
-
-/*
-  3) Messages de non-conformité dynamiques
-*/
+// ======================================================================
+// 4) Messages de non-conformité dynamiques (Custom uniquement)
+// ======================================================================
 var dynamicMessages = [
   for policy in customPoliciesTags: {
     policyDefinitionReferenceId: 'require-${policy.name}'
@@ -133,9 +158,9 @@ var allMessagesdynamicMessagesCustomPoliciesTags = union(
   dynamicMessages
 )
 
-/*
-Assignation de l’initiative au niveau ABONNEMENT
-*/
+// ======================================================================
+// 5) Assignations des initiatives
+// ======================================================================
 resource initiativeCustomPoliciesTagsAssignment 'Microsoft.Authorization/policyAssignments@2021-06-01' = {
   name: 'Sol-AssInit-CTag-v6.1'
   location: location
@@ -146,7 +171,6 @@ resource initiativeCustomPoliciesTagsAssignment 'Microsoft.Authorization/policyA
   }
 }
 
-// Assignation de l’initiative Built-in au niveau ABONNEMENT
 resource initiativeBuiltinPoliciesTagsAssignment 'Microsoft.Authorization/policyAssignments@2021-06-01' = {
   name: 'Sol-AssInit-BTag-v6.1'
   location: location
@@ -156,14 +180,12 @@ resource initiativeBuiltinPoliciesTagsAssignment 'Microsoft.Authorization/policy
   properties: {
     displayName: initiativeBuiltinPoliciesDisplayName
     policyDefinitionId: initiativeBuiltinPoliciesTags.id
-    // ***  Il y a présentement un problème avec les messages de non-conformité pour les policies built-in dans une initiative, c'Est popur cette raison qu'on l'a mis en commentaire  ***
-    // nonComplianceMessages: allMessagesdynamicMessagesBuiltinPoliciesTags
   }
 }
 
-// ------------------------------------------------------------
-// Sorties pratiques
-// ------------------------------------------------------------
+// ======================================================================
+// 6) Outputs
+// ======================================================================
 output initiativeCustomPoliciesTagsId string = initiativeCustomPoliciesTags.id
 output initiativeBuiltinPoliciesTagsId string = initiativeBuiltinPoliciesTags.id
 output initiativeCustomPoliciesTagsAssignmentId string = initiativeCustomPoliciesTagsAssignment.id

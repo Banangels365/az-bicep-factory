@@ -15,67 +15,34 @@ Sans modifier le Bicep quand tu changes les policies : tu ne fais que passer des
 1) Restrict location (Allowed locations +
 2) Audit resource location matches resource group location)
 
-
 */
-
-// ------------------------------------------------------------
-// Déploiement au niveau de l'abonnement
-// ------------------------------------------------------------
-targetScope = 'subscription' // Ce template s'applique à un abonnement Azure
-
-// ------------------------------------------------------------
-// Paramètres personnalisables
-// ------------------------------------------------------------
-
-// Nom interne de l’initiative
-@description('Nom de l\'initiative (policy set) à créer.')
-param initiativeName string //= '02-General-Initiative' // Doit être unique dans le scope de déploiement
-
-// Nom interne de l’assignation
-///@description('Nom de l’assignation de l’initiative.')
-param assignmentName string //= '02-General-Assignment'
-
-// NOTE: This template is deployed at subscription scope. The assignment will
-// be created in the same subscription as the deployment. Do not pass a
-// different subscriptionId here (to target another subscription you must use
-// a module deployed to that subscription).
-
-// Emplacements autorisés (Canada Central et Canada East par défaut)
-@description('Liste des emplacements autorisés.')
-param allowedLocations array /*= [
-  'canadacentral'
-  'canadaeast'
-  ]*/
-
-//++++++++++++++++++++++++++++++++++++  DEBUT DU BLOC POUR LA POLICY  +++++++++++++++++++++++++++++++++++++++++++++++++++
 /*
-// SKU autorisés pour les machines virtuelles (exemple : Standard_DS1_v2, Standard_DS2_v2, Standard_B2s)
-@description('Liste des SKU autorisés pour les machines virtuelles.')
-param allowedVmSkus array = [
-  'Standard_DS1_v2'
-  'Standard_DS2_v2'
-  'Standard_B2s'
-]
+02_General_Policy.bicep - Initiative regroupant des policies générales (ex: restriction de localisation)
 */
-//++++++++++++++++++++++++++++++++++++  FIN DU BLOC POUR LA POLICY  +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// Libellés lisibles
+targetScope = 'subscription'
+
+// ------------------------------------------------------------
+// Paramètres
+// ------------------------------------------------------------
+@description('Nom interne de l\'initiative (policy set) à créer.')
+param initiativeName string
+
+@description('Nom interne de l\'assignation.')
+param assignmentName string
+
+@description('Liste des emplacements autorisés.')
+param allowedLocations array
+
 @description('Nom lisible pour l\'initiative.')
-param initiativeDisplayName string //= '02-General Initiative'
+param initiativeDisplayName string
 
 @description('Nom lisible pour l\'assignation.')
-param assignmentDisplayName string //= '02-General Assignment'
-
-// @description('ID de l’abonnement cible pour l\'assignation. Doit être le même que celui du scope de déploiement.')
-// param subscriptionId string = subscription().subscriptionId
+param assignmentDisplayName string
 
 // ------------------------------------------------------------
-// Création de l’initiative (Policy Set Definition)
+// Initiative regroupant les policies générales
 // ------------------------------------------------------------
-// Cette initiative regroupe deux policies built-in :
-// 1) Allowed locations
-// 2) Audit resource location matches resource group location
-
 resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = {
   name: initiativeName
   properties: {
@@ -85,6 +52,7 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = 
     metadata: {
       category: 'General'
     }
+
     // Paramètres exposés par l’initiative
     parameters: {
       allowedLocations: {
@@ -94,21 +62,12 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = 
           description: 'List of allowed locations for resource deployment.'
         }
       }
-
-      //++++++++++++++++++++++++++++++++++++  DEBUT DU BLOC POUR LA POLICY  +++++++++++++++++++++++++++++++++++++++++++++++++++
-      /*allowedVmSkus: {
-        type: 'Array'
-        metadata: {
-          displayName: '02-General'
-          description: '02-General List of allowed Location'
-        }
-      }*/
-      //++++++++++++++++++++++++++++++FIN DU BLOC ++++++++++++++++++++++++++++++++++++++++
     }
-    // Liste des policies incluses
+
+    // Liste des policies incluses dans l’initiative
     policyDefinitions: [
       {
-        policyDefinitionReferenceId: 'allowed-locations' // ✅ ADD THIS
+        policyDefinitionReferenceId: 'allowed-locations'
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c'
         parameters: {
           listOfAllowedLocations: {
@@ -118,54 +77,45 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = 
       }
 
       {
-        policyDefinitionReferenceId: 'audit-resource-location' // ✅ ADD THIS
+        policyDefinitionReferenceId: 'audit-resource-location'
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/0a914e76-4921-4c19-b460-a2d36003525a'
       }
 
-      // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-      //++++++++++++++++ DEBUT DU BLOC bloc que vous ajouter vitre builtin policy ++++++++++++++++++++++++++++++
-      //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-      /*{
-        // Policy : Allowed virtual machine SKUs (built-in)
+      // Exemple pour ajouter une autre policy built-in :
+      /*
+      {
+        policyDefinitionReferenceId: 'allowed-vm-skus'
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/cccc23c7-8427-4f53-ad12-b6a63eb452b3'
         parameters: {
           listOfAllowedSKUs: {
             value: allowedVmSkus
           }
         }
-      }*/
-      //++++++++++++++++++++++++++++++++++++++++  FIN DU BLOC +++++++++++++++++++++++++++++++++++++++++++++++++++
+      }
+      */
     ]
   }
 }
 
 // ------------------------------------------------------------
-// Assignation de l’initiative à l’abonnement
+// Assignation de l’initiative
 // ------------------------------------------------------------
 resource initiativeAssignment 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
   name: assignmentName
-  // scope: subscription(subscriptionId)
   properties: {
     displayName: assignmentDisplayName
     description: '02-General Assign to 02-General initiative'
     policyDefinitionId: initiative.id
     parameters: {
-      // Allowed locations pour la policy correspondante
       allowedLocations: {
         value: allowedLocations
       }
-      /*
-      allowedVmSkus: {
-        value: allowedVmSkus
-      }*/
     }
   }
 }
 
 // ------------------------------------------------------------
-// Sorties pratiques
+// Sorties
 // ------------------------------------------------------------
 output initiativeId string = initiative.id
 output assignmentId string = initiativeAssignment.id
