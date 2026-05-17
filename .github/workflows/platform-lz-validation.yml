@@ -12,7 +12,7 @@ on:
       - 'platform-lz/**'
       - '.github/workflows/platform-lz-validation.yml'
     branches-ignore:
-      - main # Ne pas déclencher sur les PRs vers main, car elles sont gérées par l'événement push
+      - main
 
 permissions:
   contents: read
