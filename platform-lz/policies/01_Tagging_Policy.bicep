@@ -37,7 +37,7 @@ var inheritTagFromResourceGroupIfMissingId = '/providers/Microsoft.Authorization
      - Ajout de la contrainte sur le type pour viser uniquement les Resource Groups
 */
 resource policyDefinitionsResources 'Microsoft.Authorization/policyDefinitions@2021-06-01' = [
-  for policy in customPoliciesTags: {
+  for (policy, index) in customPoliciesTags: {
     name: policy.name
     properties: {
       displayName: policy.displayName
@@ -78,9 +78,9 @@ resource initiativeCustomPoliciesTags 'Microsoft.Authorization/policySetDefiniti
     displayName: initiativeCustomPoliciesDisplayName
     metadata: { category: 'Tags', version: '1.0.0' }
     policyDefinitions: [
-      for policy in customPoliciesTags: {
+      for (policy, index) in customPoliciesTags: {
         policyDefinitionReferenceId: 'require-${policy.name}'
-        policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/${policy.name}'
+        policyDefinitionId: policyDefinitionsResources[index].id // Use symbolic reference
         parameters: {}
       }
     ]
@@ -95,7 +95,7 @@ resource initiativeBuiltinPoliciesTags 'Microsoft.Authorization/policySetDefinit
     metadata: { category: 'Tags', version: '1.0.0' }
     // 👇 Aucun 'parameters' de niveau initiative
     policyDefinitions: [
-      for tag in builtinPolicieTags: {
+      for (tag, index) in builtinPolicieTags: {
         policyDefinitionReferenceId: tag.type == 'requiredOnResourceGroup'
           ? 'require-${tag.Name}-tag-on-rg'
           : 'Inherit-${tag.Name}-tag-from-rg'

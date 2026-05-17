@@ -108,7 +108,7 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = 
     // Liste des policies incluses
     policyDefinitions: [
       {
-        // Policy : Allowed locations (built-in)
+        policyDefinitionReferenceId: 'allowed-locations' // ✅ ADD THIS
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c'
         parameters: {
           listOfAllowedLocations: {
@@ -117,11 +117,11 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = 
         }
       }
 
-      // ++++++++++++++++ AJOUT : Audit resource location matches resource group location (built‑in) ++++++++++++++++
       {
-        // Aucun paramètre requis, effet = audit
+        policyDefinitionReferenceId: 'audit-resource-location' // ✅ ADD THIS
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/0a914e76-4921-4c19-b460-a2d36003525a'
       }
+
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       //++++++++++++++++ DEBUT DU BLOC bloc que vous ajouter vitre builtin policy ++++++++++++++++++++++++++++++
