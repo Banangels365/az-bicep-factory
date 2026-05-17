@@ -48,7 +48,7 @@ param metadata object = {}
 // Policy Assignment Resource
 resource policyAssignment 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
   name: assignmentName
-  location: identityType == 'SystemAssigned' ? location : null
+  location: identityType == 'SystemAssigned' ? location : 'eastus'
   identity: identityType != 'None'
     ? {
         type: identityType

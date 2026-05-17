@@ -79,7 +79,7 @@ resource initiativeCustomPoliciesTags 'Microsoft.Authorization/policySetDefiniti
     policyDefinitions: [
       for policy in customPoliciesTags: {
         policyDefinitionReferenceId: 'require-${policy.name}'
-        policyDefinitionId: ('/providers/Microsoft.Management/managementGroups/4e504624-9abd-4371-aa47-31f0626f32d0/providers/Microsoft.Authorization/policyDefinitions/${policy.name}')
+        policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/${policy.name}'
         parameters: {}
       }
     ]

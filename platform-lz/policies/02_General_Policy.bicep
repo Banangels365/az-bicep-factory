@@ -112,7 +112,7 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2021-06-01' = 
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c'
         parameters: {
           listOfAllowedLocations: {
-            value: '[parameters(\'allowedLocations\')]'
+            value: allowedLocations
           }
         }
       }
@@ -132,7 +132,7 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2021-06-01' = 
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/cccc23c7-8427-4f53-ad12-b6a63eb452b3'
         parameters: {
           listOfAllowedSKUs: {
-            value: '[parameters(\'allowedVmSkus\')]'
+            value: allowedVmSkus
           }
         }
       }*/

@@ -22,13 +22,13 @@ resource managementGroup 'Microsoft.Management/managementGroups@2023-04-01' = {
   name: managementGroupId
   properties: {
     displayName: displayName
-    details: {
-      parent: !empty(parentManagementGroupId)
-        ? {
+    details: !empty(parentManagementGroupId)
+      ? {
+          parent: {
             id: tenantResourceId('Microsoft.Management/managementGroups', parentManagementGroupId)
           }
-        : null
-    }
+        }
+      : {}
   }
 }
 
