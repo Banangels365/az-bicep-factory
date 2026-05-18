@@ -16,6 +16,8 @@ param tags = {
   CreeLe: '2026-05-17'
   CreePar: 'CloudOps-Team'
   Criticite: 'Moyen'
+  Responsable: 'CloudOps-Team'
+  ResponsableEmail: 'cloudops@acmy.com'
 }
 
 // Logging configuration
@@ -25,10 +27,10 @@ param tags = {
 // Policy configuration
 
 // Liste des
-param initiativeCustomPoliciesName = '01-Tag'
-param initiativeCustomPoliciesDisplayName = '01-Tag'
-param initiativeBuiltinPoliciesName = '01-Tag-Assignment'
-param initiativeBuiltinPoliciesDisplayName = '01-Tag-Assignment'
+// param initiativeCustomPoliciesName = '01-Tag'
+// param initiativeCustomPoliciesDisplayName = '01-Tag'
+// param initiativeBuiltinPoliciesName = '01-Tag-Assignment'
+// param initiativeBuiltinPoliciesDisplayName = '01-Tag-Assignment'
 
 /*
 Liste des policies custom pour les tags
@@ -39,30 +41,30 @@ On peut ajouter autant de tags que nécessaire dans cette liste, avec les propri
 - allowedValues : la liste des valeurs autorisées pour ce tag
 */
 
-param customPoliciesTags = [
-  {
-    name: 'Environnement'
-    displayName: 'Tag - Environnement'
-    field: 'tags.Environnement'
-    allowedValues: [
-      'Dev'
-      'Preprod'
-      'Prod'
-    ]
-    nonComplianceMessage: 'Le tag Environnement doit être conforme aux valeurs acceptées. Soit Dev, Preprod ou Prod.'
-  }
-  {
-    name: 'Criticite'
-    displayName: 'Tag - Criticite'
-    field: 'tags.Criticite'
-    allowedValues: [
-      'Eleve'
-      'Moyen'
-      'Bas'
-    ]
-    nonComplianceMessage: 'Le tag Criticite doit être conforme aux valeurs acceptées. Soit Eleve, Moyen ou Bas.'
-  }
-]
+// param customPoliciesTags = [
+//   {
+//     name: 'Environnement'
+//     displayName: 'Tag - Environnement'
+//     field: 'tags.Environnement'
+//     allowedValues: [
+//       'Dev'
+//       'Preprod'
+//       'Prod'
+//     ]
+//     nonComplianceMessage: 'Le tag Environnement doit être conforme aux valeurs acceptées. Soit Dev, Preprod ou Prod.'
+//   }
+//   {
+//     name: 'Criticite'
+//     displayName: 'Tag - Criticite'
+//     field: 'tags.Criticite'
+//     allowedValues: [
+//       'Eleve'
+//       'Moyen'
+//       'Bas'
+//     ]
+//     nonComplianceMessage: 'Le tag Criticite doit être conforme aux valeurs acceptées. Soit Eleve, Moyen ou Bas.'
+//   }
+// ]
 
 /*
 Liste des policies builtin pour les tags
@@ -72,49 +74,49 @@ On peut ajouter autant de tags que nécessaire dans cette liste, avec les propri
 - nonComplianceMessage : le message de non-conformité affiché lorsque la policy n'est pas respectée
 */
 
-param builtinPoliciesTags = [
-  {
-    name: 'Application'
-    type: 'requiredOnResourceGroup'
-    nonComplianceMessage: 'Le tag FournisseurApp est obligatoire sur les Resource Groups.'
-  }
-  {
-    name: 'Responsable'
-    type: 'requiredOnResourceGroup'
-    nonComplianceMessage: 'Le tag Responsable est obligatoire sur les Resource Groups.'
-  }
-  {
-    name: 'ResponsableEmail'
-    type: 'requiredOnResourceGroup'
-    nonComplianceMessage: 'Le tag ResponsableEmail est obligatoire sur les Resource Groups.'
-  }
-  {
-    name: 'CreePar'
-    type: 'requiredOnResourceGroup'
-    nonComplianceMessage: 'Le tag CreePar est obligatoire sur les Resource Groups.'
-  }
-  {
-    name: 'CreeLe'
-    type: 'requiredOnResourceGroup'
-    nonComplianceMessage: 'Le tag CreeLe est obligatoire sur les Resource Groups.'
-  }
-  // Tags hérités du parent
-  {
-    name: 'Environnement'
-    type: 'inheritFromParent'
-    nonComplianceMessage: 'Le tag Environnement doit être hérité du parent.'
-  }
-  {
-    name: 'Application'
-    type: 'inheritFromParent'
-    nonComplianceMessage: 'Le tag Application doit être hérité du parent.'
-  }
-  {
-    name: 'Criticite'
-    type: 'inheritFromParent'
-    nonComplianceMessage: 'Le tag Criticite doit être hérité du parent.'
-  }
-]
+// param builtinPoliciesTags = [
+//   {
+//     name: 'Application'
+//     type: 'requiredOnResourceGroup'
+//     nonComplianceMessage: 'Le tag FournisseurApp est obligatoire sur les Resource Groups.'
+//   }
+//   {
+//     name: 'Responsable'
+//     type: 'requiredOnResourceGroup'
+//     nonComplianceMessage: 'Le tag Responsable est obligatoire sur les Resource Groups.'
+//   }
+//   {
+//     name: 'ResponsableEmail'
+//     type: 'requiredOnResourceGroup'
+//     nonComplianceMessage: 'Le tag ResponsableEmail est obligatoire sur les Resource Groups.'
+//   }
+//   {
+//     name: 'CreePar'
+//     type: 'requiredOnResourceGroup'
+//     nonComplianceMessage: 'Le tag CreePar est obligatoire sur les Resource Groups.'
+//   }
+//   {
+//     name: 'CreeLe'
+//     type: 'requiredOnResourceGroup'
+//     nonComplianceMessage: 'Le tag CreeLe est obligatoire sur les Resource Groups.'
+//   }
+//   // Tags hérités du parent
+//   {
+//     name: 'Environnement'
+//     type: 'inheritFromParent'
+//     nonComplianceMessage: 'Le tag Environnement doit être hérité du parent.'
+//   }
+//   {
+//     name: 'Application'
+//     type: 'inheritFromParent'
+//     nonComplianceMessage: 'Le tag Application doit être hérité du parent.'
+//   }
+//   {
+//     name: 'Criticite'
+//     type: 'inheritFromParent'
+//     nonComplianceMessage: 'Le tag Criticite doit être hérité du parent.'
+//   }
+// ]
 
 param initiativeName02 = '02-General Initiative'
 param assignmentName02 = '02-General Assignment'

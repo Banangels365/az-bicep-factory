@@ -27,12 +27,7 @@ param location string = 'caea'
 param managementSubscriptionId string
 
 @description('Tags à appliquer aux ressources')
-param tags object = {
-  Environment: environment
-  ManagedBy: 'Bicep'
-  CostCenter: 'Platform'
-  Owner: 'CloudOps'
-}
+param tags object = {}
 
 // @description('Log Analytics retention in days')
 // @minValue(30)
@@ -128,22 +123,89 @@ module quarantineMg './modules/management_group.bicep' = {
 // 01-Tagging-Policy Creation
 //---------------------------------
 
-param initiativeCustomPoliciesName string
-param initiativeCustomPoliciesDisplayName string
-param initiativeBuiltinPoliciesName string
-param initiativeBuiltinPoliciesDisplayName string
-param customPoliciesTags array = []
-param builtinPoliciesTags array = []
+// param initiativeCustomPoliciesName string
+// param initiativeCustomPoliciesDisplayName string
+// param initiativeBuiltinPoliciesName string
+// param initiativeBuiltinPoliciesDisplayName string
+// param customPoliciesTags array = []
+// param builtinPoliciesTags array = []
 module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
   name: 'deploy-01-tagging-policy'
   scope: subscription(managementSubscriptionId)
   params: {
-    initiativeCustomPoliciesName: initiativeCustomPoliciesName
-    initiativeCustomPoliciesDisplayName: initiativeCustomPoliciesDisplayName
-    initiativeBuiltinPoliciesName: initiativeBuiltinPoliciesName
-    initiativeBuiltinPoliciesDisplayName: initiativeBuiltinPoliciesDisplayName
-    customPoliciesTags: customPoliciesTags
-    builtinPoliciesTags: builtinPoliciesTags
+    initiativeCustomPoliciesName: '01-Tag'
+    initiativeCustomPoliciesDisplayName: '01-Tag'
+    initiativeBuiltinPoliciesName: '01-Tag-Assignment'
+    initiativeBuiltinPoliciesDisplayName: '01-Tag-Assignment'
+    customPoliciesTags: [
+      {
+        name: 'Environnement'
+        displayName: 'Tag - Environnement'
+        field: 'tags.Environnement'
+        allowedValues: [
+          'prod' // production
+          'dev' // development
+          'logs' // logging/monitoring
+          'quar' // quarantine
+          'sbox' // sandbox
+        ]
+        nonComplianceMessage: 'Le tag Environnement doit être conforme aux valeurs acceptées. Soit Dev, Preprod ou Prod.'
+      }
+      {
+        name: 'Criticite'
+        displayName: 'Tag - Criticite'
+        field: 'tags.Criticite'
+        allowedValues: [
+          'Eleve'
+          'Moyen'
+          'Bas'
+        ]
+        nonComplianceMessage: 'Le tag Criticite doit être conforme aux valeurs acceptées. Soit Eleve, Moyen ou Bas.'
+      }
+    ]
+    builtinPoliciesTags: [
+      {
+        name: 'Application'
+        type: 'requiredOnResourceGroup'
+        nonComplianceMessage: 'Le tag FournisseurApp est obligatoire sur les Resource Groups.'
+      }
+      {
+        name: 'Responsable'
+        type: 'requiredOnResourceGroup'
+        nonComplianceMessage: 'Le tag Responsable est obligatoire sur les Resource Groups.'
+      }
+      {
+        name: 'ResponsableEmail'
+        type: 'requiredOnResourceGroup'
+        nonComplianceMessage: 'Le tag ResponsableEmail est obligatoire sur les Resource Groups.'
+      }
+      {
+        name: 'CreePar'
+        type: 'requiredOnResourceGroup'
+        nonComplianceMessage: 'Le tag CreePar est obligatoire sur les Resource Groups.'
+      }
+      {
+        name: 'CreeLe'
+        type: 'requiredOnResourceGroup'
+        nonComplianceMessage: 'Le tag CreeLe est obligatoire sur les Resource Groups.'
+      }
+      // Tags hérités du parent
+      // {
+      //   name: 'Environnement'
+      //   type: 'inheritFromParent'
+      //   nonComplianceMessage: 'Le tag Environnement doit être hérité du parent.'
+      // }
+      // {
+      //   name: 'Application'
+      //   type: 'inheritFromParent'
+      //   nonComplianceMessage: 'Le tag Application doit être hérité du parent.'
+      // }
+      // {
+      //   name: 'Criticite'
+      //   type: 'inheritFromParent'
+      //   nonComplianceMessage: 'Le tag Criticite doit être hérité du parent.'
+      // }
+    ]
   }
 }
 
