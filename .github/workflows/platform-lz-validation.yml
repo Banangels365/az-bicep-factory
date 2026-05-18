@@ -135,32 +135,37 @@ jobs:
         shell: pwsh
         run: |
           # 1. Capture la sortie brute en texte
-          $jsonRaw = az deployment mg what-if `
+          $changes = az deployment mg what-if `
               --name platform-lz-whatif `
               --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} `
               --location ${{ env.LOCATION }} `
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
-              --query "changes" `
-              --output json | Out-String
+              --query "changes[].{id:resourceId, type:changeType}" `
+              --output tsv 2>$null
 
-          # 2. Extraire uniquement le tableau JSON (la première occurrence de [ ... ])
-          #    -match stocke le résultat dans $matches[0]
-          if ($jsonRaw -match '(\[[\s\S]*\])') {
-              $jsonClean = $matches[0]
-          } else {
-              throw "Impossible d'extraire le JSON What-If."
+          # 2. Si aucune sortie
+          if (-not $changes) {
+              Write-Host "Aucun changement détecté."
+              exit 0
           }
 
-          # 3. Conversion JSON
-          $json = $jsonClean | ConvertFrom-Json
+          # 3. Convertir en objets PowerShell simples
+          $parsed = $changes | ForEach-Object {
+              $parts = $_ -split "`t"
+              [PSCustomObject]@{
+                  ResourceId = $parts[0]
+                  ChangeType = $parts[1]
+              }
+          }
 
           # 4. Comptage
-          $created  = ($json | Where-Object changeType -eq "Create").Count
-          $deleted  = ($json | Where-Object changeType -eq "Delete").Count
-          $modified = ($json | Where-Object changeType -eq "Modify").Count
-          $nochange = ($json | Where-Object changeType -eq "NoChange").Count
+          $created  = ($parsed | Where-Object ChangeType -eq "Create").Count
+          $deleted  = ($parsed | Where-Object ChangeType -eq "Delete").Count
+          $modified = ($parsed | Where-Object ChangeType -eq "Modify").Count
+          $nochange = ($parsed | Where-Object ChangeType -eq "NoChange").Count
 
+          # 5. Résumé
           Write-Host ""
           Write-Host "==================================="
           Write-Host "Platform-LZ Change Summary"
@@ -171,3 +176,7 @@ jobs:
           Write-Host "No Change : $nochange"
           Write-Host "==================================="
 
+          # 6. Tableau détaillé
+          Write-Host ""
+          Write-Host "Détails des ressources modifiées :"
+          $parsed | Sort-Object ChangeType | Format-Table -AutoSize
