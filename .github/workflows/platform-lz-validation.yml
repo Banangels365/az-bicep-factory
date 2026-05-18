@@ -163,20 +163,25 @@ jobs:
           }
           $jsonText = $cleanJson.Substring($start)
 
-          # 3. Parser le JSON
+          # 3. Parser le JSON avec meilleure gestion d'erreurs
           try {
-              $whatif = $jsonText | ConvertFrom-Json
+              $whatif = $jsonText | ConvertFrom-Json -ErrorAction Stop
           } catch {
-              Write-Host "❌ Erreur de parsing JSON. Extrait reçu :"
-              Write-Host $jsonText
+              Write-Host "❌ Erreur de parsing JSON :"
+              Write-Host "Erreur : $_"
+              Write-Host "Extrait reçu (premiers 2000 caractères) :"
+              Write-Host $jsonText.Substring(0, [Math]::Min(2000, $jsonText.Length))
               exit 1
           }
 
-          # 4. Extraire les changements (la propriété peut être 'changes' ou 'change')
-          $changes = $whatif.properties.changes
+          # 4. Extraire les changements en essayant plusieurs chemins possibles
+          $changes = $whatif.changes
           if (-not $changes) {
-              Write-Host "Aucune propriété 'changes' trouvée dans la réponse."
-              $whatif | ConvertTo-Json -Depth 5 | Write-Host
+              $changes = $whatif.properties.changes
+          }
+          if (-not $changes) {
+              Write-Host "❌ Aucune propriété 'changes' trouvée. Structure JSON :"
+              $whatif | ConvertTo-Json -Depth 10 | Write-Host
               exit 1
           }
 
