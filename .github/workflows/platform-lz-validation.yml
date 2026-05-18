@@ -133,42 +133,60 @@ jobs:
 
       - name: Generate Change Summary
         shell: pwsh
+        env:
+          AZURE_CLI_DISABLE_PROGRESS: true
         run: |
-          $env:AZURE_CLI_DISABLE_PROGRESS = "true"
-
-          # 1. Exécuter what-if en capturant stdout + stderr, sans masquer les erreurs
+          # 1. Exécuter what-if SANS --query
           $result = az deployment mg what-if `
               --name platform-lz-whatif `
-              --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} `
-              --location ${{ env.LOCATION }} `
+              --management-group-id "${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}" `
+              --location "${{ env.LOCATION }}" `
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
-              --query "properties.changes[].{resourceId:resourceId, changeType:changeType}" `
               --output json 2>&1
 
-          # 2. Vérifier le code de retour de la commande
           if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ Échec de la commande what-if :"
+              Write-Host "❌ Échec de what-if :"
               Write-Host $result
               exit 1
           }
 
-          # Convertir le JSON (maintenant propre)
+          # 2. Nettoyer la sortie : certains warnings (ex: bicep path) peuvent précéder le JSON.
+          #    On extrait tout ce qui commence par '{' ou '['
+          $cleanJson = $result -join "`n"
+          $start = $cleanJson.IndexOf('{')
+          if ($start -eq -1) { $start = $cleanJson.IndexOf('[') }
+          if ($start -eq -1) {
+              Write-Host "❌ Aucun JSON trouvé dans la sortie. Sortie brute :"
+              Write-Host $cleanJson
+              exit 1
+          }
+          $jsonText = $cleanJson.Substring($start)
+
+          # 3. Parser le JSON
           try {
-              $parsed = $result | ConvertFrom-Json
+              $whatif = $jsonText | ConvertFrom-Json
           } catch {
-              Write-Host "❌ Erreur de parsing JSON. Sortie brute :"
-              Write-Host $result
+              Write-Host "❌ Erreur de parsing JSON. Extrait reçu :"
+              Write-Host $jsonText
               exit 1
           }
 
-          # 4. Regroupement (les noms de propriétés sont maintenant corrects)
-          $created   = @($parsed | Where-Object changeType -eq "Create")
-          $deleted   = @($parsed | Where-Object changeType -eq "Delete")
-          $modified  = @($parsed | Where-Object changeType -eq "Modify")
-          $nochange  = @($parsed | Where-Object changeType -eq "NoChange")
+          # 4. Extraire les changements (la propriété peut être 'changes' ou 'change')
+          $changes = $whatif.properties.changes
+          if (-not $changes) {
+              Write-Host "Aucune propriété 'changes' trouvée dans la réponse."
+              $whatif | ConvertTo-Json -Depth 5 | Write-Host
+              exit 1
+          }
 
-          # 5. Résumé
+          # 5. Regroupement
+          $created   = @($changes | Where-Object { $_.changeType -eq "Create" })
+          $deleted   = @($changes | Where-Object { $_.changeType -eq "Delete" })
+          $modified  = @($changes | Where-Object { $_.changeType -eq "Modify" })
+          $nochange  = @($changes | Where-Object { $_.changeType -eq "NoChange" })
+
+          # 6. Résumé
           Write-Host ""
           Write-Host "==================================="
           Write-Host "Platform-LZ Change Summary"
@@ -179,8 +197,8 @@ jobs:
           Write-Host "No Change : $($nochange.Count)"
           Write-Host "==================================="
 
-          # 6. Détails
-          if ($created)   { Write-Host "`n===== CRÉÉES ====="; $created   | Format-Table -AutoSize }
-          if ($deleted)   { Write-Host "`n===== SUPPRIMÉES ====="; $deleted   | Format-Table -AutoSize }
-          if ($modified)  { Write-Host "`n===== MODIFIÉES ====="; $modified  | Format-Table -AutoSize }
-          if ($nochange)  { Write-Host "`n===== AUCUN CHANGEMENT ====="; $nochange  | Format-Table -AutoSize }
+          # 7. Détails (optionnel)
+          if ($created)   { Write-Host "`n===== CRÉÉES ====="; $created   | Select-Object resourceId, changeType | Format-Table -AutoSize }
+          if ($deleted)   { Write-Host "`n===== SUPPRIMÉES ====="; $deleted   | Select-Object resourceId, changeType | Format-Table -AutoSize }
+          if ($modified)  { Write-Host "`n===== MODIFIÉES ====="; $modified  | Select-Object resourceId, changeType | Format-Table -AutoSize }
+          if ($nochange)  { Write-Host "`n===== AUCUN CHANGEMENT ====="; $nochange  | Select-Object resourceId, changeType | Format-Table -AutoSize }
