@@ -108,7 +108,7 @@ resource initiativeAssignment 'Microsoft.Authorization/policyAssignments@2023-04
     policyDefinitionId: initiative.id
     parameters: {
       allowedLocations: {
-        value: '[parameters(\'allowedLocations\')]'
+        value: allowedLocations
       }
     }
   }

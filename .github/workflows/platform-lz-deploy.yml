@@ -231,22 +231,7 @@ jobs:
 
           if ($LASTEXITCODE -ne 0) {
               Write-Host "❌ Deployment failed:"
-              Write-Host $output
-              
-              # Extract detailed error information
-              try {
-                  $errorData = $output -join "`n" | ConvertFrom-Json -ErrorAction Stop
-                  if ($errorData.error.details) {
-                      Write-Host "`n📋 Detailed Errors:"
-                      foreach ($detail in $errorData.error.details) {
-                          Write-Host "  - Code: $($detail.code)"
-                          Write-Host "    Message: $($detail.message)"
-                          Write-Host "    Target: $($detail.target)"
-                      }
-                  }
-              } catch {
-                  Write-Host "Raw output: $output"
-              }
+              $output | Write-Host
               exit 1
           }
 
