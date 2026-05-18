@@ -142,18 +142,24 @@ jobs:
               --location ${{ env.LOCATION }} `
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
-              --query "changes[].{ResourceId: resourceId, ChangeType: changeType}" `
+              --query "properties.changes[].{id:resourceId, type:changeType}" `
               --output json 2>$null
 
           # 2. Si aucune sortie brute ou chaîne vide
-          if ([string]::IsNullOrEmpty($changesJson) -or $changesJson -eq "[]") {
-                Write-Host "Aucun changement détecté."
-                exit 0
+          if (-not $changes) {
+              Write-Host "Aucun changement détecté."
+              exit 0
           }
 
           # 3. Convertir le JSON directement en vrais objets PowerShell (beaucoup plus robuste que de découper du TSV !)
-          $singleStringJson = $changesJson -join "`n"
-          $parsed = ConvertFrom-Json $singleStringJson
+          $parsed = $changes | ForEach-Object {
+              $parts = $_ -split "`t"
+
+              [PSCustomObject]@{
+                  ResourceId = $parts[0]
+                  ChangeType = $parts[1]
+              }
+          }
 
           # 4. Regroupement par catégorie (comptage sécurisé si 0 ou 1 ressource)
           $created   = @($parsed | Where-Object ChangeType -eq "Create")
@@ -173,23 +179,22 @@ jobs:
           Write-Host "==================================="
 
           # 6. Détails par catégorie (uniquement s'il y en a)
-          if ($created.Count -gt 0) {
-              Write-Host ""
-              Write-Host "===== CRÉÉES ====="
-              $created | Select-Object ResourceId | Format-Table -AutoSize
+          if ($created) {
+              Write-Host "`n===== CRÉÉES ====="
+              $created | Format-Table -AutoSize
           }
-          if ($deleted.Count -gt 0) {
-              Write-Host ""
-              Write-Host "===== SUPPRIMÉES ====="
-              $deleted | Select-Object ResourceId | Format-Table -AutoSize
+
+          if ($deleted) {
+              Write-Host "`n===== SUPPRIMÉES ====="
+              $deleted | Format-Table -AutoSize
           }
-          if ($modified.Count -gt 0) {
-              Write-Host ""
-              Write-Host "===== MODIFIÉES ====="
-              $modified | Select-Object ResourceId | Format-Table -AutoSize
+
+          if ($modified) {
+              Write-Host "`n===== MODIFIÉES ====="
+              $modified | Format-Table -AutoSize
           }
-          if ($nochange.Count -gt 0) {
-              Write-Host ""
-              Write-Host "===== AUCUN CHANGEMENT ====="
-              $nochange | Select-Object ResourceId | Format-Table -AutoSize
+
+          if ($nochange) {
+              Write-Host "`n===== AUCUN CHANGEMENT ====="
+              $nochange | Format-Table -AutoSize
           }
