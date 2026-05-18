@@ -136,7 +136,7 @@ jobs:
         env:
           AZURE_CLI_DISABLE_PROGRESS: true
         run: |
-          # 1. Exécuter what-if SANS --query
+          # 1. Run what-if and capture output
           $result = az deployment mg what-if `
               --name platform-lz-whatif `
               --management-group-id "${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}" `
@@ -146,52 +146,67 @@ jobs:
               --output json 2>&1
 
           if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ Échec de what-if :"
+              Write-Host "❌ What-if command failed:"
               Write-Host $result
               exit 1
           }
 
-          # 2. Nettoyer la sortie : certains warnings (ex: bicep path) peuvent précéder le JSON.
-          #    On extrait tout ce qui commence par '{' ou '['
+          # 2. Convert result to string and clean
           $cleanJson = $result -join "`n"
+          
+          # 3. Extract valid JSON object (must start with { not [)
           $start = $cleanJson.IndexOf('{')
-          if ($start -eq -1) { $start = $cleanJson.IndexOf('[') }
           if ($start -eq -1) {
-              Write-Host "❌ Aucun JSON trouvé dans la sortie. Sortie brute :"
+              Write-Host "❌ No valid JSON object found in output. Raw output:"
               Write-Host $cleanJson
               exit 1
           }
+          
+          # Find the matching closing brace
           $jsonText = $cleanJson.Substring($start)
+          $braceCount = 0
+          $end = 0
+          for ($i = 0; $i -lt $jsonText.Length; $i++) {
+              if ($jsonText[$i] -eq '{') { $braceCount++ }
+              if ($jsonText[$i] -eq '}') { $braceCount--; if ($braceCount -eq 0) { $end = $i + 1; break } }
+          }
+          
+          if ($end -eq 0) {
+              Write-Host "❌ Could not find valid JSON boundaries."
+              exit 1
+          }
+          
+          $jsonText = $jsonText.Substring(0, $end)
 
-          # 3. Parser le JSON avec meilleure gestion d'erreurs
+          # 4. Parse JSON with error handling
           try {
               $whatif = $jsonText | ConvertFrom-Json -ErrorAction Stop
           } catch {
-              Write-Host "❌ Erreur de parsing JSON :"
-              Write-Host "Erreur : $_"
-              Write-Host "Extrait reçu (premiers 2000 caractères) :"
+              Write-Host "❌ JSON parsing error:"
+              Write-Host "Error: $_"
+              Write-Host "First 2000 characters:"
               Write-Host $jsonText.Substring(0, [Math]::Min(2000, $jsonText.Length))
               exit 1
           }
 
-          # 4. Extraire les changements en essayant plusieurs chemins possibles
+          # 5. Extract changes
           $changes = $whatif.changes
           if (-not $changes) {
               $changes = $whatif.properties.changes
           }
           if (-not $changes) {
-              Write-Host "❌ Aucune propriété 'changes' trouvée. Structure JSON :"
+              Write-Host "❌ No 'changes' property found. JSON structure:"
               $whatif | ConvertTo-Json -Depth 10 | Write-Host
               exit 1
           }
 
-          # 5. Regroupement
+          # 6. Group changes
           $created   = @($changes | Where-Object { $_.changeType -eq "Create" })
           $deleted   = @($changes | Where-Object { $_.changeType -eq "Delete" })
           $modified  = @($changes | Where-Object { $_.changeType -eq "Modify" })
           $nochange  = @($changes | Where-Object { $_.changeType -eq "NoChange" })
 
-          # 6. Résumé
+          # 7. Summary
           Write-Host ""
           Write-Host "==================================="
           Write-Host "Platform-LZ Change Summary"
@@ -202,8 +217,7 @@ jobs:
           Write-Host "No Change : $($nochange.Count)"
           Write-Host "==================================="
 
-          # 7. Détails (optionnel)
-          if ($created)   { Write-Host "`n===== CRÉÉES ====="; $created   | Select-Object resourceId, changeType | Format-Table -AutoSize }
-          if ($deleted)   { Write-Host "`n===== SUPPRIMÉES ====="; $deleted   | Select-Object resourceId, changeType | Format-Table -AutoSize }
-          if ($modified)  { Write-Host "`n===== MODIFIÉES ====="; $modified  | Select-Object resourceId, changeType | Format-Table -AutoSize }
-          if ($nochange)  { Write-Host "`n===== AUCUN CHANGEMENT ====="; $nochange  | Select-Object resourceId, changeType | Format-Table -AutoSize }
+          # 8. Details
+          if ($created)   { Write-Host "`n===== CREATED ====="; $created   | Select-Object resourceId, changeType | Format-Table -AutoSize }
+          if ($deleted)   { Write-Host "`n===== DELETED ====="; $deleted   | Select-Object resourceId, changeType | Format-Table -AutoSize }
+          if ($modified)  { Write-Host "`n===== MODIFIED ====="; $modified  | Select-Object resourceId, changeType | Format-Table -AutoSize }
