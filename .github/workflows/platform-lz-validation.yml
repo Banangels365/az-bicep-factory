@@ -151,7 +151,7 @@ jobs:
               exit 1
           }
 
-          # 2. Rejoindre le tableau de strings en une seule string puis parser
+          # 2. Parser le JSON
           $json = $rawOutput -join "`n"
           try {
               $whatif = $json | ConvertFrom-Json -ErrorAction Stop
@@ -183,7 +183,27 @@ jobs:
           Write-Host "No Change  : $($nochange.Count)"
           Write-Host "Unsupported: $($unsupported.Count)"
 
-          # 6. GitHub Job Summary
+          # 6. Fonction utilitaire : décompose un resourceId en segments lisibles
+          #    Exemple : .../policyAssignments/03-network-Assignment
+          #    → Type  : Microsoft.Authorization/policyAssignments
+          #    → Nom   : 03-network-Assignment
+          function Get-ResourceInfo {
+              param([string]$resourceId)
+
+              $segments = $resourceId -split '/providers/' | Select-Object -Last 1
+              $parts    = $segments -split '/', 3
+
+              $provider = $parts[0]          # ex: Microsoft.Authorization
+              $kind     = $parts[1]          # ex: policyAssignments
+              $name     = $parts[2]          # ex: 03-network-Assignment (peut contenir des sous-ressources)
+
+              return [PSCustomObject]@{
+                  Type = "$provider/$kind"
+                  Name = $name
+              }
+          }
+
+          # 7. GitHub Job Summary
           $summary = [System.Text.StringBuilder]::new()
 
           $null = $summary.AppendLine("## 📋 Platform-LZ — What-If Change Summary")
@@ -209,17 +229,23 @@ jobs:
               $null = $sb.AppendLine("<details>")
               $null = $sb.AppendLine("<summary>$emoji <strong>$title ($($items.Count))</strong></summary>")
               $null = $sb.AppendLine("")
-              $null = $sb.AppendLine("| Resource ID |")
-              $null = $sb.AppendLine("|-------------|")
+              $null = $sb.AppendLine("| # | Type de ressource | Nom |")
+              $null = $sb.AppendLine("|---|-------------------|-----|")
+
+              $i = 1
               foreach ($item in $items) {
-                  $rid = $item.resourceId
+                  $info = Get-ResourceInfo -resourceId $item.resourceId
+
+                  # Pour les Modify : ajouter les propriétés impactées en note sous le nom
                   if ($item.changeType -eq "Modify" -and $item.delta) {
                       $props = ($item.delta | ForEach-Object { $_.path }) -join ", "
-                      $null = $sb.AppendLine("| ``$rid`` _(props: $props)_ |")
+                      $null = $sb.AppendLine("| $i | ``$($info.Type)`` | **$($info.Name)** _(modifié: $props)_ |")
                   } else {
-                      $null = $sb.AppendLine("| ``$rid`` |")
+                      $null = $sb.AppendLine("| $i | ``$($info.Type)`` | $($info.Name) |")
                   }
+                  $i++
               }
+
               $null = $sb.AppendLine("")
               $null = $sb.AppendLine("</details>")
               $null = $sb.AppendLine("")
