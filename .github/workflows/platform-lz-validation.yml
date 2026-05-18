@@ -147,12 +147,13 @@ jobs:
 
           # 2. Si aucune sortie brute ou chaîne vide
           if ([string]::IsNullOrEmpty($changesJson) -or $changesJson -eq "[]") {
-              Write-Host "Aucun changement détecté."
-              exit 0
+                Write-Host "Aucun changement détecté."
+                exit 0
           }
 
           # 3. Convertir le JSON directement en vrais objets PowerShell (beaucoup plus robuste que de découper du TSV !)
-          $parsed = ConvertFrom-Json $changesJson
+          $singleStringJson = $changesJson -join "`n"
+          $parsed = ConvertFrom-Json $singleStringJson
 
           # 4. Regroupement par catégorie (comptage sécurisé si 0 ou 1 ressource)
           $created   = @($parsed | Where-Object ChangeType -eq "Create")
