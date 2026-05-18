@@ -34,22 +34,12 @@ echo "Assigning RBAC role at Root Management Group..."
 az role assignment create \
   --assignee "$APP_ID" \
   --role Owner \
-  --scope /providers/Microsoft.Management/managementGroups/$ROOT_MG_ID
-
-az role assignment create \
-  --assignee "$APP_ID" \
-  --role "Management Group Contributor" \
-  --scope /providers/Microsoft.Management/managementGroups/$ROOT_MG_ID
-
-az role assignment create \
-  --assignee "$APP_ID" \
-  --role "Resource Policy Contributor" \
-  --scope /providers/Microsoft.Management/managementGroups/$ROOT_MG_ID
+  --scope "/"
 
 az role assignment create \
   --assignee "$APP_ID" \
   --role "User Access Administrator" \
-  --scope /providers/Microsoft.Management/managementGroups/$ROOT_MG_ID
+  --scope "/"
 
 echo "Adding Federated Credential (OIDC)..."
 az ad app federated-credential create \

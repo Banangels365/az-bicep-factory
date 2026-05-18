@@ -1,5 +1,5 @@
-// platform-lz/modules/policy_assignment.bicep
-// Azure Policy Assignment module
+// platform-lz/modules/ppolicy_assignment.bicep
+// Azure Policy Assignment module (management group scope)
 
 targetScope = 'managementGroup'
 
@@ -45,28 +45,38 @@ param nonComplianceMessages array = []
 @description('Metadata for the assignment')
 param metadata object = {}
 
+// ======================================================================
 // Policy Assignment Resource
+// ======================================================================
 resource policyAssignment 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
   name: assignmentName
+
+  // L'identité doit être conditionnelle
   location: identityType == 'SystemAssigned' ? location : null
-  identity: identityType != 'None'
-    ? {
+
+  identity: identityType == 'None'
+    ? null
+    : {
         type: identityType
       }
-    : null
+
   properties: {
     displayName: displayName
     description: assignmentDescription
     policyDefinitionId: policyDefinitionId
     parameters: parameters
     enforcementMode: enforcementMode
-    resourceSelectors: !empty(resourceSelectors) ? resourceSelectors : null
-    nonComplianceMessages: !empty(nonComplianceMessages) ? nonComplianceMessages : null
-    metadata: !empty(metadata) ? metadata : null
+
+    // Ces propriétés doivent être null si vides
+    resourceSelectors: resourceSelectors == [] ? null : resourceSelectors
+    nonComplianceMessages: nonComplianceMessages == [] ? null : nonComplianceMessages
+    metadata: metadata == {} ? null : metadata
   }
 }
 
+// ======================================================================
 // Outputs
+// ======================================================================
 @description('Policy assignment ID')
 output assignmentId string = policyAssignment.id
 

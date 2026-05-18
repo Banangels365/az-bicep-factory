@@ -2,17 +2,18 @@ name: ALZ - Platform-LZ Validation
 
 on:
   push:
-    paths:
-      - 'platform-lz/**'
-      - '.github/workflows/platform-lz-validation.yml'
     branches-ignore:
       - main
-  pull_request:
     paths:
       - 'platform-lz/**'
       - '.github/workflows/platform-lz-validation.yml'
-    branches:
-      - main # On veut valider quand on cible main
+
+  pull_request:
+    branches-ignore:
+      - main
+    paths:
+      - 'platform-lz/**'
+      - '.github/workflows/platform-lz-validation.yml'
 
 permissions:
   contents: read
@@ -22,34 +23,53 @@ defaults:
   run:
     working-directory: ./platform-lz
 
-jobs:
-  validate:
-    name: Validate Bicep Files & Security
-    runs-on: ubuntu-latest
-    environment: Sandbox
+env:
+  LOCATION: canadaeast
+  # ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
 
-    env:
-      LOCATION: canadaeast
-      ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
+jobs:
+
+  # =========================================================
+  # JOB 1 - BICEP LINT
+  # =========================================================
+
+  lint:
+    name: Build & Lint Bicep
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- ÉTAPE 1 : ANALYSE STATIQUE (Rapide & Gratuit) ---
+      - name: Install Bicep
+        run: az bicep install
 
-      - name: Build & Lint all Bicep files
+      - name: Build all Bicep files
         run: |
           for file in $(find . -name '*.bicep' -not -path './.git/*'); do
+            echo "Validating $file"
             az bicep build --file "$file"
           done
+
+  # =========================================================
+  # JOB 2 - SECURITY ANALYSIS
+  # =========================================================
+
+  security:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@master
         with:
-          directory: ./platform-lz
           framework: bicep
-          soft_fail: false # Bloque si erreurs de sécurité
+          directory: ./platform-lz
+          soft_fail: true
 
       - name: PSRule for Azure
         uses: microsoft/ps-rule@v2.9.0
@@ -57,7 +77,19 @@ jobs:
           modules: PSRule.Rules.Azure
           inputPath: ./platform-lz
 
-      # --- ÉTAPE 2 : VALIDATION AZURE (Nécessite Connexion) ---
+  # =========================================================
+  # JOB 3 - AZURE VALIDATION
+  # =========================================================
+
+  validate:
+    name: Azure Validate
+    runs-on: ubuntu-latest
+    needs: security
+    environment: Sandbox
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -66,24 +98,168 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Install Bicep
+        run: az bicep install
+
       - name: Validate Platform-LZ deployment
         run: |
           az deployment mg validate \
             --name platform-lz-validation \
-            --management-group-id $ROOT_MG_ID \
-            --location $LOCATION \
+            --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} \
+            --location ${{ env.LOCATION }} \
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
 
-      - name: Platform-LZ What-If
-        run: |
-          az deployment mg what-if \
-            --name platform-lz-whatif \
-            --management-group-id $ROOT_MG_ID \
-            --location $LOCATION \
-            --template-file ./platform.bicep \
-            --parameters ./platform.bicepparam 
+  # =========================================================
+  # JOB 4 - WHAT-IF SUMMARY
+  # =========================================================
 
-      - name: Azure Logout
-        if: always()
-        run: az logout
+  whatif-summary:
+    name: What-If Change Summary
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: Sandbox
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Generate Change Summary
+        shell: pwsh
+        env:
+          AZURE_CLI_DISABLE_PROGRESS: true
+        run: |
+          # 1. Run what-if
+          $rawOutput = az deployment mg what-if `
+              --name platform-lz-whatif `
+              --management-group-id "${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}" `
+              --location "${{ env.LOCATION }}" `
+              --template-file ./platform.bicep `
+              --parameters ./platform.bicepparam `
+              --no-pretty-print 2>&1
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ What-if command failed:"
+              $rawOutput | Write-Host
+              exit 1
+          }
+
+          # 2. Parser le JSON
+          $json = $rawOutput -join "`n"
+          try {
+              $whatif = $json | ConvertFrom-Json -ErrorAction Stop
+          } catch {
+              Write-Host "❌ JSON parsing error: $_"
+              Write-Host "Premiers 500 caractères : $($json.Substring(0, [Math]::Min(500, $json.Length)))"
+              exit 1
+          }
+
+          # 3. Extraire les changes
+          $changes = $whatif.changes
+          if (-not $changes) { $changes = $whatif.properties.changes }
+          if (-not $changes) {
+              Write-Host "❌ Propriété 'changes' introuvable."
+              exit 1
+          }
+
+          # 4. Grouper par changeType
+          $created     = @($changes | Where-Object { $_.changeType -eq "Create" })
+          $deleted     = @($changes | Where-Object { $_.changeType -eq "Delete" })
+          $modified    = @($changes | Where-Object { $_.changeType -eq "Modify" })
+          $nochange    = @($changes | Where-Object { $_.changeType -eq "NoChange" })
+          $unsupported = @($changes | Where-Object { $_.changeType -eq "Unsupported" })
+
+          # 5. Console log
+          Write-Host "Created    : $($created.Count)"
+          Write-Host "Deleted    : $($deleted.Count)"
+          Write-Host "Modified   : $($modified.Count)"
+          Write-Host "No Change  : $($nochange.Count)"
+          Write-Host "Unsupported: $($unsupported.Count)"
+
+          # 6. Fonction utilitaire : décompose un resourceId en segments lisibles
+          #    Exemple : .../policyAssignments/03-network-Assignment
+          #    → Type  : Microsoft.Authorization/policyAssignments
+          #    → Nom   : 03-network-Assignment
+          function Get-ResourceInfo {
+              param([string]$resourceId)
+
+              $segments = $resourceId -split '/providers/' | Select-Object -Last 1
+              $parts    = $segments -split '/', 3
+
+              $provider = $parts[0]          # ex: Microsoft.Authorization
+              $kind     = $parts[1]          # ex: policyAssignments
+              $name     = $parts[2]          # ex: 03-network-Assignment (peut contenir des sous-ressources)
+
+              return [PSCustomObject]@{
+                  Type = "$provider/$kind"
+                  Name = $name
+              }
+          }
+
+          # 7. GitHub Job Summary
+          $summary = [System.Text.StringBuilder]::new()
+
+          $null = $summary.AppendLine("## 📋 Platform-LZ — What-If Change Summary")
+          $null = $summary.AppendLine("")
+          $null = $summary.AppendLine("| Type | Count |")
+          $null = $summary.AppendLine("|------|-------|")
+          $null = $summary.AppendLine("| ✅ Created     | $($created.Count) |")
+          $null = $summary.AppendLine("| 🗑️ Deleted     | $($deleted.Count) |")
+          $null = $summary.AppendLine("| ✏️ Modified    | $($modified.Count) |")
+          $null = $summary.AppendLine("| ➡️ No Change   | $($nochange.Count) |")
+          $null = $summary.AppendLine("| ⚠️ Unsupported | $($unsupported.Count) |")
+          $null = $summary.AppendLine("")
+
+          function Add-Section {
+              param(
+                  [System.Text.StringBuilder]$sb,
+                  [string]$emoji,
+                  [string]$title,
+                  [array]$items
+              )
+              if ($items.Count -eq 0) { return }
+
+              $null = $sb.AppendLine("<details>")
+              $null = $sb.AppendLine("<summary>$emoji <strong>$title ($($items.Count))</strong></summary>")
+              $null = $sb.AppendLine("")
+              $null = $sb.AppendLine("| # | Type de ressource | Nom |")
+              $null = $sb.AppendLine("|---|-------------------|-----|")
+
+              $i = 1
+              foreach ($item in $items) {
+                  $info = Get-ResourceInfo -resourceId $item.resourceId
+
+                  # Pour les Modify : ajouter les propriétés impactées en note sous le nom
+                  if ($item.changeType -eq "Modify" -and $item.delta) {
+                      $props = ($item.delta | ForEach-Object { $_.path }) -join ", "
+                      $null = $sb.AppendLine("| $i | ``$($info.Type)`` | **$($info.Name)** _(modifié: $props)_ |")
+                  } else {
+                      $null = $sb.AppendLine("| $i | ``$($info.Type)`` | $($info.Name) |")
+                  }
+                  $i++
+              }
+
+              $null = $sb.AppendLine("")
+              $null = $sb.AppendLine("</details>")
+              $null = $sb.AppendLine("")
+          }
+
+          Add-Section -sb $summary -emoji "✅" -title "Created"     -items $created
+          Add-Section -sb $summary -emoji "🗑️" -title "Deleted"     -items $deleted
+          Add-Section -sb $summary -emoji "✏️" -title "Modified"    -items $modified
+          Add-Section -sb $summary -emoji "➡️" -title "No Change"   -items $nochange
+          Add-Section -sb $summary -emoji "⚠️" -title "Unsupported" -items $unsupported
+
+          $null = $summary.AppendLine("---")
+          $null = $summary.AppendLine("_Run: ``${{ github.run_id }}`` · Branch: ``${{ github.ref_name }}`` · Commit: ``${{ github.sha }}``_")
+
+          $summary.ToString() | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+          exit 0

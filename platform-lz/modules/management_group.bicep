@@ -1,9 +1,9 @@
 // platform-lz/modules/management_group.bicep
-// Management Group module for Azure Landing Zone hierarchy
+// Module de création de Management Group pour Azure Landing Zone
 
 targetScope = 'tenant'
 
-@description('ID du groupe d\'administration') // Doit être unique dans le locataire, 1-90 caractères, lettres, chiffres et tirets autorisés
+@description('ID du groupe d\'administration (1-90 caractères, lettres, chiffres, tirets)')
 @minLength(1)
 @maxLength(90)
 param managementGroupId string
@@ -11,28 +11,34 @@ param managementGroupId string
 @description('Nom d\'affichage pour le groupe d\'administration')
 param displayName string
 
-@description('ID du groupe d\'administration parent (optionnel). Laisser vide pour créer un groupe d\'administration au niveau racine.')
+@description('ID du groupe d\'administration parent (optionnel). Laisser vide pour créer au niveau racine.')
 param parentManagementGroupId string = ''
 
-@description('IDs des abonnements à associer au groupe d\'administration')
+@description('Liste des abonnements à associer au groupe d\'administration')
 param subscriptionIds array = []
 
-// Management Group Resource
+// ======================================================================
+// 1) Création du Management Group
+// ======================================================================
 resource managementGroup 'Microsoft.Management/managementGroups@2023-04-01' = {
   name: managementGroupId
   properties: {
     displayName: displayName
-    details: {
-      parent: !empty(parentManagementGroupId)
-        ? {
+
+    // L'objet "details" doit être entièrement conditionnel
+    details: empty(parentManagementGroupId)
+      ? null
+      : {
+          parent: {
             id: tenantResourceId('Microsoft.Management/managementGroups', parentManagementGroupId)
           }
-        : null
-    }
+        }
   }
 }
 
-// Associate subscriptions to management group
+// ======================================================================
+// 2) Association des abonnements au Management Group
+// ======================================================================
 resource subscriptionAssociations 'Microsoft.Management/managementGroups/subscriptions@2023-04-01' = [
   for subscriptionId in subscriptionIds: {
     parent: managementGroup
@@ -40,7 +46,9 @@ resource subscriptionAssociations 'Microsoft.Management/managementGroups/subscri
   }
 ]
 
-// Outputs
+// ======================================================================
+// 3) Sorties
+// ======================================================================
 @description('ID du groupe d\'administration')
 output managementGroupId string = managementGroup.id
 
