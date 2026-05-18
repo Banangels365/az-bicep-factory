@@ -136,7 +136,7 @@ jobs:
         env:
           AZURE_CLI_DISABLE_PROGRESS: true
         run: |
-          # 1. Run what-if — capturer stdout et stderr séparément
+          # 1. Run what-if
           $rawOutput = az deployment mg what-if `
               --name platform-lz-whatif `
               --management-group-id "${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}" `
@@ -147,88 +147,93 @@ jobs:
 
           if ($LASTEXITCODE -ne 0) {
               Write-Host "❌ What-if command failed:"
-              Write-Host $rawOutput
+              $rawOutput | Write-Host
               exit 1
           }
 
-          # DEBUG — afficher les 60 premières lignes avec leur index et représentation exacte
-          Write-Host "=== DEBUG RAW OUTPUT (60 premières lignes) ==="
-          $rawOutput | Select-Object -First 60 | ForEach-Object -Begin { $i = 0 } -Process {
-              Write-Host "$i : $([System.Web.HttpUtility]::HtmlEncode($_) -replace '&amp;','&') → [$_]"
-              $i++
+          # 2. Rejoindre le tableau de strings en une seule string puis parser
+          $json = $rawOutput -join "`n"
+          try {
+              $whatif = $json | ConvertFrom-Json -ErrorAction Stop
+          } catch {
+              Write-Host "❌ JSON parsing error: $_"
+              Write-Host "Premiers 500 caractères : $($json.Substring(0, [Math]::Min(500, $json.Length)))"
+              exit 1
           }
-          Write-Host "=== FIN DEBUG ==="
+
+          # 3. Extraire les changes
+          $changes = $whatif.changes
+          if (-not $changes) { $changes = $whatif.properties.changes }
+          if (-not $changes) {
+              Write-Host "❌ Propriété 'changes' introuvable."
+              exit 1
+          }
+
+          # 4. Grouper par changeType
+          $created     = @($changes | Where-Object { $_.changeType -eq "Create" })
+          $deleted     = @($changes | Where-Object { $_.changeType -eq "Delete" })
+          $modified    = @($changes | Where-Object { $_.changeType -eq "Modify" })
+          $nochange    = @($changes | Where-Object { $_.changeType -eq "NoChange" })
+          $unsupported = @($changes | Where-Object { $_.changeType -eq "Unsupported" })
+
+          # 5. Console log
+          Write-Host "Created    : $($created.Count)"
+          Write-Host "Deleted    : $($deleted.Count)"
+          Write-Host "Modified   : $($modified.Count)"
+          Write-Host "No Change  : $($nochange.Count)"
+          Write-Host "Unsupported: $($unsupported.Count)"
+
+          # 6. GitHub Job Summary
+          $summary = [System.Text.StringBuilder]::new()
+
+          $null = $summary.AppendLine("## 📋 Platform-LZ — What-If Change Summary")
+          $null = $summary.AppendLine("")
+          $null = $summary.AppendLine("| Type | Count |")
+          $null = $summary.AppendLine("|------|-------|")
+          $null = $summary.AppendLine("| ✅ Created     | $($created.Count) |")
+          $null = $summary.AppendLine("| 🗑️ Deleted     | $($deleted.Count) |")
+          $null = $summary.AppendLine("| ✏️ Modified    | $($modified.Count) |")
+          $null = $summary.AppendLine("| ➡️ No Change   | $($nochange.Count) |")
+          $null = $summary.AppendLine("| ⚠️ Unsupported | $($unsupported.Count) |")
+          $null = $summary.AppendLine("")
+
+          function Add-Section {
+              param(
+                  [System.Text.StringBuilder]$sb,
+                  [string]$emoji,
+                  [string]$title,
+                  [array]$items
+              )
+              if ($items.Count -eq 0) { return }
+
+              $null = $sb.AppendLine("<details>")
+              $null = $sb.AppendLine("<summary>$emoji <strong>$title ($($items.Count))</strong></summary>")
+              $null = $sb.AppendLine("")
+              $null = $sb.AppendLine("| Resource ID |")
+              $null = $sb.AppendLine("|-------------|")
+              foreach ($item in $items) {
+                  $rid = $item.resourceId
+                  if ($item.changeType -eq "Modify" -and $item.delta) {
+                      $props = ($item.delta | ForEach-Object { $_.path }) -join ", "
+                      $null = $sb.AppendLine("| ``$rid`` _(props: $props)_ |")
+                  } else {
+                      $null = $sb.AppendLine("| ``$rid`` |")
+                  }
+              }
+              $null = $sb.AppendLine("")
+              $null = $sb.AppendLine("</details>")
+              $null = $sb.AppendLine("")
+          }
+
+          Add-Section -sb $summary -emoji "✅" -title "Created"     -items $created
+          Add-Section -sb $summary -emoji "🗑️" -title "Deleted"     -items $deleted
+          Add-Section -sb $summary -emoji "✏️" -title "Modified"    -items $modified
+          Add-Section -sb $summary -emoji "➡️" -title "No Change"   -items $nochange
+          Add-Section -sb $summary -emoji "⚠️" -title "Unsupported" -items $unsupported
+
+          $null = $summary.AppendLine("---")
+          $null = $summary.AppendLine("_Run: ``${{ github.run_id }}`` · Branch: ``${{ github.ref_name }}`` · Commit: ``${{ github.sha }}``_")
+
+          $summary.ToString() | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
           exit 0
-
-
-          # $created     = [System.Collections.Generic.List[string]]::new()
-          # $deleted     = [System.Collections.Generic.List[string]]::new()
-          # $modified    = [System.Collections.Generic.List[string]]::new()
-          # $nochange    = [System.Collections.Generic.List[string]]::new()
-          # $unsupported = [System.Collections.Generic.List[string]]::new()
-
-          # foreach ($line in $rawOutput) {
-          #     # Les lignes de ressources suivent le pattern : "SYMBOL ResourceType/name [apiVersion]"
-          #     if ($line -match '^(\s{2})([\w.]+/[\w./\-]+)\s') { $nochange.Add($Matches[2]) }
-          #     elseif ($line -match '^\s*\+\s+([\w.]+/[\w./\-]+)\s')  { $created.Add($Matches[1]) }
-          #     elseif ($line -match '^\s*-\s+([\w.]+/[\w./\-]+)\s')   { $deleted.Add($Matches[1]) }
-          #     elseif ($line -match '^\s*~\s+([\w.]+/[\w./\-]+)\s')   { $modified.Add($Matches[1]) }
-          #     elseif ($line -match '^\s*x\s+([\w.]+/[\w./\-]+)\s')   { $unsupported.Add($Matches[1]) }
-          # }
-
-          # # 3. Console log (logs bruts)
-          # Write-Host "Created    : $($created.Count)"
-          # Write-Host "Deleted    : $($deleted.Count)"
-          # Write-Host "Modified   : $($modified.Count)"
-          # Write-Host "No Change  : $($nochange.Count)"
-          # Write-Host "Unsupported: $($unsupported.Count)"
-
-          # # 4. GitHub Job Summary
-          # $summary = [System.Text.StringBuilder]::new()
-
-          # $null = $summary.AppendLine("## 📋 Platform-LZ — What-If Change Summary")
-          # $null = $summary.AppendLine("")
-          # $null = $summary.AppendLine("| Type | Count |")
-          # $null = $summary.AppendLine("|------|-------|")
-          # $null = $summary.AppendLine("| ✅ Created     | $($created.Count) |")
-          # $null = $summary.AppendLine("| 🗑️ Deleted     | $($deleted.Count) |")
-          # $null = $summary.AppendLine("| ✏️ Modified    | $($modified.Count) |")
-          # $null = $summary.AppendLine("| ➡️ No Change   | $($nochange.Count) |")
-          # $null = $summary.AppendLine("| ⚠️ Unsupported | $($unsupported.Count) |")
-          # $null = $summary.AppendLine("")
-
-          # function Add-Section {
-          #     param(
-          #         [System.Text.StringBuilder]$sb,
-          #         [string]$emoji,
-          #         [string]$title,
-          #         [System.Collections.Generic.List[string]]$items
-          #     )
-          #     if ($items.Count -eq 0) { return }
-
-          #     $null = $sb.AppendLine("<details>")
-          #     $null = $sb.AppendLine("<summary>$emoji <strong>$title ($($items.Count))</strong></summary>")
-          #     $null = $sb.AppendLine("")
-          #     $null = $sb.AppendLine("| Resource |")
-          #     $null = $sb.AppendLine("|----------|")
-          #     foreach ($item in $items) {
-          #         $null = $sb.AppendLine("| ``$item`` |")
-          #     }
-          #     $null = $sb.AppendLine("")
-          #     $null = $sb.AppendLine("</details>")
-          #     $null = $sb.AppendLine("")
-          # }
-
-          # Add-Section -sb $summary -emoji "✅" -title "Created"     -items $created
-          # Add-Section -sb $summary -emoji "🗑️" -title "Deleted"     -items $deleted
-          # Add-Section -sb $summary -emoji "✏️" -title "Modified"    -items $modified
-          # Add-Section -sb $summary -emoji "➡️" -title "No Change"   -items $nochange
-          # Add-Section -sb $summary -emoji "⚠️" -title "Unsupported" -items $unsupported
-
-          # $null = $summary.AppendLine("---")
-          # $null = $summary.AppendLine("_Run: ``${{ github.run_id }}`` · Branch: ``${{ github.ref_name }}`` · Commit: ``${{ github.sha }}``_")
-
-          # $summary.ToString() | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-
-          # exit 0
