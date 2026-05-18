@@ -145,7 +145,7 @@ jobs:
               --output json
 
           # 2. Remplace NaN par null
-          $jsonClean = $jsonRaw -replace '\bNaN\b', 'null'
+          $jsonClean = $jsonRaw -replace 'NaN', 'null' -replace ':NaN', ':null' -replace '\[NaN\]', '[null]'
 
           # 3. Convertit en objets PowerShell
           $json = $jsonClean | ConvertFrom-Json
