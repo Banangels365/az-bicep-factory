@@ -141,7 +141,11 @@ jobs:
             --template-file ./platform.bicep `
             --parameters ./platform.bicepparam `
             --query "changes" `
-            --output json | ConvertFrom-Json
+            --output json
+
+          # Replace NaN values with null before parsing
+          $json = $json -replace '\bNaN\b', 'null'
+          $json = ConvertFrom-Json -InputObject $json
 
           $created  = ($json | Where-Object changeType -eq "Create").Count
           $deleted  = ($json | Where-Object changeType -eq "Delete").Count
