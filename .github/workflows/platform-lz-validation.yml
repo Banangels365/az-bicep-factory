@@ -141,7 +141,7 @@ jobs:
               --location ${{ env.LOCATION }} `
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
-              --query "changes[].{id:resourceId, type:changeType}" `
+              --query "changes[].{id: concat('/providers/', after.type, '/', after.name), type:changeType}" `
               --output tsv 2>$null
 
           # 2. Si aucune sortie
