@@ -208,3 +208,6 @@ jobs:
           if ($created)   { Write-Host "`n===== CREATED ====="; $created   | Select-Object resourceId, changeType | Format-Table -AutoSize }
           if ($deleted)   { Write-Host "`n===== DELETED ====="; $deleted   | Select-Object resourceId, changeType | Format-Table -AutoSize }
           if ($modified)  { Write-Host "`n===== MODIFIED ====="; $modified  | Select-Object resourceId, changeType | Format-Table -AutoSize }
+
+          # 9. Exit with success
+          exit 0
