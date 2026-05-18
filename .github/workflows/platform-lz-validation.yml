@@ -142,7 +142,7 @@ jobs:
               --location ${{ env.LOCATION }} `
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
-              --query "properties.changes[].{id:resourceId || after.id, type:changeType}":changeType}" `
+              --query "properties.changes[].{id:resourceId || after.id, type:changeType}" `
               --output json 2>$null
 
           # 2. Si aucune sortie brute ou chaîne vide
