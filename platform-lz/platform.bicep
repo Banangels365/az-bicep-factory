@@ -29,13 +29,13 @@ param managementSubscriptionId string
 @description('Tags à appliquer aux ressources')
 param tags object = {}
 
-// @description('Log Analytics retention in days')
-// @minValue(30)
-// @maxValue(730)
-// param logRetentionDays int = 90
+@description('Log Analytics retention in days')
+@minValue(30)
+@maxValue(730)
+param logRetentionDays int = 90
 
-// @description('Activer Microsoft Sentinel')
-// param enableSentinel bool = true
+@description('Activer Microsoft Sentinel')
+param enableSentinel bool = false
 
 // Variables
 // var logAnalyticsWorkspaceName = 'law-${organizationName}-platform-${environment}'
@@ -213,21 +213,24 @@ module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
 // 02-General-Policy Creation
 //---------------------------------
 
-param initiativeName02 string //= '02-General Initiative'
-param assignmentName02 string //= '02-General-Assignment'
-param initiativeDisplayName02 string //= '02-General Initiative'
-param assignmentDisplayName02 string //= '02-General Assignment'
-param allowedLocations array = []
+// param initiativeName02 string //= '02-General Initiative'
+// param assignmentName02 string //= '02-General-Assignment'
+// param initiativeDisplayName02 string //= '02-General Initiative'
+// param assignmentDisplayName02 string //= '02-General Assignment'
+// param allowedLocations array = []
 
 module generalPolicy './policies/02_General_Policy.bicep' = {
   name: 'deploy-02-general-policy'
   scope: subscription(managementSubscriptionId)
   params: {
-    initiativeName: initiativeName02
-    assignmentName: assignmentName02
-    initiativeDisplayName: initiativeDisplayName02
-    assignmentDisplayName: assignmentDisplayName02
-    allowedLocations: allowedLocations
+    initiativeName: '02-General Initiative'
+    assignmentName: '02-General Assignment'
+    initiativeDisplayName: '02-General Initiative'
+    assignmentDisplayName: '02-General Assignment'
+    allowedLocations: [
+      'canadacentral'
+      'canadaeast'
+    ]
   }
 }
 
@@ -235,23 +238,23 @@ module generalPolicy './policies/02_General_Policy.bicep' = {
 // 03-network-Policy Creation
 // ---------------------------
 
-param initiativeName03 string //='03-network-Initiative'
-param assignmentName03 string //='03-network-Assignment' //ne doit pas depasse 24 
-param assignmentDisplayName03 string //= '03-network-Assignment'
-param initiativeDisplayName03 string //= '03-network-Initiative'
-param initiativeCategory string //=  'General'
-param enforcementMode string //= 'Default'
+// param initiativeName03 string //='03-network-Initiative'
+// param assignmentName03 string //='03-network-Assignment' //ne doit pas depasse 24 
+// param assignmentDisplayName03 string //= '03-network-Assignment'
+// param initiativeDisplayName03 string //= '03-network-Initiative'
+// param initiativeCategory string //=  'General'
+// param enforcementMode string //= 'Default'
 
 module networkPolicy './policies/03_Network_Policy.bicep' = {
   name: 'deploy-03-network-policy'
   //scope: subscription(managementSubscriptionId)
   params: {
-    initiativeName: initiativeName03
-    assignmentName: assignmentName03
-    initiativeDisplayName: initiativeDisplayName03
-    assignmentDisplayName: assignmentDisplayName03
-    initiativeCategory: initiativeCategory
-    enforcementMode: enforcementMode
+    initiativeName: '03-network-Initiative'
+    assignmentName: '03-network-Assignment' //ne doit pas depasse 24 
+    initiativeDisplayName: '03-network-Assignment'
+    assignmentDisplayName: '03-network-Assignment'
+    initiativeCategory: 'General'
+    enforcementMode: 'Default'
   }
 }
 
@@ -259,21 +262,21 @@ module networkPolicy './policies/03_Network_Policy.bicep' = {
 // 04-keyVault-Policy Creation
 // ---------------------------
 
-param initiativeName04 string //= '04-Keyvault-RBAC-Initiative'
-param assignmentName04 string //= '04-Key-RBAC-Assignment' //ne doit pas depasse 24 characteres
-param initiativeDisplayName04 string //= '04-Keyvault-RBAC-Initiative'
-param assignmentDisplayName04 string //= '04-Keyvault-RBAC-Assignment'
-param kvRbacEffect string //= 'Audit'
+// param initiativeName04 string //= '04-Keyvault-RBAC-Initiative'
+// param assignmentName04 string //= '04-Key-RBAC-Assignment' //ne doit pas depasse 24 characteres
+// param initiativeDisplayName04 string //= '04-Keyvault-RBAC-Initiative'
+// param assignmentDisplayName04 string //= '04-Keyvault-RBAC-Assignment'
+// param kvRbacEffect string //= 'Audit'
 
 module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
   name: 'deploy-04-keyVault-policy'
   //scope: subscription(managementSubscriptionId)
   params: {
-    initiativeName: initiativeName04
-    assignmentName: assignmentName04
-    initiativeDisplayName: initiativeDisplayName04
-    assignmentDisplayName: assignmentDisplayName04
-    kvRbacEffect: kvRbacEffect
+    initiativeName: '04-Keyvault-RBAC-Initiative'
+    assignmentName: '04-Key-RBAC-Assignment'
+    initiativeDisplayName: '04-Keyvault-RBAC-Initiative'
+    assignmentDisplayName: '04-Keyvault-RBAC-Assignment'
+    kvRbacEffect: 'Audit'
   }
 }
 
@@ -281,33 +284,37 @@ module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
 // 05-VM-Policy Creation
 // ---------------------------
 
-param initiativeName05 string //= '05-VM-Initiative'
-param assignmentName05 string //= '05-VM-Assignment' //ne doit pas depasse 24 characteres
-param initiativeDisplayName05 string //= '05-VM Initiative'
-param assignmentDisplayName05 string //= '05-VM Assignment'
+// param initiativeName05 string //= '05-VM-Initiative'
+// param assignmentName05 string //= '05-VM-Assignment' //ne doit pas depasse 24 characteres
+// param initiativeDisplayName05 string //= '05-VM Initiative'
+// param assignmentDisplayName05 string //= '05-VM Assignment'
 
-// Liste d’exemple des SKUs autorisés
-param allowedVmSkus array /*= [
-  'Standard_B2s'
-  'Standard_DS1_v2'
-  'Standard_DS2_v2'
-]*/
+// // Liste d’exemple des SKUs autorisés
+// param allowedVmSkus array /*= [
+//   'Standard_B2s'
+//   'Standard_DS1_v2'
+//   'Standard_DS2_v2'
+// ]*/
 
 // Azure Backup (Audit) — tu peux commenter cette ligne pour utiliser la defaultValue de l’initiative
 // param backupEffect = 'AuditIfNotExists'
 // Pour désactiver l’audit (temporairement) :
-param backupEffect string = 'Disabled'
+// param backupEffect string = 'Disabled'
 
 module vmPolicy './policies/05_VM_Policy.bicep' = {
   name: 'deploy-05-vm-policy'
   //scope: subscription(managementSubscriptionId)
   params: {
-    initiativeName: initiativeName05
-    assignmentName: assignmentName05
-    initiativeDisplayName: initiativeDisplayName05
-    assignmentDisplayName: assignmentDisplayName05
-    allowedVmSkus: allowedVmSkus
-    backupEffect: backupEffect
+    initiativeName: '05-VM-Initiative'
+    assignmentName: '05-VM-Assignment'
+    initiativeDisplayName: '05-VM Initiative'
+    assignmentDisplayName: '05-VM Assignment'
+    allowedVmSkus: [
+      'Standard_B2s'
+      'Standard_DS1_v2'
+      'Standard_DS2_v2'
+    ]
+    backupEffect: 'Disabled' // Utiliser 'AuditIfNotExists' pour activer l’audit, ou 'Disabled' pour désactiver temporairement l’audit
   }
 }
 
@@ -315,33 +322,33 @@ module vmPolicy './policies/05_VM_Policy.bicep' = {
 // 06-StorageAccount-Policy Creation
 // ----------------------------------
 
-param initiativeName06 string //= '06-StorageAccountInitiative'
-param assignmentName06 string //= '06-StorageAccountAssign' //ne doit pas depasse 24 characteres
-param initiativeDisplayName06 string //= '06-StorageAccount Initiative' // The policy assignment name length must not exceed '24' characters
-param assignmentDisplayName06 string //= '06-StorageAccount Assignment'
+// param initiativeName06 string //= '06-StorageAccountInitiative'
+// param assignmentName06 string //= '06-StorageAccountAssign' //ne doit pas depasse 24 characteres
+// param initiativeDisplayName06 string //= '06-StorageAccount Initiative' // The policy assignment name length must not exceed '24' characters
+// param assignmentDisplayName06 string //= '06-StorageAccount Assignment'
 
-// région pour la Managed Identity de l’assignation (utile si un effet Modify est actif).
-param assignmentLocation string //= 'canadacentral'
+// // région pour la Managed Identity de l’assignation (utile si un effet Modify est actif).
+// param assignmentLocation string //= 'canadacentral'
 
-// Effects au choix
-param secureTransferEffect string //= 'Modify'   // ou 'Disabled'
-param tlsEffect string //= 'Audit'    // 'Audit' | 'Deny' | 'Disabled'
-param minimumTlsVersion string //= 'TLS1_2'   // 'TLS1_0' | 'TLS1_1' | 'TLS1_2'
-param publicAccessEffect string //= 'Deny'     // 'Audit' | 'Deny' | 'Disabled'
+// // Effects au choix
+// param secureTransferEffect string //= 'Modify'   // ou 'Disabled'
+// param tlsEffect string //= 'Audit'    // 'Audit' | 'Deny' | 'Disabled'
+// param minimumTlsVersion string //= 'TLS1_2'   // 'TLS1_0' | 'TLS1_1' | 'TLS1_2'
+// param publicAccessEffect string //= 'Deny'     // 'Audit' | 'Deny' | 'Disabled'
 
 module storageAccount './policies/06_StorageAccount_Policy.bicep' = {
   name: 'deploy-06-storageaccount-policy'
   //scope: subscription(managementSubscriptionId)
   params: {
-    initiativeName: initiativeName06
-    assignmentName: assignmentName06
-    initiativeDisplayName: initiativeDisplayName06
-    assignmentDisplayName: assignmentDisplayName06
-    assignmentLocation: assignmentLocation
-    minimumTlsVersion: minimumTlsVersion
-    publicAccessEffect: publicAccessEffect
-    secureTransferEffect: secureTransferEffect
-    tlsEffect: tlsEffect
+    initiativeName: '06-StorageAccountInitiative'
+    assignmentName: '06-StorageAccountAssign' //ne doit pas depasse 24 characteres
+    initiativeDisplayName: '06-StorageAccount Initiative' // Ne doit pas depasse 24 characteres
+    assignmentDisplayName: '06-StorageAccount Assignment'
+    assignmentLocation: deployment().location
+    minimumTlsVersion: 'TLS1_2' // Utiliser 'TLS1_2' pour exiger TLS 1.2, ou 'Disabled' pour ne pas appliquer cette règle
+    publicAccessEffect: 'Deny' // Utiliser 'Deny' pour bloquer les comptes de stockage qui permettent l’accès public, 'Audit' pour auditer les comptes de stockage qui permettent l’accès public, ou 'Disabled' pour ne pas appliquer cette règle
+    secureTransferEffect: 'Modify' // Utiliser 'Modify' pour forcer le secure transfer, ou 'Disabled' pour ne pas appliquer cette règle
+    tlsEffect: 'Audit' // Utiliser 'Audit' pour auditer les comptes de stockage qui n’utilisent pas TLS 1.2, 'Deny' pour bloquer la création de comptes de stockage qui n’utilisent pas TLS 1.2, ou 'Disabled' pour ne pas appliquer cette règle
   }
 }
 
@@ -410,30 +417,30 @@ module monitoringRg './modules/resource_group.bicep' = if (!empty(managementSubs
 // ============================================
 
 // Log Analytics Workspace
-// module logAnalytics 'log-analytics-workspace/main.bicep' = {
-//   name: 'deploy-log-analytics'
-//   scope: resourceGroup(managementSubscriptionId, resourceGroupName)
-//   params: {
-//     workspaceName: logAnalyticsWorkspaceName
-//     location: location
-//     sku: 'PerGB2018'
-//     retentionInDays: logRetentionDays
-//     dailyQuotaGb: 0
-//     enableSentinel: enableSentinel
-//     solutions: [
-//       'SecurityCenterFree'
-//       'Updates'
-//       'VMInsights'
-//       'ChangeTracking'
-//       'AzureActivity'
-//       'AgentHealthAssessment'
-//     ]
-//     tags: tags
-//   }
-//   dependsOn: [
-//     managementRg
-//   ]
-// }
+module logAnalytics './modules/log_analytics_workspace.bicep' = {
+  name: 'deploy-log-analytics'
+  scope: resourceGroup(managementSubscriptionId, 'rg-${organizationName}-${environment}-${location}-monitoring')
+  params: {
+    workspaceName: 'law-${organizationName}-${environment}-${location}'
+    location: location
+    sku: 'PerGB2018'
+    retentionInDays: logRetentionDays
+    dailyQuotaGb: 0
+    enableSentinel: enableSentinel
+    solutions: [
+      'SecurityCenterFree'
+      'Updates'
+      'VMInsights'
+      'ChangeTracking'
+      'AzureActivity'
+      'AgentHealthAssessment'
+    ]
+    tags: tags
+  }
+  dependsOn: [
+    monitoringRg
+  ]
+}
 
 // ============================================
 // OUTPUTS
@@ -463,9 +470,9 @@ output policyInitiatives object = {
   storageAccount: storageAccount.outputs.initiativeId
 }
 
-// output logAnalyticsWorkspaceId string = logAnalytics.outputs.workspaceId
-// output logAnalyticsWorkspaceName string = logAnalytics.outputs.workspaceName
-// output logAnalyticsCustomerId string = logAnalytics.outputs.customerId
+output logAnalyticsWorkspaceId string = logAnalytics.outputs.workspaceId
+output logAnalyticsWorkspaceName string = logAnalytics.outputs.workspaceName
+output logAnalyticsCustomerId string = logAnalytics.outputs.customerId
 
 // output policyInitiativeId string = lzBaselineInitiative.outputs.initiativeId
 // output prodPolicyAssignmentId string = prodPolicyAssignment.outputs.assignmentId
