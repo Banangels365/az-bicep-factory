@@ -156,61 +156,108 @@ jobs:
           
           # 3. Extract valid JSON (handle both objects and arrays)
           $start = $cleanJson.IndexOf('{')
-          if ($start -eq -1) {
-              $start = $cleanJson.IndexOf('[')
-          }
+          if ($start -eq -1) { $start = $cleanJson.IndexOf('[') }
           if ($start -eq -1) {
               Write-Host "❌ No valid JSON found in output. Raw output:"
               Write-Host $cleanJson
               exit 1
           }
-          
-          # Extract JSON text from the first valid character
           $jsonText = $cleanJson.Substring($start)
 
           # 4. Parse JSON with error handling
           try {
               $whatif = $jsonText | ConvertFrom-Json -ErrorAction Stop
           } catch {
-              Write-Host "❌ JSON parsing error:"
-              Write-Host "Error: $_"
-              Write-Host "First 2000 characters of extracted text:"
+              Write-Host "❌ JSON parsing error: $_"
+              Write-Host "First 2000 characters:"
               Write-Host $jsonText.Substring(0, [Math]::Min(2000, $jsonText.Length))
               exit 1
           }
               
           # 5. Extract changes
           $changes = $whatif.changes
-          if (-not $changes) {
-              $changes = $whatif.properties.changes
-          }
+          if (-not $changes) { $changes = $whatif.properties.changes }
           if (-not $changes) {
               Write-Host "❌ No 'changes' property found. JSON structure:"
               $whatif | ConvertTo-Json -Depth 10 | Write-Host
               exit 1
           }
 
-          # 6. Group changes
+          # 6. Group changes by type
           $created   = @($changes | Where-Object { $_.changeType -eq "Create" })
           $deleted   = @($changes | Where-Object { $_.changeType -eq "Delete" })
           $modified  = @($changes | Where-Object { $_.changeType -eq "Modify" })
           $nochange  = @($changes | Where-Object { $_.changeType -eq "NoChange" })
+          $unsupported = @($changes | Where-Object { $_.changeType -eq "Unsupported" })
 
-          # 7. Summary
-          Write-Host ""
-          Write-Host "==================================="
-          Write-Host "Platform-LZ Change Summary"
-          Write-Host "==================================="
-          Write-Host "Created   : $($created.Count)"
-          Write-Host "Deleted   : $($deleted.Count)"
-          Write-Host "Modified  : $($modified.Count)"
-          Write-Host "No Change : $($nochange.Count)"
-          Write-Host "==================================="
+          # -------------------------------------------------------
+          # 7. GitHub Job Summary  (visible dans l'UI de la PR/run)
+          # -------------------------------------------------------
+          $summary = [System.Text.StringBuilder]::new()
 
-          # 8. Details
-          if ($created)   { Write-Host "`n===== CREATED ====="; $created   | Select-Object resourceId, changeType | Format-Table -AutoSize }
-          if ($deleted)   { Write-Host "`n===== DELETED ====="; $deleted   | Select-Object resourceId, changeType | Format-Table -AutoSize }
-          if ($modified)  { Write-Host "`n===== MODIFIED ====="; $modified  | Select-Object resourceId, changeType | Format-Table -AutoSize }
+          # En-tête
+          $null = $summary.AppendLine("## 📋 Platform-LZ — What-If Change Summary")
+          $null = $summary.AppendLine("")
+          $null = $summary.AppendLine("| Type | Count |")
+          $null = $summary.AppendLine("|------|-------|")
+          $null = $summary.AppendLine("| ✅ Created    | $($created.Count) |")
+          $null = $summary.AppendLine("| 🗑️ Deleted    | $($deleted.Count) |")
+          $null = $summary.AppendLine("| ✏️ Modified   | $($modified.Count) |")
+          $null = $summary.AppendLine("| ➡️ No Change  | $($nochange.Count) |")
+          $null = $summary.AppendLine("| ⚠️ Unsupported| $($unsupported.Count) |")
+          $null = $summary.AppendLine("")
 
-          # 9. Exit with success
+          # Fonction utilitaire : génère un bloc détail par type
+          function Add-Section {
+              param(
+                  [System.Text.StringBuilder]$sb,
+                  [string]$emoji,
+                  [string]$title,
+                  [array]$items
+              )
+              if ($items.Count -eq 0) { return }
+
+              $null = $sb.AppendLine("<details>")
+              $null = $sb.AppendLine("<summary>$emoji <strong>$title ($($items.Count))</strong></summary>")
+              $null = $sb.AppendLine("")
+              $null = $sb.AppendLine("| Resource ID | Type de changement |")
+              $null = $sb.AppendLine("|-------------|-------------------|")
+
+              foreach ($item in $items) {
+                  $rid = $item.resourceId
+                  $ct  = $item.changeType
+
+                  # Détail des propriétés modifiées (uniquement pour Modify)
+                  if ($ct -eq "Modify" -and $item.delta) {
+                      $props = ($item.delta | ForEach-Object { $_.path }) -join ", "
+                      $null = $sb.AppendLine("| ``$rid`` | $ct — props: ``$props`` |")
+                  } else {
+                      $null = $sb.AppendLine("| ``$rid`` | $ct |")
+                  }
+              }
+
+              $null = $sb.AppendLine("")
+              $null = $sb.AppendLine("</details>")
+              $null = $sb.AppendLine("")
+          }
+
+          Add-Section -sb $summary -emoji "✅" -title "Created"     -items $created
+          Add-Section -sb $summary -emoji "🗑️" -title "Deleted"     -items $deleted
+          Add-Section -sb $summary -emoji "✏️" -title "Modified"    -items $modified
+          Add-Section -sb $summary -emoji "➡️" -title "No Change"   -items $nochange
+          Add-Section -sb $summary -emoji "⚠️" -title "Unsupported" -items $unsupported
+
+          # Métadonnées
+          $null = $summary.AppendLine("---")
+          $null = $summary.AppendLine("_Run: ``${{ github.run_id }}`` · Branch: ``${{ github.ref_name }}`` · Commit: ``${{ github.sha }}``_")
+
+          # Écriture dans le fichier GITHUB_STEP_SUMMARY
+          $summary.ToString() | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+          # 8. Optionnel : échec du job si des suppressions sont détectées
+          # if ($deleted.Count -gt 0) {
+          #     Write-Host "❌ Deployment would DELETE $($deleted.Count) resource(s). Blocking pipeline."
+          #     exit 1
+          # }
+
           exit 0
