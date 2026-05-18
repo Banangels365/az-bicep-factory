@@ -150,7 +150,7 @@ jobs:
               exit 0
           }
 
-          # 3. Convertir en objets PowerShell simples
+          # 3. Convertir TSV → objets PowerShell
           $parsed = $changes | ForEach-Object {
               $parts = $_ -split "`t"
               [PSCustomObject]@{
@@ -159,24 +159,36 @@ jobs:
               }
           }
 
-          # 4. Comptage
-          $created  = ($parsed | Where-Object ChangeType -eq "Create").Count
-          $deleted  = ($parsed | Where-Object ChangeType -eq "Delete").Count
-          $modified = ($parsed | Where-Object ChangeType -eq "Modify").Count
-          $nochange = ($parsed | Where-Object ChangeType -eq "NoChange").Count
+          # 4. Regroupement par catégorie
+          $created   = $parsed | Where-Object ChangeType -eq "Create"
+          $deleted   = $parsed | Where-Object ChangeType -eq "Delete"
+          $modified  = $parsed | Where-Object ChangeType -eq "Modify"
+          $nochange  = $parsed | Where-Object ChangeType -eq "NoChange"
 
-          # 5. Résumé
+          # 5. Résumé global
           Write-Host ""
           Write-Host "==================================="
           Write-Host "Platform-LZ Change Summary"
           Write-Host "==================================="
-          Write-Host "Created   : $created"
-          Write-Host "Deleted   : $deleted"
-          Write-Host "Modified  : $modified"
-          Write-Host "No Change : $nochange"
+          Write-Host "Created   : $($created.Count)"
+          Write-Host "Deleted   : $($deleted.Count)"
+          Write-Host "Modified  : $($modified.Count)"
+          Write-Host "No Change : $($nochange.Count)"
           Write-Host "==================================="
 
-          # 6. Tableau détaillé
+          # 6. Détails par catégorie
           Write-Host ""
-          Write-Host "Détails des ressources modifiées :"
-          $parsed | Sort-Object ChangeType | Format-Table -AutoSize
+          Write-Host "===== CRÉÉES ====="
+          $created | Format-Table -AutoSize
+
+          Write-Host ""
+          Write-Host "===== SUPPRIMÉES ====="
+          $deleted | Format-Table -AutoSize
+
+          Write-Host ""
+          Write-Host "===== MODIFIÉES ====="
+          $modified | Format-Table -AutoSize
+
+          Write-Host ""
+          Write-Host "===== AUCUN CHANGEMENT ====="
+          $nochange | Format-Table -AutoSize
