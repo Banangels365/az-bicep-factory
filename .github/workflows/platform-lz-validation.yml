@@ -9,7 +9,7 @@ on:
       - '.github/workflows/platform-lz-validation.yml'
 
   pull_request:
-    branches:
+    branches-ignore:
       - main
     paths:
       - 'platform-lz/**'
@@ -144,15 +144,13 @@ jobs:
               --query "changes" `
               --output json | Out-String
 
-          # 2. Nettoyage agressif : supprime tout ce qui n'est pas JSON
-          #    - enlève les caractères parasites
-          #    - remplace NaN par null
-          #    - supprime les lignes hors JSON
-          $jsonClean = $jsonRaw `
-              -replace 'NaN', 'null' `
-              -replace '^\s*NaN.*$', '' `
-              -replace '^\s*$', '' `
-              -replace '[^\x20-\x7E\r\n\t]', ''  # supprime les caractères non imprimables
+          # 2. Extraire uniquement le tableau JSON (la première occurrence de [ ... ])
+          #    -match stocke le résultat dans $matches[0]
+          if ($jsonRaw -match '(\[[\s\S]*\])') {
+              $jsonClean = $matches[0]
+          } else {
+              throw "Impossible d'extraire le JSON What-If."
+          }
 
           # 3. Conversion JSON
           $json = $jsonClean | ConvertFrom-Json
