@@ -133,6 +133,8 @@ jobs:
 
       - name: Generate Change Summary
         shell: pwsh
+        env:
+          AZURE_CLI_DISABLE_PROGRESS: true
         run: |
           # 1. Exécuter what-if en capturant stdout + stderr, sans masquer les erreurs
           $result = az deployment mg what-if `
@@ -142,49 +144,31 @@ jobs:
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
               --query "properties.changes[].{resourceId:resourceId, changeType:changeType}" `
-              --output json `
-              --no-progress 2>&1
+              --output json 2>&1
 
-          # 2. Vérifier le code de sortie Azure CLI
+          # 2. Vérifier le code de retour de la commande
           if ($LASTEXITCODE -ne 0) {
               Write-Host "❌ Échec de la commande what-if :"
               Write-Host $result
               exit 1
           }
 
-          # 3. Afficher le contenu brut (pour déboguer)
-          Write-Host "🔎 Contenu brut reçu (début) :"
-          $result | Out-String -Width 4096 | Select-Object -First 10
-
-          # 4. Convertir le JSON (il peut y avoir des lignes de warning mélangées)
-          #    On extrait uniquement la partie JSON (commençant par '[' ou '{')
-          $raw = $result | Out-String
-          $jsonStart = $raw.IndexOf('[')
-          if ($jsonStart -eq -1) { $jsonStart = $raw.IndexOf('{') }
-          if ($jsonStart -eq -1) {
-              Write-Host "❌ Aucun JSON trouvé dans la sortie."
-              Write-Host "Sortie complète :"
-              Write-Host $raw
-              exit 1
-          }
-          $jsonText = $raw.Substring($jsonStart)
-
+          # Convertir le JSON (maintenant propre)
           try {
-              $parsed = $jsonText | ConvertFrom-Json
+              $parsed = $result | ConvertFrom-Json
           } catch {
-              Write-Host "❌ Erreur de parsing JSON : $_"
-              Write-Host "Extrait JSON à parser :"
-              Write-Host $jsonText
+              Write-Host "❌ Erreur de parsing JSON. Sortie brute :"
+              Write-Host $result
               exit 1
           }
 
-          # 5. Regroupement (les noms de propriétés sont maintenant corrects)
+          # 4. Regroupement (les noms de propriétés sont maintenant corrects)
           $created   = @($parsed | Where-Object changeType -eq "Create")
           $deleted   = @($parsed | Where-Object changeType -eq "Delete")
           $modified  = @($parsed | Where-Object changeType -eq "Modify")
           $nochange  = @($parsed | Where-Object changeType -eq "NoChange")
 
-          # 6. Résumé
+          # 5. Résumé
           Write-Host ""
           Write-Host "==================================="
           Write-Host "Platform-LZ Change Summary"
@@ -195,7 +179,7 @@ jobs:
           Write-Host "No Change : $($nochange.Count)"
           Write-Host "==================================="
 
-          # 7. Détails
+          # 6. Détails
           if ($created)   { Write-Host "`n===== CRÉÉES ====="; $created   | Format-Table -AutoSize }
           if ($deleted)   { Write-Host "`n===== SUPPRIMÉES ====="; $deleted   | Format-Table -AutoSize }
           if ($modified)  { Write-Host "`n===== MODIFIÉES ====="; $modified  | Format-Table -AutoSize }
