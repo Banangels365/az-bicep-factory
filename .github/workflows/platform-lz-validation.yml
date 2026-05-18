@@ -134,36 +134,31 @@ jobs:
       - name: Generate Change Summary
         shell: pwsh
         run: |
-          # 1. Capture la sortie brute en texte
-          $changes = az deployment mg what-if `
+          # 1. Forcer la sortie en JSON pour que le --query fonctionne
+          # On ajuste aussi le JMESPath pour pointer sur les bonnes propriétés (resourceId et changeType)
+          $changesJson = az deployment mg what-if `
               --name platform-lz-whatif `
               --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} `
               --location ${{ env.LOCATION }} `
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
-              --query "changes[].{id: concat('/providers/', after.type, '/', after.name), type:changeType}" `
-              --output tsv 2>$null
+              --query "changes[].{ResourceId: resourceId, ChangeType: changeType}" `
+              --output json 2>$null
 
-          # 2. Si aucune sortie
-          if (-not $changes) {
+          # 2. Si aucune sortie brute ou chaîne vide
+          if ([string]::IsNullOrEmpty($changesJson) -or $changesJson -eq "[]") {
               Write-Host "Aucun changement détecté."
               exit 0
           }
 
-          # 3. Convertir TSV → objets PowerShell
-          $parsed = $changes | ForEach-Object {
-              $parts = $_ -split "`t"
-              [PSCustomObject]@{
-                  ResourceId = $parts[0]
-                  ChangeType = $parts[1]
-              }
-          }
+          # 3. Convertir le JSON directement en vrais objets PowerShell (beaucoup plus robuste que de découper du TSV !)
+          $parsed = ConvertFrom-Json $changesJson
 
-          # 4. Regroupement par catégorie
-          $created   = $parsed | Where-Object ChangeType -eq "Create"
-          $deleted   = $parsed | Where-Object ChangeType -eq "Delete"
-          $modified  = $parsed | Where-Object ChangeType -eq "Modify"
-          $nochange  = $parsed | Where-Object ChangeType -eq "NoChange"
+          # 4. Regroupement par catégorie (comptage sécurisé si 0 ou 1 ressource)
+          $created   = @($parsed | Where-Object ChangeType -eq "Create")
+          $deleted   = @($parsed | Where-Object ChangeType -eq "Delete")
+          $modified  = @($parsed | Where-Object ChangeType -eq "Modify")
+          $nochange  = @($parsed | Where-Object ChangeType -eq "NoChange")
 
           # 5. Résumé global
           Write-Host ""
@@ -176,19 +171,24 @@ jobs:
           Write-Host "No Change : $($nochange.Count)"
           Write-Host "==================================="
 
-          # 6. Détails par catégorie
-          Write-Host ""
-          Write-Host "===== CRÉÉES ====="
-          $created | Format-Table -AutoSize
-
-          Write-Host ""
-          Write-Host "===== SUPPRIMÉES ====="
-          $deleted | Format-Table -AutoSize
-
-          Write-Host ""
-          Write-Host "===== MODIFIÉES ====="
-          $modified | Format-Table -AutoSize
-
-          Write-Host ""
-          Write-Host "===== AUCUN CHANGEMENT ====="
-          $nochange | Format-Table -AutoSize
+          # 6. Détails par catégorie (uniquement s'il y en a)
+          if ($created.Count -gt 0) {
+              Write-Host ""
+              Write-Host "===== CRÉÉES ====="
+              $created | Select-Object ResourceId | Format-Table -AutoSize
+          }
+          if ($deleted.Count -gt 0) {
+              Write-Host ""
+              Write-Host "===== SUPPRIMÉES ====="
+              $deleted | Select-Object ResourceId | Format-Table -AutoSize
+          }
+          if ($modified.Count -gt 0) {
+              Write-Host ""
+              Write-Host "===== MODIFIÉES ====="
+              $modified | Select-Object ResourceId | Format-Table -AutoSize
+          }
+          if ($nochange.Count -gt 0) {
+              Write-Host ""
+              Write-Host "===== AUCUN CHANGEMENT ====="
+              $nochange | Select-Object ResourceId | Format-Table -AutoSize
+          }
