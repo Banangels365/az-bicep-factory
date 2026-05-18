@@ -155,7 +155,7 @@ jobs:
           $cleanJson = $result -join "`n"
           
           # 3. Extract valid JSON object (must start with { not [)
-          $start = $cleanJson.IndexOf('{')
+          $start = $cleanJson.IndexOf('{"')
           if ($start -eq -1) {
               Write-Host "❌ No valid JSON object found in output. Raw output:"
               Write-Host $cleanJson
@@ -164,19 +164,6 @@ jobs:
           
           # Find the matching closing brace
           $jsonText = $cleanJson.Substring($start)
-          $braceCount = 0
-          $end = 0
-          for ($i = 0; $i -lt $jsonText.Length; $i++) {
-              if ($jsonText[$i] -eq '{') { $braceCount++ }
-              if ($jsonText[$i] -eq '}') { $braceCount--; if ($braceCount -eq 0) { $end = $i + 1; break } }
-          }
-          
-          if ($end -eq 0) {
-              Write-Host "❌ Could not find valid JSON boundaries."
-              exit 1
-          }
-          
-          $jsonText = $jsonText.Substring(0, $end)
 
           # 4. Parse JSON with error handling
           try {
@@ -184,7 +171,7 @@ jobs:
           } catch {
               Write-Host "❌ JSON parsing error:"
               Write-Host "Error: $_"
-              Write-Host "First 2000 characters:"
+              Write-Host "First 2000 characters of extracted text:"
               Write-Host $jsonText.Substring(0, [Math]::Min(2000, $jsonText.Length))
               exit 1
           }
