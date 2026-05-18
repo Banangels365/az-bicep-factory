@@ -106,7 +106,7 @@ jobs:
           az deployment mg validate \
             --name platform-lz-validation \
             --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} \
-            --location $LOCATION \
+            --location ${{ env.LOCATION }} \
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
 
@@ -138,7 +138,7 @@ jobs:
           $jsonRaw = az deployment mg what-if `
               --name platform-lz-whatif `
               --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} `
-              --location $lOCATION `
+              --location ${{ env.LOCATION }} `
               --template-file ./platform.bicep `
               --parameters ./platform.bicepparam `
               --query "changes" `
