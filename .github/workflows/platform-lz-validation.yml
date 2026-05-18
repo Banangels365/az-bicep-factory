@@ -154,15 +154,18 @@ jobs:
           # 2. Convert result to string and clean
           $cleanJson = $result -join "`n"
           
-          # 3. Extract valid JSON object (must start with { not [)
-          $start = $cleanJson.IndexOf('{"')
+          # 3. Extract valid JSON (handle both objects and arrays)
+          $start = $cleanJson.IndexOf('{')
           if ($start -eq -1) {
-              Write-Host "❌ No valid JSON object found in output. Raw output:"
+              $start = $cleanJson.IndexOf('[')
+          }
+          if ($start -eq -1) {
+              Write-Host "❌ No valid JSON found in output. Raw output:"
               Write-Host $cleanJson
               exit 1
           }
           
-          # Find the matching closing brace
+          # Extract JSON text from the first valid character
           $jsonText = $cleanJson.Substring($start)
 
           # 4. Parse JSON with error handling
@@ -175,7 +178,7 @@ jobs:
               Write-Host $jsonText.Substring(0, [Math]::Min(2000, $jsonText.Length))
               exit 1
           }
-
+              
           # 5. Extract changes
           $changes = $whatif.changes
           if (-not $changes) {
