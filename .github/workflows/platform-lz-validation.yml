@@ -2,17 +2,18 @@ name: ALZ - Platform-LZ Validation
 
 on:
   push:
+    branches-ignore:
+      - main
     paths:
       - 'platform-lz/**'
       - '.github/workflows/platform-lz-validation.yml'
-    branches-ignore:
-      - main
+
   pull_request:
+    branches:
+      - main
     paths:
       - 'platform-lz/**'
       - '.github/workflows/platform-lz-validation.yml'
-    branches-ignore:
-      - main
 
 permissions:
   contents: read
@@ -22,34 +23,53 @@ defaults:
   run:
     working-directory: ./platform-lz
 
+env:
+  LOCATION: canadaeast
+  # ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
+
 jobs:
-  validate:
-    name: Validate Bicep Files & Security
+
+  # =========================================================
+  # JOB 1 - BICEP LINT
+  # =========================================================
+
+  lint:
+    name: Build & Lint Bicep
     runs-on: ubuntu-latest
-    environment: Sandbox
 
-    env:
-      LOCATION: canadaeast
-      ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
-
-      
-    # --- ÉTAPE 1 : ANALYSE STATIQUE (Rapide & Gratuit) ---
-    # Remarque: les en-têtes 'Step X' ont été commentés car ils créaient des clés YAML invalides
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build & Lint all Bicep files
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Build all Bicep files
         run: |
           for file in $(find . -name '*.bicep' -not -path './.git/*'); do
+            echo "Validating $file"
             az bicep build --file "$file"
           done
+
+  # =========================================================
+  # JOB 2 - SECURITY ANALYSIS
+  # =========================================================
+
+  security:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@master
         with:
-          directory: ./platform-lz
           framework: bicep
-          soft_fail: true # Ne pas échouer le pipeline en cas de détection de problèmes, mais les signaler
+          directory: ./platform-lz
+          soft_fail: true
 
       - name: PSRule for Azure
         uses: microsoft/ps-rule@v2.9.0
@@ -57,7 +77,20 @@ jobs:
           modules: PSRule.Rules.Azure
           inputPath: ./platform-lz
 
-      # --- ÉTAPE 2 : VALIDATION AZURE (Nécessite Connexion) ---
+  # =========================================================
+  # JOB 3 - AZURE VALIDATION
+  # =========================================================
+
+  validate:
+    name: Azure Validate
+    runs-on: ubuntu-latest
+    needs: security
+    environment: Sandbox
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
@@ -65,122 +98,62 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # --- Step 3: Validate & What-If ---
+      - name: Install Bicep
+        run: az bicep install
+
       - name: Validate Platform-LZ deployment
         run: |
           az deployment mg validate \
             --name platform-lz-validation \
-            --management-group-id $ROOT_MG_ID \
+            --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} \
             --location $LOCATION \
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
 
-      # - name: Platform-LZ What-If
-      #   run: |
-      #     az deployment mg what-if \
-      #       --name platform-lz-whatif \
-      #       --management-group-id $ROOT_MG_ID \
-      #       --location $LOCATION \
-      #       --template-file ./platform.bicep \
-      #       --parameters ./platform.bicepparam \
-      #       --output json > whatif-result.json
-      #     echo "=== Contenu de whatif-result.json ==="
-      #     cat whatif-result.json
-      #     echo "=== Fin ==="
+  # =========================================================
+  # JOB 4 - WHAT-IF SUMMARY
+  # =========================================================
 
-      # --- Step 4: Generate Change Summary Report ---
-      - name: Generate Change Summary (no file)
+  whatif-summary:
+    name: What-If Change Summary
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: Sandbox
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Generate Change Summary
+        shell: pwsh
         run: |
-          pwsh -Command {
-            $json = az deployment mg what-if `
-              --name platform-lz-whatif `
-              --management-group-id $env:ROOT_MG_ID `
-              --location $env:LOCATION `
-              --template-file ./platform.bicep `
-              --parameters ./platform.bicepparam `
-              --query "changes" `
-              --output json | ConvertFrom-Json
+          $json = az deployment mg what-if `
+            --name platform-lz-whatif `
+            --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} `
+            --location $env:LOCATION `
+            --template-file ./platform.bicep `
+            --parameters ./platform.bicepparam `
+            --query "changes" `
+            --output json | ConvertFrom-Json
 
-            $created  = ($json | Where-Object changeType -eq "Create").Count
-            $deleted  = ($json | Where-Object changeType -eq "Delete").Count
-            $modified = ($json | Where-Object changeType -eq "Modify").Count
-            $nochange = ($json | Where-Object changeType -eq "NoChange").Count
+          $created  = ($json | Where-Object changeType -eq "Create").Count
+          $deleted  = ($json | Where-Object changeType -eq "Delete").Count
+          $modified = ($json | Where-Object changeType -eq "Modify").Count
+          $nochange = ($json | Where-Object changeType -eq "NoChange").Count
 
-            Write-Host "=== Résumé des changements ==="
-            Write-Host "Créés     : $created"
-            Write-Host "Supprimés : $deleted"
-            Write-Host "Modifiés  : $modified"
-            Write-Host "Inchangés : $nochange"
-          }
-
-
-
-      # - name: Generate Change Summary Report
-      #   run: |
-      #     # Vérifier que le fichier existe
-      #     if [ ! -f whatif-result.json ]; then
-      #      echo "❌ Erreur : whatif-result.json n'existe pas!"
-      #      exit 1
-      #     fi
-    
-      #     # Vérifier que c'est du JSON valide
-      #     if ! jq empty whatif-result.json 2>/dev/null; then
-      #      echo "❌ Erreur : whatif-result.json n'est pas du JSON valide!"
-      #      cat whatif-result.json
-      #      exit 1
-      #     fi
-
-      #     pwsh -Command {
-      #       $whatIfOutput = Get-Content -Path whatif-result.json | ConvertFrom-Json
-      #       $changes = $whatIfOutput.changes | Select-Object -Property resourceId, changeType
-
-      #       # Comptage des changements
-      #       $created = $changes | Where-Object { $_.changeType -eq 'Create' } | Measure-Object | Select-Object -ExpandProperty Count
-      #       $deleted = $changes | Where-Object { $_.changeType -eq 'Delete' } | Measure-Object | Select-Object -ExpandProperty Count
-      #       $modified = $changes | Where-Object { $_.changeType -eq 'Modify' } | Measure-Object | Select-Object -ExpandProperty Count
-      #       $nochange = $changes | Where-Object { $_.changeType -eq 'NoChange' } | Measure-Object | Select-Object -ExpandProperty Count
-
-      #       # Affichage du rapport
-      #       Write-Host "╔═════════════════════════════════════════════════════════════════╗"
-      #       Write-Host "║        📊 RÉSUMÉ DES CHANGEMENTS - PLATEFORME-LZ              ║"
-      #       Write-Host "╠═════════════════════════════════════════════════════════════════╣"
-      #       Write-Host "║ ✅ Ressources créées       : $($created.ToString().PadRight(39)) ║"
-      #       Write-Host "║ ❌ Ressources supprimées   : $($deleted.ToString().PadRight(39)) ║"
-      #       Write-Host "║ ✏️  Ressources modifiées   : $($modified.ToString().PadRight(39)) ║"
-      #       Write-Host "║ ➡️  Ressources inchangées  : $($nochange.ToString().PadRight(39)) ║"
-      #       Write-Host "╠═════════════════════════════════════════════════════════════════╣"
-      #       Write-Host "║ 📦 TOTAL RESSOURCES        : $($changes.Count.ToString().PadRight(39)) ║"
-      #       Write-Host "╚═════════════════════════════════════════════════════════════════╝"
-
-      #       # Tableau détaillé des changements
-      #       Write-Host ""
-      #       Write-Host "📋 DÉTAIL DES RESSOURCES PAR TYPE :"
-      #       Write-Host ""
-
-      #       if ($created -gt 0) {
-      #         Write-Host "✅ CRÉÉES ($created) :"
-      #         $changes | Where-Object { $_.changeType -eq 'Create' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-      #       }
-
-      #       if ($modified -gt 0) {
-      #         Write-Host "✏️  MODIFIÉES ($modified) :"
-      #         $changes | Where-Object { $_.changeType -eq 'Modify' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-      #       }
-
-      #       if ($deleted -gt 0) {
-      #         Write-Host "❌ SUPPRIMÉES ($deleted) :"
-      #         $changes | Where-Object { $_.changeType -eq 'Delete' } | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-      #       }
-
-      #       if ($nochange -gt 0) {
-      #         Write-Host "➡️  INCHANGÉES (Aperçu - $nochange) :"
-      #         $changes | Where-Object { $_.changeType -eq 'NoChange' } | Select-Object -First 5 | Format-Table -Property @{Name="Ressource";Expression={$_.resourceId}} -AutoSize
-      #         if ($nochange -gt 5) {
-      #           Write-Host "   ... et $($nochange - 5) autres ressources inchangées"
-      #         }
-      #       }
-      #     }
-
-      - name: Azure Logout
-        if: always()
-        run: az logout
+          Write-Host ""
+          Write-Host "==================================="
+          Write-Host "Platform-LZ Change Summary"
+          Write-Host "==================================="
+          Write-Host "Created   : $created"
+          Write-Host "Deleted   : $deleted"
+          Write-Host "Modified  : $modified"
+          Write-Host "No Change : $nochange"
+          Write-Host "==================================="

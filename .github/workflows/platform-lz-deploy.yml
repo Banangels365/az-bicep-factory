@@ -20,7 +20,7 @@ defaults:
 
 env:
   LOCATION: canadaeast
-  ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
+
 
 jobs:
 
@@ -81,7 +81,7 @@ jobs:
         run: |
           az deployment mg what-if \
             --name platform-lz-whatif \
-            --management-group-id $ROOT_MG_ID \
+            --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} \
             --location $LOCATION \
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
@@ -118,7 +118,7 @@ jobs:
         run: |
           az deployment mg create \
             --name platform-lz-deploy \
-            --management-group-id $ROOT_MG_ID \
+            --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} \
             --location $LOCATION \
             --template-file ./platform.bicep \
             --parameters ./platform.bicepparam
