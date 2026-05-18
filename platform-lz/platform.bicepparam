@@ -12,7 +12,7 @@ param managementSubscriptionId = '0061dc3e-7704-4778-bcda-b566d000d486'
 // liste des tags à appliquer à toutes les ressources
 param tags = {
   Application: 'Platform-LZ'
-  Environment: 'sbox'
+  Environnement: 'sbox'
   CreeLe: '2024-05-18'
   CreePar: 'CloudOps-Team'
   Criticite: 'Moyen'
