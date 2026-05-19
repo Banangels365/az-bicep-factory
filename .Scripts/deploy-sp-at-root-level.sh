@@ -69,3 +69,14 @@ echo "- AZURE_SUBSCRIPTION_ID (optional if needed)"
 # Run this command in Azure Cloud Shell (Bash) to refresh permissions for the app. 
 # This is needed if you get errors related to Microsoft Graph permissions when running the script.:
 # az login --scope "https://graph.microsoft.com/.default"
+
+# Exemple de commandes pour assigner les rôles manuellement si besoin (remplacez l'ID de l'application par le vôtre) :
+# az role assignment create \
+#   --assignee 7bf19b05-ba25-4b76-bed0-72f2c45e61bd \
+#   --role "Owner" \
+#   --scope "/"
+
+# az role assignment create \
+#   --assignee 7bf19b05-ba25-4b76-bed0-72f2c45e61bd \
+#   --role "User Access Administrator" \
+#   --scope "/"
