@@ -176,11 +176,11 @@ jobs:
           $null = $summary.AppendLine("")
           $null = $summary.AppendLine("| Statut attendu | Quantité |")
           $null = $summary.AppendLine("|----------------|----------|")
-          $null = $summary.AppendLine("| ✅ Création          | $($created.Count) |")
-          $null = $summary.AppendLine("| 🗑️ Suppression       | $($deleted.Count) |")
-          $null = $summary.AppendLine("| ✏️ Modification      | $($modified.Count) |")
-          $null = $summary.AppendLine("| ➡️ Aucun changement  | $($nochange.Count) |")
-          $null = $summary.AppendLine("| ⚠️ Non supporté      | $($unsupported.Count) |")
+          $null = $summary.AppendLine("| ✅ À Créer          | $($created.Count) |")
+          $null = $summary.AppendLine("| 🗑️ À Supprimer       | $($deleted.Count) |")
+          $null = $summary.AppendLine("| ✏️ À Modifier      | $($modified.Count) |")
+          $null = $summary.AppendLine("| ➡️ Sans Changement  | $($nochange.Count) |")
+          $null = $summary.AppendLine("| ⚠️ Non Supporté      | $($unsupported.Count) |")
           $null = $summary.AppendLine("")
 
           Add-Section -sb $summary -emoji "✅" -title "À Créer"          -items $created
@@ -227,11 +227,34 @@ jobs:
             --location "${{ env.LOCATION }}" `
             --template-file ./platform.bicep `
             --parameters ./platform.bicepparam `
-            --output json 2>&1
+            --output json 2>stderr.txt
+
+          $stderr = Get-Content stderr.txt -Raw -ErrorAction SilentlyContinue
 
           if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ Deployment failed:"
+              Write-Host "❌ Deployment failed"
+              Write-Host "=== STDERR COMPLET ==="
+              Write-Host $stderr
+              Write-Host "=== STDOUT ==="
               $output | Write-Host
+
+              # Tenter de parser le JSON d'erreur pour extraire les details imbriqués
+              try {
+                  $errJson = $stderr | ConvertFrom-Json -ErrorAction Stop
+                  Write-Host "`n=== ERREURS DÉTAILLÉES ==="
+                  $errJson.error.details | ForEach-Object {
+                      Write-Host "--- $($_.code) : $($_.target) ---"
+                      Write-Host $_.message
+                      $_.details | ForEach-Object {
+                          Write-Host "  >> $($_.code) : $($_.message)"
+                          $_.details | ForEach-Object {
+                              Write-Host "    >> $($_.code) : $($_.message)"
+                          }
+                      }
+                  }
+              } catch {
+                  Write-Host "(Impossible de parser l'erreur en JSON)"
+              }
               exit 1
           }
 

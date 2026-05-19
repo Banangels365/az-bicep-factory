@@ -209,11 +209,11 @@ jobs:
           $null = $summary.AppendLine("")
           $null = $summary.AppendLine("| Type | Count |")
           $null = $summary.AppendLine("|------|-------|")
-          $null = $summary.AppendLine("| ✅ Created     | $($created.Count) |")
-          $null = $summary.AppendLine("| 🗑️ Deleted     | $($deleted.Count) |")
-          $null = $summary.AppendLine("| ✏️ Modified    | $($modified.Count) |")
-          $null = $summary.AppendLine("| ➡️ No Change   | $($nochange.Count) |")
-          $null = $summary.AppendLine("| ⚠️ Unsupported | $($unsupported.Count) |")
+          $null = $summary.AppendLine("| ✅ À Créer     | $($created.Count) |")
+          $null = $summary.AppendLine("| 🗑️ À Supprimer     | $($deleted.Count) |")
+          $null = $summary.AppendLine("| ✏️ À Modifier    | $($modified.Count) |")
+          $null = $summary.AppendLine("| ➡️ Sans Changement   | $($nochange.Count) |")
+          $null = $summary.AppendLine("| ⚠️ Non Supporté | $($unsupported.Count) |")
           $null = $summary.AppendLine("")
 
           function Add-Section {
@@ -250,11 +250,11 @@ jobs:
               $null = $sb.AppendLine("")
           }
 
-          Add-Section -sb $summary -emoji "✅" -title "Created"     -items $created
-          Add-Section -sb $summary -emoji "🗑️" -title "Deleted"     -items $deleted
-          Add-Section -sb $summary -emoji "✏️" -title "Modified"    -items $modified
-          Add-Section -sb $summary -emoji "➡️" -title "No Change"   -items $nochange
-          Add-Section -sb $summary -emoji "⚠️" -title "Unsupported" -items $unsupported
+          Add-Section -sb $summary -emoji "✅" -title "À Créer"     -items $created
+          Add-Section -sb $summary -emoji "🗑️" -title "À Supprimer"     -items $deleted
+          Add-Section -sb $summary -emoji "✏️" -title "À Modifier"    -items $modified
+          Add-Section -sb $summary -emoji "➡️" -title "Sans Changement"   -items $nochange
+          Add-Section -sb $summary -emoji "⚠️" -title "Non Supporté" -items $unsupported
 
           $null = $summary.AppendLine("---")
           $null = $summary.AppendLine("_Run: ``${{ github.run_id }}`` · Branch: ``${{ github.ref_name }}`` · Commit: ``${{ github.sha }}``_")
