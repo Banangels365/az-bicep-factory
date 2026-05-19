@@ -71,7 +71,7 @@ resource initiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = 
         policyDefinitionId: '/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c'
         parameters: {
           listOfAllowedLocations: {
-            value: allowedLocations
+            value: '[parameters(\'allowedLocations\')]'
           }
         }
       }

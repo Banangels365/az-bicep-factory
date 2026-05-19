@@ -172,7 +172,7 @@ jobs:
           }
 
           $summary = [System.Text.StringBuilder]::new()
-          $null = $summary.AppendLine("## 🔍 Platform-LZ — Prévision des modifications (What-If)")
+          $null = $summary.AppendLine("## 🔍 Platform-LZ - Prévision des modifications (What-If)")
           $null = $summary.AppendLine("")
           $null = $summary.AppendLine("| Statut attendu | Quantité |")
           $null = $summary.AppendLine("|----------------|----------|")
@@ -246,13 +246,13 @@ jobs:
 
           # En-tête avec statut global
           if ($env:DEPLOY_STATUS -eq "success" -or (Test-Path deploy-output.json)) {
-              $null = $summary.AppendLine("## 🚀 Platform-LZ — Résumé du déploiement")
+              $null = $summary.AppendLine("## 🚀 Platform-LZ - Résumé du déploiement")
               $null = $summary.AppendLine("")
               $null = $summary.AppendLine("> ✅ **Déploiement complété avec succès**")
           } else {
-              $null = $summary.AppendLine("## 🚀 Platform-LZ — Résumé du déploiement")
+              $null = $summary.AppendLine("## 🚀 Platform-LZ - Résumé du déploiement")
               $null = $summary.AppendLine("")
-              $null = $summary.AppendLine("> ❌ **Déploiement en échec — consulter les logs du job**")
+              $null = $summary.AppendLine("> ❌ **Déploiement en échec - consulter les logs du job**")
           }
           $null = $summary.AppendLine("")
 

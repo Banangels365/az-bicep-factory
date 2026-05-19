@@ -149,7 +149,7 @@ module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
           'quar' // quarantine
           'sbox' // sandbox
         ]
-        nonComplianceMessage: 'Le tag Environnement doit être conforme aux valeurs acceptées. Soit Dev, Preprod ou Prod.'
+        nonComplianceMessage: 'Le tag Environnement doit être conforme aux valeurs acceptées : prod, dev, logs, quar ou sbox.'
       }
       {
         name: 'Criticite'

@@ -25,7 +25,6 @@ defaults:
 
 env:
   LOCATION: canadaeast
-  # ROOT_MG_ID: ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}
 
 jobs:
 
@@ -206,7 +205,7 @@ jobs:
           # 7. GitHub Job Summary
           $summary = [System.Text.StringBuilder]::new()
 
-          $null = $summary.AppendLine("## 📋 Platform-LZ — What-If Change Summary")
+          $null = $summary.AppendLine("## 📋 Platform-LZ - What-If Change Summary")
           $null = $summary.AppendLine("")
           $null = $summary.AppendLine("| Type | Count |")
           $null = $summary.AppendLine("|------|-------|")
