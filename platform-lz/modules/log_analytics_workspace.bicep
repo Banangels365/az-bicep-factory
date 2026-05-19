@@ -30,9 +30,9 @@ param sku string = 'PerGB2018'
 @maxValue(730)
 param retentionInDays int = 90
 
-@description('Limite quotidienne de données en GB (0 pour illimité)')
-@minValue(0)
-param dailyQuotaGb int = 0
+@description('Limite quotidienne de données en GB (-1 pour illimité)')
+@minValue(-1)
+param dailyQuotaGb int = -1
 
 @description('Activer l\'accès au réseau public pour l\'ingestion')
 @allowed([

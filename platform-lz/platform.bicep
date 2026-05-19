@@ -425,7 +425,7 @@ module logAnalytics './modules/log_analytics_workspace.bicep' = {
     location: location
     sku: 'PerGB2018'
     retentionInDays: logRetentionDays
-    dailyQuotaGb: 0
+    dailyQuotaGb: -1 // -1 = pas de limite quotidienne (recommandé pour sandbox). Valeur minimale acceptée par Azure : > 0.023
     enableSentinel: enableSentinel
     solutions: [
       'SecurityCenterFree'
