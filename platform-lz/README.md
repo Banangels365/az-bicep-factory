@@ -1,381 +1,425 @@
-# Azure Landing Zone - Platform
+# Platform Landing Zone — Modules et utilisation
 
-Ce repository contient les modules Bicep et l'orchestration pour déployer la **Platform Landing Zone** Azure selon les recommandations Microsoft Cloud Adoption Framework (CAF).
+Ce document décrit les modules Bicep fournis dans `platform-lz/modules`, leur rôle, leurs entrées/sorties, ressources créées et dépendances. Il est structuré pour faciliter l'utilisation selon les bonnes pratiques IaC.
 
-## 📋 Table des matières
+## Description
 
-- [Vue d'ensemble](#vue-densemble)
-- [Architecture](#architecture)
-- [Prérequis](#prérequis)
-- [Structure du projet](#structure-du-projet)
-- [Déploiement](#déploiement)
-- [Modules disponibles](#modules-disponibles)
-- [Gestion des Policies](#gestion-des-policies)
-- [Logging et monitoring](#logging-et-monitoring)
-- [Bonnes pratiques](#bonnes-pratiques)
+Ce dossier contient des modules réutilisables pour déployer les éléments de la Platform Landing Zone :
+- `management_group.bicep` : création et association d'abonnements aux Management Groups (scope tenant).
+- `log_analytics_workspace.bicep` : déploiement d'un Log Analytics Workspace et solutions associées.
+- `diagnostic_settings.bicep` : configuration des Diagnostic Settings sur une ressource (scope ressource).
+- `resource_group.bicep` : création d'un Resource Group (scope subscription).
 
-## 🎯 Vue d'ensemble
+## Utilisation
 
-Cette Landing Zone Platform déploie :
+Principes d'utilisation :
+- Appeler chaque module depuis un template d'orchestration (ex. `platform/main.bicep`).
+- Spécifier correctement le `scope` du module (`tenant`, `managementGroup`, `subscription`, `resource`).
+- Utiliser des fichiers de paramètres séparés par environnement (`.bicepparam`).
+- Tester avec `--what-if` avant déploiement réel.
+- Utiliser des `outputs` de module comme entrées de modules ultérieurs pour conserver la traçabilité.
 
-- **Hiérarchie de Management Groups** : Organisation des subscriptions selon le modèle CAF
-- **Azure Policies** : Gouvernance et compliance automatisée
-- **Log Analytics Workspace** : Logging centralisé pour toutes les ressources
-- **Microsoft Sentinel** : SIEM pour la sécurité (optionnel)
-- **Diagnostic Settings** : Configuration automatique des logs
-
-## 🏗️ Architecture
-
-### Hiérarchie des Management Groups
-
-```
-Tenant Root Group
-└── contoso-root
-    ├── contoso-platform
-    │   ├── Management
-    │   ├── Identity
-    │   └── Connectivity
-    ├── contoso-landing-zones
-    │   ├── contoso-dev
-    │   ├── contoso-staging
-    │   └── contoso-prod
-    ├── contoso-sandbox
-    └── contoso-decommissioned
-```
-
-### Flux de déploiement
-
-1. **Management Groups** → Création de la hiérarchie organisationnelle
-2. **Policy Definitions** → Définition des règles de gouvernance
-3. **Policy Initiatives** → Regroupement des policies en ensembles cohérents
-4. **Platform Resources** → Déploiement du Log Analytics Workspace et Sentinel
-5. **Policy Assignments** → Application des policies aux Management Groups
-
-## ✅ Prérequis
-
-### Outils requis
-
-- **Azure CLI** >= 2.50.0
-- **Bicep CLI** >= 0.24.0
-- **PowerShell** >= 7.0 (pour les scripts de déploiement)
-- **Git** (pour le versioning)
-
-### Permissions Azure requises
-
-- **User Access Administrator** au niveau Tenant Root Group
-- **Contributor** sur la subscription de management
-- **Policy Contributor** au niveau Tenant Root Group
-
-### Installation des outils
-
-```bash
-# Azure CLI
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
-# Bicep CLI
-az bicep install
-
-# PowerShell 7
-wget https://github.com/PowerShell/PowerShell/releases/download/v7.4.0/powershell_7.4.0-1.deb_amd64.deb
-sudo dpkg -i powershell_7.4.0-1.deb_amd64.deb
-```
-
-## 📁 Structure du projet
-
-```
-azure-landing-zone/
-├── platform/
-│   ├── main.bicep                    # Orchestrateur principal
-│   ├── main.bicepparam               # Paramètres de déploiement
-│   ├── management-groups/
-│   ├── policy/
-│   │   ├── definitions/
-│   │   │   └── custom-policies.bicep
-│   │   └── assignments/
-│   ├── logging/
-│   └── security/
-├── modules/
-│   └── management/
-│       ├── management-group/
-│       ├── policy-definition/
-│       ├── policy-assignment/
-│       ├── policy-initiative/
-│       ├── log-analytics-workspace/
-│       └── diagnostic-settings/
-└── scripts/
-    └── deploy-platform.ps1
-```
-
-## 🚀 Déploiement
-
-### 1. Configuration initiale
-
-Éditez le fichier `platform/main.bicepparam` avec vos paramètres :
+### Exemples d'appel complets
 
 ```bicep
-param organizationName = 'votre-organisation'
-param managementSubscriptionId = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
-param devSubscriptionIds = ['sub-id-1', 'sub-id-2']
-param stagingSubscriptionIds = ['sub-id-3']
-param prodSubscriptionIds = ['sub-id-4', 'sub-id-5']
-```
-
-### 2. Connexion à Azure
-
-```bash
-az login
-az account set --subscription "Management-Subscription"
-```
-
-### 3. Validation (WhatIf)
-
-```powershell
-# Valider sans déployer
-.\scripts\deploy-platform.ps1 -Environment prod -Location canadacentral -WhatIf
-```
-
-### 4. Déploiement
-
-```powershell
-# Déploiement complet
-.\scripts\deploy-platform.ps1 -Environment prod -Location canadacentral
-```
-
-### 5. Déploiement manuel avec Azure CLI
-
-```bash
-# Déploiement au niveau Tenant
-az deployment tenant create \
-  --name platform-deployment \
-  --location canadacentral \
-  --template-file platform/main.bicep \
-  --parameters platform/main.bicepparam
-```
-
-## 🧩 Modules disponibles
-
-### Management Group
-
-Crée un Management Group dans la hiérarchie Azure.
-
-```bicep
-module mg 'modules/management/management-group/main.bicep' = {
-  scope: managementGroup()
+module mg 'modules/management_group.bicep' = {
+  name: 'mg-prod'
+  scope: tenant()
   params: {
     managementGroupId: 'mg-prod'
     displayName: 'Production'
     parentManagementGroupId: 'mg-root'
-    subscriptionIds: ['sub-id-1']
+    subscriptionIds: [subscription().subscriptionId]
   }
 }
-```
 
-### Policy Definition
-
-Définit une Azure Policy personnalisée.
-
-```bicep
-module policy 'modules/management/policy-definition/main.bicep' = {
-  scope: managementGroup('mg-root')
+module rg 'modules/resource_group.bicep' = {
+  name: 'rg-platform-prod'
+  scope: subscription()
   params: {
-    policyName: 'require-tags'
-    displayName: 'Require mandatory tags'
-    mode: 'Indexed'
-    policyRule: { ... }
+    resourceGroupName: 'rg-platform-prod-canadacentral'
+    location: 'cace'
+    tags: {
+      Environment: 'prod'
+      ManagedBy: 'platform-lz'
+    }
   }
 }
-```
 
-### Policy Initiative
-
-Regroupe plusieurs policies en une initiative.
-
-```bicep
-module initiative 'modules/management/policy-initiative/main.bicep' = {
-  scope: managementGroup('mg-root')
-  params: {
-    initiativeName: 'baseline-security'
-    displayName: 'Baseline Security Policies'
-    policyDefinitions: [...]
-  }
-}
-```
-
-### Policy Assignment
-
-Assigne une policy ou initiative à un scope.
-
-```bicep
-module assignment 'modules/management/policy-assignment/main.bicep' = {
-  scope: managementGroup('mg-prod')
-  params: {
-    assignmentName: 'prod-baseline'
-    policyDefinitionId: initiative.outputs.initiativeId
-    identityType: 'SystemAssigned'
-    enforcementMode: 'Default'
-  }
-}
-```
-
-### Log Analytics Workspace
-
-Déploie un workspace Log Analytics centralisé.
-
-```bicep
-module law 'modules/management/log-analytics-workspace/main.bicep' = {
-  scope: resourceGroup('rg-management')
+module law 'modules/log_analytics_workspace.bicep' = {
+  name: 'law-platform-prod'
+  scope: resourceGroup(rg.outputs.resourceGroupName)
   params: {
     workspaceName: 'law-platform-prod'
+    location: 'cace'
+    sku: 'PerGB2018'
     retentionInDays: 90
+    dailyQuotaGb: -1
     enableSentinel: true
-    solutions: ['SecurityInsights', 'Updates']
+    solutions: [
+      'SecurityInsights'
+      'Updates'
+    ]
+    tags: {
+      Environment: 'prod'
+      Owner: 'PlatformTeam'
+    }
   }
 }
 ```
 
-## 🔒 Gestion des Policies
-
-### Policies personnalisées incluses
-
-1. **enforce-https-storage-accounts** : Force HTTPS uniquement pour les Storage Accounts
-2. **enforce-minimum-tls-version** : Force TLS 1.2 minimum
-3. **deny-public-ip-addresses** : Empêche la création de Public IPs (sauf exceptions)
-4. **require-private-endpoints-paas** : Exige des Private Endpoints pour les PaaS
-5. **require-diagnostic-settings** : Force l'activation des logs de diagnostic
-6. **enforce-naming-convention** : Applique les conventions de nommage
-7. **allowed-vm-skus** : Limite les SKUs de VMs autorisées
-
-### Mode d'enforcement par environnement
-
-- **Production** : `Default` (Enforcement activé)
-- **Staging** : `Default` (Enforcement activé)
-- **Dev** : `DoNotEnforce` (Audit uniquement)
-- **Sandbox** : `DoNotEnforce` (Audit uniquement)
-
-### Ajout d'une nouvelle policy
-
-1. Créer le fichier de définition dans `platform/policy/definitions/`
-2. Ajouter la policy à l'initiative dans `platform/main.bicep`
-3. Assigner l'initiative mise à jour aux Management Groups appropriés
-
-## 📊 Logging et monitoring
-
-### Log Analytics Workspace
-
-Tous les logs sont centralisés dans un workspace Log Analytics unique :
-
-- **Retention** : 90 jours par défaut (configurable)
-- **Solutions déployées** :
-  - SecurityInsights (Sentinel)
-  - Updates
-  - VMInsights
-  - ChangeTracking
-  - AzureActivity
-  - AgentHealthAssessment
-
-### Diagnostic Settings
-
-Les diagnostic settings sont automatiquement configurés via Policy sur :
-
-- Storage Accounts
-- Key Vaults
-- SQL Databases
-- Virtual Networks
-- Network Security Groups
-- Virtual Machines
-
-### Requêtes KQL utiles
-
-```kql
-// Ressources non-conformes aux policies
-PolicyResources
-| where type == "microsoft.policyinsights/policystates"
-| where properties.complianceState == "NonCompliant"
-| summarize Count = count() by tostring(properties.policyDefinitionName)
-
-// Activité d'administration
-AzureActivity
-| where OperationNameValue contains "write" or OperationNameValue contains "delete"
-| summarize Count = count() by Caller, OperationNameValue
-| order by Count desc
+```bicep
+module diagnostics 'modules/diagnostic_settings.bicep' = {
+  name: 'diag-rg-platform-prod'
+  scope: resourceGroup(rg.outputs.resourceGroupName)
+  params: {
+    diagnosticSettingName: 'platform-prod-diagnostics'
+    workspaceId: law.outputs.workspaceId
+    logCategories: [
+      {
+        category: 'AuditEvent'
+        enabled: true
+      }
+    ]
+  }
+}
 ```
 
-## 📚 Bonnes pratiques
+## Requis
 
-### Naming conventions
+- Azure CLI (ou PowerShell) avec connexion active
+- Bicep CLI installé
+- Permissions : rôle approprié selon le scope (ex. `User Access Administrator` au tenant, `Contributor` ou `Policy Contributor` selon actions)
 
-Suivez les conventions Microsoft pour nommer vos ressources :
+## Inputs / Outputs (global)
 
-- Management Groups : `{org}-{environment}` (ex: `contoso-prod`)
-- Resource Groups : `rg-{workload}-{environment}-{region}` (ex: `rg-platform-prod-canadacentral`)
-- Log Analytics : `law-{purpose}-{environment}` (ex: `law-platform-prod`)
+Ce README documente les inputs/outputs par module ci-dessous. Les paramètres attendus doivent être fournis via les appels de module ou le fichier `.bicepparam`.
 
-### Tagging strategy
+## Ressources créées
 
-Tags obligatoires (appliqués via Policy) :
+- Management Groups : `Microsoft.Management/managementGroups`
+- Policy Definitions : `Microsoft.Authorization/policyDefinitions`
+- Policy Initiatives : `Microsoft.Authorization/policySetDefinitions`
+- Policy Assignments : `Microsoft.Authorization/policyAssignments`
+- Log Analytics Workspace : `Microsoft.OperationalInsights/workspaces`
+- Diagnostic Settings : `Microsoft.Insights/diagnosticSettings`
+- Resource Groups : `Microsoft.Resources/resourceGroups`
 
-- **Environment** : dev, staging, prod
-- **CostCenter** : Centre de coûts
-- **Owner** : Équipe responsable
-- **ManagedBy** : Bicep, Terraform, Portal
+## Dépendances
 
-### Sécurité
-
-- ✅ Toujours activer les Private Endpoints pour les PaaS
-- ✅ Forcer HTTPS et TLS 1.2 minimum
-- ✅ Activer les diagnostic settings sur toutes les ressources
-- ✅ Utiliser des Managed Identities plutôt que des secrets
-- ✅ Appliquer le principe du moindre privilège (RBAC)
-
-### Déploiements
-
-- ✅ Toujours tester avec `--what-if` avant de déployer
-- ✅ Utiliser des fichiers de paramètres séparés par environnement
-- ✅ Versionner tous les changements dans Git
-- ✅ Automatiser via Azure DevOps Pipelines
-- ✅ Implémenter des approbations manuelles pour la production
-
-## 🔧 Troubleshooting
-
-### Erreur : Insufficient permissions
-
-**Problème** : Vous n'avez pas les permissions nécessaires au niveau Tenant Root.
-
-**Solution** :
-```bash
-# Demandez à un administrateur de vous accorder le rôle User Access Administrator
-az role assignment create \
-  --assignee <your-user-id> \
-  --role "User Access Administrator" \
-  --scope "/"
-```
-
-### Erreur : Management Group already exists
-
-**Problème** : Le Management Group existe déjà.
-
-**Solution** : Modifiez le nom dans les paramètres ou supprimez l'ancien Management Group.
-
-### Erreur : Policy assignment failed
-
-**Problème** : L'assignment de policy échoue.
-
-**Solution** : Vérifiez que la policy definition ou initiative existe et que vous avez les permissions nécessaires.
-
-## 📞 Support
-
-Pour toute question ou problème :
-
-1. Consultez la [documentation Microsoft Azure Landing Zones](https://aka.ms/alz)
-2. Ouvrez une issue dans ce repository
-3. Contactez l'équipe Cloud Platform Engineering
-
-## 📝 Licence
-
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
+- `diagnostic_settings` nécessite généralement l'ID d'un Log Analytics Workspace (si vous souhaitez centraliser les logs).
+- `log_analytics_workspace` peut être déployé avant `diagnostic_settings` ou référencé par Policy.
 
 ---
 
-**Dernière mise à jour** : Février 2026  
-**Version** : 1.0.0  
-**Mainteneur** : CloudOps Team
+## Modules — détails (Inputs / Outputs / Ressources / Dépendances)
+
+### management_group.bicep
+Description : Crée un Management Group et associe des abonnements.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `managementGroupId` | string | - | Identifiant du Management Group |
+| `displayName` | string | - | Nom d'affichage du Management Group |
+| `parentManagementGroupId` | string | `''` | ID du parent Management Group, si applicable |
+| `subscriptionIds` | array | `[]` | Liste d'IDs d'abonnement à associer |
+
+| Output | Type | Description |
+|---|---|---|
+| `managementGroupId` | string | Resource ID du Management Group |
+| `managementGroupName` | string | Nom du Management Group |
+| `displayName` | string | Nom d'affichage |
+
+Ressources : `Microsoft.Management/managementGroups`, `Microsoft.Management/managementGroups/subscriptions`
+
+Dépendances : aucune directe.
+
+### log_analytics_workspace.bicep
+Description : Déploie un workspace Log Analytics et des solutions.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `workspaceName` | string | - | Nom du workspace |
+| `location` | string | `caea` | Région logique (`cace` = canadacentral, `caea` = canadaeast) |
+| `sku` | string | `PerGB2018` | SKU du workspace |
+| `retentionInDays` | int | `90` | Durée de conservation des logs |
+| `dailyQuotaGb` | int | `-1` | Quota journalier des données |
+| `publicNetworkAccessForIngestion` | string | `Enabled` | Accès public ingestion |
+| `publicNetworkAccessForQuery` | string | `Enabled` | Accès public requête |
+| `tags` | object | `{}` | Tags à appliquer |
+| `enableSentinel` | bool | `false` | Déploie la solution Sentinel si vrai |
+| `solutions` | array | `[]` | Solutions OMS additionnelles |
+
+| Output | Type | Description |
+|---|---|---|
+| `workspaceId` | string | ID du workspace |
+| `workspaceName` | string | Nom du workspace |
+| `customerId` | string | ID client du workspace |
+
+Ressources : `Microsoft.OperationalInsights/workspaces`, `Microsoft.OperationsManagement/solutions`
+
+Dépendances : utilisé par `diagnostic_settings.bicep` et peut être référencé par des policies ou des scripts de monitoring.
+
+### diagnostic_settings.bicep
+Description : Configure les Diagnostic Settings d'une ressource.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `diagnosticSettingName` | string | `default-diagnostics` | Nom de la configuration |
+| `workspaceId` | string | - | ID du Log Analytics cible |
+| `storageAccountId` | string | `''` | ID du compte de stockage cible |
+| `eventHubAuthorizationRuleId` | string | `''` | ID de la règle Event Hub |
+| `eventHubName` | string | `''` | Nom du Event Hub |
+| `logCategories` | array | `[]` | Catégories de logs à activer |
+| `metricCategories` | array | `[ { category: 'AllMetrics', enabled: true } ]` | Catégories de métriques |
+
+| Output | Type | Description |
+|---|---|---|
+| `diagnosticSettingId` | string | ID de la configuration |
+| `diagnosticSettingName` | string | Nom de la configuration |
+
+Ressources : `Microsoft.Insights/diagnosticSettings`
+
+Dépendances : dépend généralement d'un `log_analytics_workspace` si `workspaceId` est fourni.
+
+### resource_group.bicep
+Description : Crée un Resource Group.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `resourceGroupName` | string | - | Nom du Resource Group |
+| `location` | string | `caea` | Région logique (cace/canadacentral, caea/canadaeast) |
+| `tags` | object | `{}` | Tags à appliquer |
+
+| Output | Type | Description |
+|---|---|---|
+| `resourceGroupId` | string | ID du Resource Group |
+| `resourceGroupName` | string | Nom du Resource Group |
+
+Ressources : `Microsoft.Resources/resourceGroups`
+
+Dépendances : aucune directe.
+
+### log_analytics_workspace.bicep
+Description : Déploie un workspace Log Analytics et des solutions.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `workspaceName` | string | - | Nom du workspace |
+| `location` | string | `caea` | Région logique (`cace` = canadacentral, `caea` = canadaeast) |
+| `sku` | string | `PerGB2018` | SKU du workspace |
+| `retentionInDays` | int | `90` | Durée de conservation des logs |
+| `dailyQuotaGb` | int | `-1` | Quota journalier des données |
+| `publicNetworkAccessForIngestion` | string | `Enabled` | Accès public ingestion |
+| `publicNetworkAccessForQuery` | string | `Enabled` | Accès public requête |
+| `tags` | object | `{}` | Tags à appliquer |
+| `enableSentinel` | bool | `false` | Déploie la solution Sentinel si vrai |
+| `solutions` | array | `[]` | Solutions OMS additionnelles |
+
+| Output | Type | Description |
+|---|---|---|
+| `workspaceId` | string | ID du workspace |
+| `workspaceName` | string | Nom du workspace |
+| `customerId` | string | ID client du workspace |
+
+Ressources : `Microsoft.OperationalInsights/workspaces`, `Microsoft.OperationsManagement/solutions`
+
+Dépendances : utilisé par `diagnostic_settings.bicep` et peut être référencé par des policies ou des scripts de monitoring.
+
+### diagnostic_settings.bicep
+Description : Configure les Diagnostic Settings d'une ressource.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `diagnosticSettingName` | string | `default-diagnostics` | Nom de la configuration |
+| `workspaceId` | string | - | ID du Log Analytics cible |
+| `storageAccountId` | string | `''` | ID du compte de stockage cible |
+| `eventHubAuthorizationRuleId` | string | `''` | ID de la règle Event Hub |
+| `eventHubName` | string | `''` | Nom du Event Hub |
+| `logCategories` | array | `[]` | Catégories de logs à activer |
+| `metricCategories` | array | `[ { category: 'AllMetrics', enabled: true } ]` | Catégories de métriques |
+
+| Output | Type | Description |
+|---|---|---|
+| `diagnosticSettingId` | string | ID de la configuration |
+| `diagnosticSettingName` | string | Nom de la configuration |
+
+Ressources : `Microsoft.Insights/diagnosticSettings`
+
+Dépendances : dépend généralement d'un workspace Log Analytics si `workspaceId` est fourni.
+
+### resource_group.bicep
+Description : Crée un Resource Group.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `resourceGroupName` | string | - | Nom du Resource Group |
+| `location` | string | `caea` | Région logique (cace/canadacentral, caea/canadaeast) |
+| `tags` | object | `{}` | Tags à appliquer |
+
+| Output | Type | Description |
+|---|---|---|
+| `resourceGroupId` | string | ID du Resource Group |
+| `resourceGroupName` | string | Nom du Resource Group |
+
+Ressources : `Microsoft.Resources/resourceGroups`
+
+Dépendances : aucune directe.
+
+---
+
+## Politiques disponibles dans `platform-lz/policies`
+
+Le dossier `platform-lz/policies` contient des templates d'initiatives et d'assignations organisées par thème. Ces fichiers sont des exemples de bundles de policies, pas des modules génériques, et peuvent être déployés directement.
+
+### 01_Tagging_Policy.bicep
+Description : initiative et assignations de policies de tagging sur les Resource Groups.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `location` | string | `deployment().location` | Région de l'assignation |
+| `initiativeCustomPoliciesName` | string | - | Nom de l'initiative personnalisée |
+| `initiativeCustomPoliciesDisplayName` | string | - | Affichage de l'initiative personnalisée |
+| `initiativeBuiltinPoliciesName` | string | - | Nom de l'initiative built-in |
+| `initiativeBuiltinPoliciesDisplayName` | string | - | Affichage de l'initiative built-in |
+| `customPoliciesTags` | array | `[]` | Liste de policies custom de tagging |
+| `builtinPoliciesTags` | array | `[]` | Liste de policies built-in de tagging |
+
+| Output | Type | Description |
+|---|---|---|
+| `initiativeCustomPoliciesTagsId` | string | ID de l'initiative custom |
+| `initiativeBuiltinPoliciesTagsId` | string | ID de l'initiative built-in |
+| `initiativeCustomPoliciesTagsAssignmentId` | string | ID de l'assignation custom |
+| `initiativeBuiltinPoliciesTagsAssignmentId` | string | ID de l'assignation built-in |
+
+Ressources : `Microsoft.Authorization/policyDefinitions`, `Microsoft.Authorization/policySetDefinitions`, `Microsoft.Authorization/policyAssignments`
+
+Contenu : 2 initiatives, 2 assignations, policies custom de tags et policies built-in de type `requiredOnResourceGroup` / `inheritFromResourceGroup`.
+
+### 02_General_Policy.bicep
+Description : initiative de policies générales pour la localisation des ressources.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `initiativeName` | string | - | Nom de l'initiative |
+| `assignmentName` | string | - | Nom de l'assignation |
+| `allowedLocations` | array | - | Liste des emplacements autorisés |
+| `initiativeDisplayName` | string | - | Nom lisible de l'initiative |
+| `assignmentDisplayName` | string | - | Nom lisible de l'assignation |
+
+| Output | Type | Description |
+|---|---|---|
+| `initiativeId` | string | ID de l'initiative |
+| `assignmentId` | string | ID de l'assignation |
+
+Ressources : `Microsoft.Authorization/policySetDefinitions`, `Microsoft.Authorization/policyAssignments`
+
+Contenu : built-ins `allowed locations` et `audit resource location matches resource group location`.
+
+### 03_Network_Policy.bicep
+Description : initiative réseau avec contrôle NSG et suppression des IP publiques sur NIC.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `initiativeName` | string | - | Nom de l'initiative |
+| `assignmentName` | string | - | Nom de l'assignation |
+| `initiativeDisplayName` | string | - | Nom lisible de l'initiative |
+| `assignmentDisplayName` | string | - | Nom lisible de l'assignation |
+| `initiativeCategory` | string | `General` | Catégorie metadata |
+| `enforcementMode` | string | `Default` | Mode d'application |
+
+| Output | Type | Description |
+|---|---|---|
+| `initiativeId` | string | ID de l'initiative |
+| `assignmentId` | string | ID de l'assignation |
+
+Ressources : `Microsoft.Authorization/policySetDefinitions`, `Microsoft.Authorization/policyAssignments`
+
+Contenu : built-ins `Subnets should be associated with a Network Security Group` et `Network interfaces should not have public IPs`.
+
+### 04_KeyVault_Policy.bicep
+Description : initiative Key Vault RBAC.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `initiativeName` | string | - | Nom de l'initiative |
+| `assignmentName` | string | - | Nom de l'assignation |
+| `initiativeDisplayName` | string | - | Nom lisible de l'initiative |
+| `assignmentDisplayName` | string | - | Nom lisible de l'assignation |
+| `kvRbacEffect` | string | - | Effet appliqué à la policy |
+
+| Output | Type | Description |
+|---|---|---|
+| `initiativeId` | string | ID de l'initiative |
+| `assignmentId` | string | ID de l'assignation |
+
+Ressources : `Microsoft.Authorization/policySetDefinitions`, `Microsoft.Authorization/policyAssignments`
+
+Contenu : built-in `Azure Key Vault should use RBAC permission model`.
+
+### 05_VM_Policy.bicep
+Description : initiative VM avec contrôles de SKU et audit Backup.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `initiativeName` | string | - | Nom de l'initiative |
+| `assignmentName` | string | - | Nom de l'assignation |
+| `allowedVmSkus` | array | - | Liste des SKU de VM autorisés |
+| `backupEffect` | string | `AuditIfNotExists` | Effet pour la policy Azure Backup |
+| `initiativeDisplayName` | string | - | Nom lisible de l'initiative |
+| `assignmentDisplayName` | string | - | Nom lisible de l'assignation |
+
+| Output | Type | Description |
+|---|---|---|
+| `initiativeId` | string | ID de l'initiative |
+| `assignmentId` | string | ID de l'assignation |
+
+Ressources : `Microsoft.Authorization/policySetDefinitions`, `Microsoft.Authorization/policyAssignments`
+
+Contenu : built-ins `Allowed virtual machine SKUs` et `Azure Backup should be enabled for Virtual Machines`.
+
+### 06_StorageAccount_Policy.bicep
+Description : initiative Storage Account avec HTTPS, TLS minimum et blocage du public access.
+
+| Input | Type | Par défaut | Description |
+|---|---|---|---|
+| `initiativeName` | string | - | Nom de l'initiative |
+| `assignmentName` | string | - | Nom de l'assignation |
+| `secureTransferEffect` | string | `Modify` | Effet pour Secure Transfer |
+| `tlsEffect` | string | `Audit` | Effet pour minimum TLS |
+| `minimumTlsVersion` | string | `TLS1_2` | Version TLS minimale |
+| `publicAccessEffect` | string | `Audit` | Effet pour blocage du public access |
+| `assignmentLocation` | string | `deployment().location` | Région de l'assignation |
+| `initiativeDisplayName` | string | - | Nom lisible de l'initiative |
+| `assignmentDisplayName` | string | - | Nom lisible de l'assignation |
+
+| Output | Type | Description |
+|---|---|---|
+| `initiativeId` | string | ID de l'initiative |
+| `assignmentId` | string | ID de l'assignation |
+
+Ressources : `Microsoft.Authorization/policySetDefinitions`, `Microsoft.Authorization/policyAssignments`
+
+Contenu : built-ins `Configure secure transfer of data on a storage account`, `Storage accounts should have the specified minimum TLS version`, et `Storage account public access should be disallowed`.
+
+---
+
+## Bonnes pratiques spécifiques aux modules
+
+- Utiliser des noms et tags standardisés (cf. stratégie de tagging dans le repo).
+- Fournir des paramètres via `.bicepparam` par environnement pour éviter les secrets en clair.
+- Séparer la création d'infrastructure (management groups, RGs, workspace) et les assignments / configurations (policies, diagnostics) en étapes distinctes.
+
+## Exemple rapide — flux recommandé
+
+1. Déployer les `management_group` (tenant scope).
+2. Déployer `log_analytics_workspace` (resource group scope).
+3. Déployer `diagnostic_settings` contre les ressources cibles (scope ressource), en pointant vers le workspace.
+
+---
+
+Si vous souhaitez, je peux :
+- Générer un tableau Markdown des paramètres/outputs pour chaque module (CSV-like),
+- Ajouter des snippets d'exemples plus détaillés pour l'appel de chaque module depuis `platform/main.bicep`.
+
+**Mise à jour** : Mai 2026
