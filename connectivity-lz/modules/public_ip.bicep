@@ -62,7 +62,7 @@ param logAnalyticsWorkspaceId string = ''
 // Public IP Address Resource
 resource publicIp 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
   name: publicIpName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   sku: {
     name: sku

@@ -37,7 +37,7 @@ param networkWatcherName string = 'NetworkWatcher_${location}'
 // Network Security Group Resource
 resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
   name: nsgName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   properties: {
     securityRules: [
@@ -132,7 +132,7 @@ module flowLogsModule './network_watcher_flowlogs.bicep' = if (enableFlowLogs &&
     networkWatcherName: networkWatcherName
     nsgId: networkSecurityGroup.id
     flowLogsStorageAccountId: flowLogsStorageAccountId
-    location: location
+    location: location == 'caea' ? 'canadaeast' : 'canadacentral'
     tags: tags
     flowLogsRetentionDays: flowLogsRetentionDays
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId

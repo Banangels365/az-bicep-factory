@@ -40,7 +40,7 @@ param availabilityZones = [
 ]
 
 // Logging
-param logAnalyticsWorkspaceId = '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-platform-management-prod/providers/Microsoft.OperationalInsights/workspaces/law-contoso-platform-prod'
+param logAnalyticsWorkspaceId = '/subscriptions/0061dc3e-7704-4778-bcda-b566d000d486/resourceGroups/rg-acmy-sbox-caea-monitoring/providers/Microsoft.OperationalInsights/workspaces/law-acmy-sbox-caea'
 
 // liste des tags à appliquer à toutes les ressources
 param tags = {

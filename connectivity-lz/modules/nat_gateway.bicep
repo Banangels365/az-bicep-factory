@@ -5,7 +5,7 @@
 param natGatewayName string
 
 @description('Location for the NAT gateway')
-param location string = resourceGroup().location
+param location string
 
 @description('Public IP Address resource IDs')
 param publicIpAddressIds array = []
@@ -33,7 +33,7 @@ param logAnalyticsWorkspaceId string = ''
 // NAT Gateway Resource
 resource natGateway 'Microsoft.Network/natGateways@2023-09-01' = {
   name: natGatewayName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   sku: {
     name: 'Standard'

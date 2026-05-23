@@ -5,7 +5,7 @@
 param loadBalancerName string
 
 @description('Location for the load balancer')
-param location string = resourceGroup().location
+param location string
 
 @description('Load Balancer SKU')
 @allowed([
@@ -71,7 +71,7 @@ param logAnalyticsWorkspaceId string = ''
 // Load Balancer Resource
 resource loadBalancer 'Microsoft.Network/loadBalancers@2023-09-01' = {
   name: loadBalancerName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   sku: {
     name: sku

@@ -5,11 +5,7 @@
 param ddosProtectionPlanName string
 
 @description('Location for the DDoS protection plan')
-@allowed([
-  'cace' // canadacentral
-  'caea' // canadaeast
-])
-param location string = 'caea'
+param location string
 
 @description('Tags to apply to the DDoS protection plan')
 param tags object = {}
