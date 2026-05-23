@@ -105,6 +105,7 @@ var ddosProtectionPlanName = 'ddos-${organizationName}-${environment}'
 
 // NSG names
 var nsgManagementName = 'nsg-hub-${organizationName}-${environment}-${location}'
+var nsgBastionName = 'nsg-bastion-${organizationName}-${environment}-${location}'
 
 // Public IP names
 var pipVpnGatewayName = 'pip-vpngw-${organizationName}-${environment}'
@@ -139,10 +140,59 @@ module nsgManagement './modules/network_security_group.bicep' = {
     nsgName: nsgManagementName
     location: location
     securityRules: [
-      // --- Bastion mandatory inbound rules (per Microsoft documentation) ---
+      // nsgManagement — règles management uniquement
+      {
+        name: 'AllowRDP'
+        protocol: 'Tcp'
+        sourcePortRange: '*'
+        destinationPortRange: '3389'
+        sourceAddressPrefix: bastionSubnetAddressPrefix
+        destinationAddressPrefix: managementSubnetAddressPrefix
+        access: 'Allow'
+        priority: 100
+        direction: 'Inbound'
+      }
+      {
+        name: 'AllowSSH'
+        protocol: 'Tcp'
+        sourcePortRange: '*'
+        destinationPortRange: '22'
+        sourceAddressPrefix: bastionSubnetAddressPrefix
+        destinationAddressPrefix: managementSubnetAddressPrefix
+        access: 'Allow'
+        priority: 110
+        direction: 'Inbound'
+      }
+      {
+        name: 'DenyAllInbound'
+        protocol: '*'
+        sourcePortRange: '*'
+        destinationPortRange: '*'
+        sourceAddressPrefix: '*'
+        destinationAddressPrefix: '*'
+        access: 'Deny'
+        priority: 4096
+        direction: 'Inbound'
+      }
+    ]
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
+    enableDiagnostics: true
+    tags: tags
+  }
+}
+
+// NSG dédié au subnet Bastion pour permettre des règles spécifiques (ex: autoriser uniquement le port 22/3389 depuis le subnet management, et pas depuis tout le VNet)
+module nsgBastion './modules/network_security_group.bicep' = if (deployBastion) {
+  scope: resourceGroup(connectivityResourceGroupName)
+  name: 'deploy-nsg-bastion'
+  params: {
+    nsgName: nsgBastionName
+    location: location
+    securityRules: [
+      // -- INBOUND ---
       {
         name: 'AllowHttpsInbound'
-        description: 'Allow HTTPS from Internet to Bastion'
+        description: 'Required: HTTPS from Internet'
         protocol: 'Tcp'
         sourcePortRange: '*'
         destinationPortRange: '443'
@@ -154,7 +204,7 @@ module nsgManagement './modules/network_security_group.bicep' = {
       }
       {
         name: 'AllowGatewayManagerInbound'
-        description: 'Allow GatewayManager inbound (required by Bastion)'
+        description: 'Required: Bastion control plane'
         protocol: 'Tcp'
         sourcePortRange: '*'
         destinationPortRange: '443'
@@ -166,7 +216,7 @@ module nsgManagement './modules/network_security_group.bicep' = {
       }
       {
         name: 'AllowAzureLoadBalancerInbound'
-        description: 'Allow Azure Load Balancer health probes'
+        description: 'Required: health probes'
         protocol: 'Tcp'
         sourcePortRange: '*'
         destinationPortRange: '443'
@@ -177,8 +227,8 @@ module nsgManagement './modules/network_security_group.bicep' = {
         direction: 'Inbound'
       }
       {
-        name: 'AllowBastionHostCommunication'
-        description: 'Allow Bastion host-to-host communication'
+        name: 'AllowBastionHostCommunicationInbound'
+        description: 'Required: host-to-host'
         protocol: '*'
         sourcePortRange: '*'
         destinationPortRanges: ['5701', '8080']
@@ -188,67 +238,54 @@ module nsgManagement './modules/network_security_group.bicep' = {
         priority: 130
         direction: 'Inbound'
       }
-      // --- Bastion mandatory outbound rules (per Microsoft documentation) ---
+      // ----- OUTBOUND ---------
+      {
+        name: 'AllowSshRdpOutbound'
+        description: 'Required: SSH/RDP to target VMs'
+        protocol: '*'
+        sourcePortRange: '*'
+        destinationPortRanges: ['22', '3389']
+        sourceAddressPrefix: '*'
+        destinationAddressPrefix: 'VirtualNetwork'
+        access: 'Allow'
+        priority: 100
+        direction: 'Outbound'
+      }
       {
         name: 'AllowAzureCloudOutbound'
-        description: 'Allow Bastion outbound to Azure control plane'
+        description: 'Required: Bastion control plane outbound'
         protocol: 'Tcp'
         sourcePortRange: '*'
         destinationPortRange: '443'
         sourceAddressPrefix: '*'
         destinationAddressPrefix: 'AzureCloud'
         access: 'Allow'
-        priority: 300
+        priority: 110
         direction: 'Outbound'
       }
       {
-        name: 'AllowBastionHostCommunicationOutbound'
-        description: 'Allow Bastion host-to-host outbound communication'
+        name: 'AllowBastionCommunicationOutbound'
+        description: 'Required: host-to-host outbound'
         protocol: '*'
         sourcePortRange: '*'
         destinationPortRanges: ['5701', '8080']
-        sourceAddressPrefix: 'VirtualNetwork'
+        sourceAddressPrefix: '*'
         destinationAddressPrefix: 'VirtualNetwork'
         access: 'Allow'
-        priority: 310
+        priority: 120
         direction: 'Outbound'
       }
-      // --- Management subnet rules ---
       {
-        name: 'AllowRDP'
-        description: 'Allow RDP from Bastion subnet'
-        protocol: 'Tcp'
-        sourcePortRange: '*'
-        destinationPortRange: '3389'
-        sourceAddressPrefix: bastionSubnetAddressPrefix
-        destinationAddressPrefix: managementSubnetAddressPrefix
-        access: 'Allow'
-        priority: 200
-        direction: 'Inbound'
-      }
-      {
-        name: 'AllowSSH'
-        description: 'Allow SSH from Bastion subnet'
-        protocol: 'Tcp'
-        sourcePortRange: '*'
-        destinationPortRange: '22'
-        sourceAddressPrefix: bastionSubnetAddressPrefix
-        destinationAddressPrefix: managementSubnetAddressPrefix
-        access: 'Allow'
-        priority: 210
-        direction: 'Inbound'
-      }
-      {
-        name: 'DenyAllInbound'
-        description: 'Deny all other inbound traffic'
+        name: 'AllowGetSessionInformation'
+        description: 'Required: session info via HTTP'
         protocol: '*'
         sourcePortRange: '*'
-        destinationPortRange: '*'
+        destinationPortRange: '80'
         sourceAddressPrefix: '*'
-        destinationAddressPrefix: '*'
-        access: 'Deny'
-        priority: 4096
-        direction: 'Inbound'
+        destinationAddressPrefix: 'Internet'
+        access: 'Allow'
+        priority: 130
+        direction: 'Outbound'
       }
     ]
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
