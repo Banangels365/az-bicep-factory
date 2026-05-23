@@ -75,9 +75,9 @@ jobs:
       - name: What-If Connectivity-LZ
         shell: pwsh
         run: |
-          $output = az deployment mg what-if `
+          $output = az deployment sub what-if `
             --name connectivity-lz-whatif `
-            --management-group-id "${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}" `
+            --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}" `
             --location "${{ env.LOCATION }}" `
             --template-file ./connectivity.bicep `
             --parameters ./connectivity.bicepparam `
@@ -221,9 +221,9 @@ jobs:
       - name: Deploy Connectivity-LZ
         shell: pwsh
         run: |
-          $output = az deployment mg create `
+          $output = az deployment sub create `
             --name connectivity-lz-deploy `
-            --management-group-id "${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}" `
+            --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}" `
             --location "${{ env.LOCATION }}" `
             --template-file ./connectivity.bicep `
             --parameters ./connectivity.bicepparam `

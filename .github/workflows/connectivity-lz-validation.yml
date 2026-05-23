@@ -102,9 +102,9 @@ jobs:
 
       - name: Validate Connectivity-LZ deployment
         run: |
-          az deployment mg validate \
+          az deployment sub validate \
             --name connectivity-lz-validation \
-            --management-group-id ${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }} \
+            --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
             --location ${{ env.LOCATION }} \
             --template-file ./connectivity.bicep \
             --parameters ./connectivity.bicepparam
@@ -136,9 +136,9 @@ jobs:
           AZURE_CLI_DISABLE_PROGRESS: true
         run: |
           # 1. Run what-if
-          $rawOutput = az deployment mg what-if `
+          $rawOutput = az deployment sub what-if `
               --name connectivity-lz-whatif `
-              --management-group-id "${{ secrets.AZURE_ROOT_MANAGEMENT_GROUP }}" `
+              --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}" `
               --location "${{ env.LOCATION }}" `
               --template-file ./connectivity.bicep `
               --parameters ./connectivity.bicepparam `
