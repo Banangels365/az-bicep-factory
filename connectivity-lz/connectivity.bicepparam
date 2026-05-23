@@ -43,7 +43,7 @@ param tags = {
   Application: 'Connectivity-LZ'
   Environnement: 'sbox'
   CreeLe: '2024-05-22'
-  CreePar: 'CloudOps-Team'
+  CreePar: 'Bicep'
   Criticite: 'Moyen'
   Responsable: 'CloudOps-Team'
   ResponsableEmail: 'cloudops@acmy.com'

@@ -3,10 +3,10 @@
 
 targetScope = 'subscription'
 
-@description('Organization name')
+@description('Nom de l\'organisation')
 param organizationName string
 
-@description('Environment')
+@description('Environnement')
 @allowed([
   'prod' // production
   'logs' // logging/monitoring
@@ -15,44 +15,44 @@ param organizationName string
 ])
 param environment string
 
-@description('Azure region for hub resources')
+@description('Région de déploiement')
 @allowed([
   'cace' // canadacentral
   'caea' // canadaeast
 ])
 param location string = 'caea'
 
-@description('Connectivity Resource Group (must exist prior to deployment)')
+@description('Connectivity Resource Group (doit être créé au préalable)')
 param connectivityResourceGroupName string
 
-@description('Hub VNet address prefix')
+@description('Préfixe d\'adresse du VNet du hub')
 param hubVnetAddressPrefix string = '10.0.0.0/16'
 
-@description('Gateway subnet address prefix')
+@description('Préfixe d\'adresse du sous-réseau de la passerelle')
 param gatewaySubnetAddressPrefix string = '10.0.0.0/27'
 
-@description('Azure Firewall subnet address prefix')
+@description('Préfixe d\'adresse du sous-réseau d\'Azure Firewall')
 param firewallSubnetAddressPrefix string = '10.0.1.0/26'
 
-@description('Bastion subnet address prefix')
+@description('Préfixe d\'adresse du sous-réseau de Bastion')
 param bastionSubnetAddressPrefix string = '10.0.2.0/27'
 
-@description('Management subnet address prefix')
+@description('Préfixe d\'adresse du sous-réseau de gestion')
 param managementSubnetAddressPrefix string = '10.0.3.0/24'
 
-@description('Deploy VPN Gateway')
+@description('Déployer le VPN Gateway')
 param deployVpnGateway bool = true
 
-@description('Deploy Azure Firewall')
+@description('Déployer Azure Firewall')
 param deployAzureFirewall bool = true
 
-@description('Deploy Azure Bastion')
+@description('Déployer Azure Bastion')
 param deployBastion bool = true
 
-@description('Deploy DDoS Protection Plan')
+@description('Déployer le plan de protection DDoS')
 param deployDdosProtection bool = false
 
-@description('VPN Gateway SKU')
+@description('SKU du VPN Gateway')
 @allowed([
   'VpnGw1'
   'VpnGw2'
@@ -67,7 +67,7 @@ param deployDdosProtection bool = false
 ])
 param vpnGatewaySku string = 'VpnGw1'
 
-@description('VPN Gateway generation — Generation2 required for VpnGw4/5 and all AZ SKUs')
+@description('Génération du VPN Gateway — Generation2 requis pour VpnGw4/5 et tous les SKUs AZ')
 @allowed([
   'Generation1'
   'Generation2'
@@ -81,16 +81,15 @@ param vpnGatewayGeneration string = 'Generation1'
 ])
 param firewallSkuTier string = 'Standard'
 
-@description('Availability zones for zone-redundant resources')
+@description('Zones de disponibilité pour les ressources redondantes par zone')
 param availabilityZones array = []
 
-@description('Log Analytics Workspace ID')
+@description('ID de l\'espace de travail Log Analytics')
 param logAnalyticsWorkspaceId string
 
-@description('Tags to apply to all resources')
+@description('Tags à appliquer à toutes les ressources')
 param tags object = {
   Environnement: environment
-  ManagedBy: 'Bicep'
   Purpose: 'Hub-Network'
 }
 
@@ -99,21 +98,21 @@ param tags object = {
 // ============================================
 
 var hubVnetName = 'vnet-${organizationName}-hub-${environment}-${location}'
-var firewallName = 'afw-${organizationName}-hub-${environment}'
+var firewallName = 'afw-${organizationName}-hub-${environment}-${location}'
 var vpnGatewayName = 'vpngw-${organizationName}-hub-${environment}'
 var bastionName = 'bas-${organizationName}-hub-${environment}'
 var ddosProtectionPlanName = 'ddos-${organizationName}-${environment}'
 
 // NSG names
-var nsgManagementName = 'nsg-hub-${environment}-${location}'
+var nsgManagementName = 'nsg-hub-${organizationName}-${environment}-${location}'
 
 // Public IP names
-var pipVpnGatewayName = 'pip-vpngw-${environment}'
-var pipFirewallName = 'pip-afw-${environment}'
-var pipBastionName = 'pip-bas-${environment}'
+var pipVpnGatewayName = 'pip-vpngw-${organizationName}-${environment}'
+var pipFirewallName = 'pip-afw-${organizationName}-${environment}'
+var pipBastionName = 'pip-bas-${organizationName}-${environment}'
 
 // Route table names
-var rtManagementName = 'rt-hub-${environment}-${location}'
+var rtManagementName = 'rt-hub-${organizationName}-${environment}-${location}'
 
 // ============================================
 // DDoS PROTECTION PLAN
@@ -188,6 +187,31 @@ module nsgManagement './modules/network_security_group.bicep' = {
         access: 'Allow'
         priority: 130
         direction: 'Inbound'
+      }
+      // --- Bastion mandatory outbound rules (per Microsoft documentation) ---
+      {
+        name: 'AllowAzureCloudOutbound'
+        description: 'Allow Bastion outbound to Azure control plane'
+        protocol: 'Tcp'
+        sourcePortRange: '*'
+        destinationPortRange: '443'
+        sourceAddressPrefix: '*'
+        destinationAddressPrefix: 'AzureCloud'
+        access: 'Allow'
+        priority: 300
+        direction: 'Outbound'
+      }
+      {
+        name: 'AllowBastionHostCommunicationOutbound'
+        description: 'Allow Bastion host-to-host outbound communication'
+        protocol: '*'
+        sourcePortRange: '*'
+        destinationPortRanges: ['5701', '8080']
+        sourceAddressPrefix: 'VirtualNetwork'
+        destinationAddressPrefix: 'VirtualNetwork'
+        access: 'Allow'
+        priority: 310
+        direction: 'Outbound'
       }
       // --- Management subnet rules ---
       {
@@ -331,8 +355,6 @@ module hubVnet './modules/virtual_network.bicep' = {
     enableDiagnostics: true
     tags: tags
   }
-  // dependsOn supprimé : nsgManagement.outputs.nsgId est référencé dans params.subnets
-  // → Bicep infère la dépendance implicitement (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -361,7 +383,6 @@ module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall)
     tags: tags
   }
   // dependsOn supprimé : hubVnet.outputs.vnetId et pipFirewall.?outputs.publicIpId
-  // sont référencés dans params → dépendances implicites (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -382,17 +403,12 @@ module routeTableManagement './modules/route_table.bicep' = {
             name: 'DefaultToFirewall'
             addressPrefix: '0.0.0.0/0'
             nextHopType: 'VirtualAppliance'
-            // FIX BCP318 : opérateur ?. sur le module conditionnel azureFirewall.
-            // Si deployAzureFirewall est false, cette branche du ternaire n'est jamais évaluée,
-            // mais Bicep analyse quand même l'expression → ?. + ?? nécessaires.
             nextHopIpAddress: azureFirewall.?outputs.privateIpAddress ?? ''
           }
         ]
       : []
     tags: tags
   }
-  // dependsOn supprimé : azureFirewall.?outputs.privateIpAddress est référencé dans params.routes
-  // → dépendance implicite sur azureFirewall (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -411,9 +427,6 @@ module managementSubnet './modules/subnet.bicep' = {
     networkSecurityGroupId: nsgManagement.outputs.nsgId
     routeTableId: routeTableManagement.outputs.routeTableId
   }
-  // dependsOn supprimé : hubVnetName est un param string (pas un output),
-  // mais nsgManagement.outputs.nsgId et routeTableManagement.outputs.routeTableId
-  // sont référencés dans params → toutes les dépendances sont implicites (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -438,8 +451,6 @@ module vpnGateway './modules/vpn_gateway.bicep' = if (deployVpnGateway) {
     enableDiagnostics: true
     tags: tags
   }
-  // dependsOn supprimé : hubVnet.outputs.vnetId et pipVpnGateway.?outputs.publicIpId
-  // sont référencés dans params → dépendances implicites (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -463,8 +474,6 @@ module bastion './modules/azure_bastion.bicep' = if (deployBastion) {
     enableDiagnostics: true
     tags: tags
   }
-  // dependsOn supprimé : hubVnet.outputs.vnetId et pipBastion.?outputs.publicIpId
-  // sont référencés dans params → dépendances implicites (no-unnecessary-dependson)
 }
 
 // ============================================
@@ -480,7 +489,6 @@ output firewallSubnetId string = '${hubVnet.outputs.vnetId}/subnets/AzureFirewal
 output bastionSubnetId string = '${hubVnet.outputs.vnetId}/subnets/AzureBastionSubnet'
 output managementSubnetId string = '${hubVnet.outputs.vnetId}/subnets/snet-hub-management'
 
-// FIX BCP318 : même pattern ?. ?? '' appliqué sur tous les outputs conditionnels.
 output vpnGatewayId string = vpnGateway.?outputs.vpnGatewayId ?? ''
 output azureFirewallId string = azureFirewall.?outputs.firewallId ?? ''
 output azureFirewallPrivateIp string = azureFirewall.?outputs.privateIpAddress ?? ''
