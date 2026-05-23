@@ -32,7 +32,7 @@ resource networkWatcher 'Microsoft.Network/networkWatchers@2023-09-01' existing 
 resource flowLogs 'Microsoft.Network/networkWatchers/flowLogs@2023-09-01' = {
   parent: networkWatcher
   name: flowLogName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   properties: {
     targetResourceId: nsgId

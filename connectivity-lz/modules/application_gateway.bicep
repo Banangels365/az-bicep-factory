@@ -5,11 +5,7 @@
 param applicationGatewayName string
 
 @description('Location for the application gateway')
-@allowed([
-  'cace' // canadacentral
-  'caea' // canadaeast
-])
-param location string = 'caea'
+param location string
 
 @description('Application Gateway SKU')
 @allowed([

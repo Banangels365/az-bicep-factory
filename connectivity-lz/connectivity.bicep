@@ -89,7 +89,7 @@ param logAnalyticsWorkspaceId string
 
 @description('Tags to apply to all resources')
 param tags object = {
-  Environment: environment
+  Environnement: environment
   ManagedBy: 'Bicep'
   Purpose: 'Hub-Network'
 }

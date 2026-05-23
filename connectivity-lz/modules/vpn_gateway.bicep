@@ -5,7 +5,7 @@
 param vpnGatewayName string
 
 @description('Location for the VPN gateway')
-param location string = resourceGroup().location
+param location string
 
 @description('Gateway type')
 @allowed([
@@ -84,7 +84,7 @@ param logAnalyticsWorkspaceId string = ''
 // VPN Gateway Resource
 resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-09-01' = {
   name: vpnGatewayName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   properties: {
     gatewayType: gatewayType

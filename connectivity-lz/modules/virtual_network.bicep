@@ -7,7 +7,7 @@
 param vnetName string
 
 @description('Location for the virtual network')
-param location string = resourceGroup().location
+param location string
 
 @description('Address space prefixes for the virtual network')
 param addressPrefixes array
@@ -45,7 +45,7 @@ param flowLogsStorageAccountId string = ''
 // Virtual Network Resource
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-09-01' = {
   name: vnetName
-  location: location
+  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
   tags: tags
   properties: {
     addressSpace: {
