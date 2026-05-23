@@ -9,7 +9,7 @@ param environment = 'sbox' // prod, logs, quar, sbox
 param location = 'caea' // canadacentral ou canadaeast
 
 // Doit avoir été créé au préalable
-param connectivityResourceGroupName = 'rg-sbox-caea-networking'
+param connectivityResourceGroupName = 'rg-${organizationName}-${environment}-${location}-networking'
 
 // Hub VNet addressing
 param hubVnetAddressPrefix = '10.0.0.0/16'
@@ -42,11 +42,13 @@ param availabilityZones = [
 // Logging
 param logAnalyticsWorkspaceId = '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-platform-management-prod/providers/Microsoft.OperationalInsights/workspaces/law-contoso-platform-prod'
 
-// Tagging
+// liste des tags à appliquer à toutes les ressources
 param tags = {
-  Environment: 'Sandbox'
-  ManagedBy: 'Bicep'
-  CostCenter: 'IT-Network'
-  Owner: 'NetworkOps-Team'
-  Purpose: 'Hub-Network'
+  Application: 'Connectivity-LZ'
+  Environnement: 'sbox'
+  CreeLe: '2024-05-22'
+  CreePar: 'CloudOps-Team'
+  Criticite: 'Moyen'
+  Responsable: 'CloudOps-Team'
+  ResponsableEmail: 'cloudops@acmy.com'
 }
