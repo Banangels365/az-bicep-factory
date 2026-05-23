@@ -35,7 +35,7 @@ param gatewaySubnetAddressPrefix string = '10.0.0.0/27'
 param firewallSubnetAddressPrefix string = '10.0.1.0/26'
 
 @description('Préfixe d\'adresse du sous-réseau de Bastion')
-param bastionSubnetAddressPrefix string = '10.0.2.0/27'
+param bastionSubnetAddressPrefix string = '10.0.2.0/26'
 
 @description('Préfixe d\'adresse du sous-réseau de gestion')
 param managementSubnetAddressPrefix string = '10.0.3.0/24'
@@ -361,7 +361,6 @@ module hubVnet './modules/virtual_network.bicep' = {
     location: location
     addressPrefixes: [hubVnetAddressPrefix]
     enableDdosProtection: deployDdosProtection
-    // FIX BCP318 : opérateur ?. pour accéder à l'output d'un module conditionnel.
     // Si ddosProtection n'est pas déployé, l'expression retourne null, et ?? fournit ''.
     ddosProtectionPlanId: ddosProtection.?outputs.ddosProtectionPlanId ?? ''
     subnets: [
@@ -379,12 +378,12 @@ module hubVnet './modules/virtual_network.bicep' = {
         name: 'AzureBastionSubnet'
         addressPrefix: bastionSubnetAddressPrefix
         // AzureBastionSubnet ne doit PAS avoir de route table
-        networkSecurityGroupId: nsgManagement.outputs.nsgId
+        networkSecurityGroupId: nsgBastion.?outputs.nsgId ?? '' // NSG dédié Bastion
       }
       {
         name: 'snet-hub-management'
         addressPrefix: managementSubnetAddressPrefix
-        networkSecurityGroupId: nsgManagement.outputs.nsgId
+        networkSecurityGroupId: nsgManagement.?outputs.nsgId ?? '' // NSG de management
         // routeTableId sera appliqué en phase 2 après le déploiement du Firewall
       }
     ]
@@ -419,7 +418,6 @@ module azureFirewall './modules/azure_firewall.bicep' = if (deployAzureFirewall)
     enableDiagnostics: true
     tags: tags
   }
-  // dependsOn supprimé : hubVnet.outputs.vnetId et pipFirewall.?outputs.publicIpId
 }
 
 // ============================================
@@ -461,7 +459,7 @@ module managementSubnet './modules/subnet.bicep' = {
     vnetName: hubVnetName
     subnetName: 'snet-hub-management'
     addressPrefix: managementSubnetAddressPrefix
-    networkSecurityGroupId: nsgManagement.outputs.nsgId
+    networkSecurityGroupId: nsgManagement.?outputs.nsgId ?? ''
     routeTableId: routeTableManagement.outputs.routeTableId
   }
 }
