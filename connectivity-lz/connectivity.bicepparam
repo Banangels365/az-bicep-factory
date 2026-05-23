@@ -32,12 +32,8 @@ param vpnGatewayGeneration = 'Generation2' // Obligatoire pour les SKUs AZ
 // Azure Firewall
 param firewallSkuTier = 'Standard' // Utiliser 'Premium' pour IDPS, TLS inspection, URL filtering
 
-// High availability — zones 1, 2, 3 pour canadacentral
-param availabilityZones = [
-  '1'
-  '2'
-  '3'
-]
+// High availability — zones 1, 2, 3 pour canadacentral. ne pas spécifier pour canadaeast (pas de zones disponibles)
+param availabilityZones = []
 
 // Logging
 param logAnalyticsWorkspaceId = '/subscriptions/0061dc3e-7704-4778-bcda-b566d000d486/resourceGroups/rg-acmy-sbox-caea-monitoring/providers/Microsoft.OperationalInsights/workspaces/law-acmy-sbox-caea'

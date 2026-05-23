@@ -105,7 +105,7 @@ var bastionName = 'bas-${organizationName}-hub-${environment}'
 var ddosProtectionPlanName = 'ddos-${organizationName}-${environment}'
 
 // NSG names
-var nsgManagementName = 'nsg-hub-management-${environment}'
+var nsgManagementName = 'nsg-hub-${environment}-${location}'
 
 // Public IP names
 var pipVpnGatewayName = 'pip-vpngw-${environment}'
@@ -113,7 +113,7 @@ var pipFirewallName = 'pip-afw-${environment}'
 var pipBastionName = 'pip-bas-${environment}'
 
 // Route table names
-var rtManagementName = 'rt-hub-management-${environment}'
+var rtManagementName = 'rt-hub-${environment}-${location}'
 
 // ============================================
 // DDoS PROTECTION PLAN
