@@ -38,6 +38,8 @@ var builtInRoleNames = {
   'Cost Management Contributor': '434105ed-43f6-45c7-a02f-909b2ba83430'
   'Cost Management Reader': '72fafb9e-0641-4937-9268-a91bfd8191a3'
   'Monitoring Contributor': '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
+  'Monitoring Reader': '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
+  'Monitoring Metrics Publisher': '3913510d-42f4-56c9-9e15-8e25fbd76d3e'
   'Network Contributor': '4d97b98b-1d4f-4787-a291-c67834d212e7'
   'Security Admin': 'fb1c8493-542b-48eb-b624-b4c8fea62acd'
   'Security Reader': '39bc4728-0917-49c7-9d2c-d95423bc2eb4'
