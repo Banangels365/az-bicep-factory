@@ -86,11 +86,13 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
     workspaceId: logAnalyticsWorkspaceId
     logs: [
       {
-        category: 'NetworkSecurityGroupEvent'
+        categoryGroup: 'allLogs'
         enabled: true
       }
+    ]
+    metrics: [
       {
-        category: 'NetworkSecurityGroupRuleCounter'
+        category: 'AllMetrics'
         enabled: true
       }
     ]
