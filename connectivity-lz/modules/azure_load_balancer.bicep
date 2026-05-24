@@ -112,12 +112,6 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
   name: '${loadBalancerName}-diagnostics'
   properties: {
     workspaceId: logAnalyticsWorkspaceId
-    logs: [
-      {
-        categoryGroup: 'allLogs'
-        enabled: true
-      }
-    ]
     metrics: [
       {
         category: 'AllMetrics'
