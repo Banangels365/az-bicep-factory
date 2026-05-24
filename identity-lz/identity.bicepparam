@@ -7,41 +7,43 @@ param environment = 'sbox' // prod, logs, quar, sbox
 param location = 'caea' // canadacentral ou canadaeast
 
 // Doit avoir été créé au préalable
-param identityResourceGroupName = 'rg-sbox-caea-identity'
+param identityResourceGroupName = 'rg-${organizationName}-${environment}-${location}-identity'
 
 // Subscription IDs
-param managementSubscriptionId = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
-param loggingSubscriptionId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
-param quarantineSubscriptionId = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-param prodSubscriptionId = 'dddddddd-dddd-dddd-dddd-dddddddddddd'
+param prodSubscriptionId = '0061dc3e-7704-4778-bcda-b566d000d486'
+// param loggingSubscriptionId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+// param quarantineSubscriptionId = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
 
 // Entra ID Group IDs (from create_entra_groups_script.sh output)
 // Load these from the JSON file created by the script
 param entraGroupIds = {
-  platformAdmins: '11111111-1111-1111-1111-111111111111'
-  platformContributors: '22222222-2222-2222-2222-222222222222'
-  networkAdmins: '33333333-3333-3333-3333-333333333333'
-  securityAdmins: '44444444-4444-4444-4444-444444444444'
-  costManagers: '00000000-0000-0000-0000-000000000001'
-  billingReaders: '00000000-0000-0000-0000-000000000002'
-  prodAdmins: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-  prodContributors: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
-  prodReaders: 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-  loggingAdmins: '55555555-5555-5555-5555-555555555555'
-  loggingContributors: '66666666-6666-6666-6666-666666666666'
-  loggingReaders: '77777777-7777-7777-7777-777777777777'
-  quarantineAdmins: '88888888-8888-8888-8888-888888888888'
-  quarantineContributors: '99999999-9999-9999-9999-999999999999'
-  quarantineReaders: '00000000-0000-0000-0000-000000000000'
-  appDevelopers: 'dddddddd-dddd-dddd-dddd-dddddddddddd'
-  appDeployers: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
+  platformAdmins: '9c69ec76-4d23-4c8f-be44-306fc8673b60'
+  platformContributors: '432f270a-b5d8-45fc-9324-b37471b0a24d'
+  networkAdmins: 'ebb9bc11-ba5f-4b2d-af04-6c47e28c8c92'
+  securityAdmins: 'f5e67f5c-38a2-4b72-8db7-c23bb78c7aac'
+  costManagers: 'bac387dd-a547-47c9-b217-14af468d1f35'
+  billingReaders: '67e47d83-f490-4209-8abd-3b47c6570d94'
+  prodAdmins: 'd7d50802-11f2-42e0-850e-d532f82df564'
+  prodContributors: 'b654a1c7-61cd-48a1-9aa4-591aa759dc1c'
+  prodReaders: 'fcecfe9f-2595-43a1-bc13-a487bd28f7ef'
+  loggingAdmins: '70da0ac4-38a1-4765-8ec2-a2c72213a8fc'
+  loggingContributors: 'f0f42fd0-4a77-4982-861a-602ce9230f0e'
+  loggingReaders: 'db913e51-0655-422f-90a8-864c33924551'
+  quarantineAdmins: '287a5e73-2ff7-49e8-879e-79ae8fbc3541'
+  quarantineContributors: '7f0a8a13-ac35-4027-a513-8cd209b8ba3e'
+  quarantineReaders: 'd903c771-8ae2-4283-9b0e-e610dabd34be'
+  // appDevelopers: 'dddddddd-dddd-dddd-dddd-dddddddddddd'
+  // appDeployers: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
 }
 
 // Tagging
 param tags = {
-  Environment: 'Sandbox'
-  ManagedBy: 'Bicep'
-  CostCenter: 'IT-Identity'
-  Owner: 'IdentityOps-Team'
+  Application: 'Identity-LZ'
+  Environnement: 'sbox'
+  CreeLe: '2024-05-24'
+  CreePar: 'Bicep'
+  Criticite: 'Moyen'
+  Responsable: 'CloudOps-Team'
+  ResponsableEmail: 'cloudops@acmy.com'
   Purpose: 'Identity-Management'
 }

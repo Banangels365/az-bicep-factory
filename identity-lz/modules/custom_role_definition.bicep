@@ -3,36 +3,38 @@
 
 targetScope = 'subscription'
 
-@description('Custom role name')
+@description('Nom du rôle personnalisé')
 param roleName string
 
-@description('Description of the custom role')
+@description('Identifiant stable pour ce rôle (utilisé pour générer le GUID — ne pas changer après déploiement)')
+param roleId string = roleName // peut être un UUID fixe passé explicitement
+
+@description('Description du rôle personnalisé')
 param customRoleDescription string
 
-@description('Actions allowed by this role')
+@description('Actions autorisées par ce rôle')
 param actions array
 
-@description('Actions not allowed by this role')
+@description('Actions non autorisées par ce rôle')
 param notActions array = []
 
-@description('Data actions allowed by this role')
+@description('Données actions autorisées par ce rôle')
 param dataActions array = []
 
-@description('Data actions not allowed by this role')
+@description('Données actions non autorisées par ce rôle')
 param notDataActions array = []
 
-@description('Assignable scopes for this role')
+@description('Périmètres d\'affectation pour ce rôle (ex: subscription, resource group, etc.)')
 param assignableScopes array = [
   subscription().id
 ]
 
 // Custom Role Definition Resource
 resource customRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
-  name: guid(subscription().id, roleName)
+  name: guid(subscription().id, roleId)
   properties: {
     roleName: roleName
     description: customRoleDescription
-    type: 'CustomRole'
     permissions: [
       {
         actions: actions
@@ -46,11 +48,11 @@ resource customRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
 }
 
 // Outputs
-@description('Custom role definition ID')
+@description('ID du rôle personnalisé')
 output roleDefinitionId string = customRole.id
 
-@description('Custom role definition name (GUID)')
+@description('Nom de la définition de rôle personnalisé (GUID)')
 output roleDefinitionName string = customRole.name
 
-@description('Custom role display name')
+@description('Nom d\'affichage du rôle personnalisé')
 output roleName string = customRole.properties.roleName
