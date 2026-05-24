@@ -1,34 +1,37 @@
 // identity-lz/modules/managed_identity.bicep
 // Managed Identity module (User-Assigned)
 
-@description('Managed Identity name')
+@description('Nom de l\'identité managée')
 param managedIdentityName string
 
-@description('Location for the managed identity')
-param location string = resourceGroup().location
+@description('Emplacement pour l\'identité managée')
+param location string
 
-@description('Tags to apply to the managed identity')
+@description('Tags à associer à l\'identité managée')
 param tags object = {}
+
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // User-Assigned Managed Identity Resource
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: managedIdentityName
-  location: location
+  location: resolvedLocation
   tags: tags
 }
 
 // Outputs
-@description('Managed Identity resource ID')
+@description('ID de l\'identité managée')
 output managedIdentityId string = managedIdentity.id
 
-@description('Managed Identity name')
+@description('Nom de l\'identité managée')
 output managedIdentityName string = managedIdentity.name
 
-@description('Managed Identity principal ID')
+@description('ID principal de l\'identité managée')
 output principalId string = managedIdentity.properties.principalId
 
-@description('Managed Identity client ID')
+@description('ID client de l\'identité managée')
 output clientId string = managedIdentity.properties.clientId
 
-@description('Managed Identity tenant ID')
+@description('ID tenant de l\'identité managée')
 output tenantId string = managedIdentity.properties.tenantId

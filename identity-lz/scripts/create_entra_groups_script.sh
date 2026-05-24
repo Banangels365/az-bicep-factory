@@ -5,8 +5,8 @@
 set -e
 
 # Configuration
-ORGANIZATION_NAME="${ORGANIZATION_NAME:-contoso}"
-ENVIRONMENT="${ENVIRONMENT:-prod}"
+ORGANIZATION_NAME="${ORGANIZATION_NAME:-acmy}"
+ENVIRONMENT="${ENVIRONMENT:-sbox}"
 
 # Color codes for output
 RED='\033[0;31m'

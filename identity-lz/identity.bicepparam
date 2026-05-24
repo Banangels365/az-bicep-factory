@@ -7,13 +7,12 @@ param environment = 'sbox' // prod, logs, quar, sbox
 param location = 'caea' // canadacentral ou canadaeast
 
 // Doit avoir été créé au préalable
-param identityResourceGroupName = 'rg-sbox-caea-identity'
+param identityResourceGroupName = 'rg-${organizationName}-${environment}-${location}-identity'
 
 // Subscription IDs
-param managementSubscriptionId = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+param prodSubscriptionId = '0061dc3e-7704-4778-bcda-b566d000d486'
 param loggingSubscriptionId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
 param quarantineSubscriptionId = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-param prodSubscriptionId = 'dddddddd-dddd-dddd-dddd-dddddddddddd'
 
 // Entra ID Group IDs (from create_entra_groups_script.sh output)
 // Load these from the JSON file created by the script
@@ -39,9 +38,12 @@ param entraGroupIds = {
 
 // Tagging
 param tags = {
-  Environment: 'Sandbox'
-  ManagedBy: 'Bicep'
-  CostCenter: 'IT-Identity'
-  Owner: 'IdentityOps-Team'
+  Application: 'Identity-LZ'
+  Environnement: 'sbox'
+  CreeLe: '2024-05-24'
+  CreePar: 'Bicep'
+  Criticite: 'Moyen'
+  Responsable: 'CloudOps-Team'
+  ResponsableEmail: 'cloudops@acmy.com'
   Purpose: 'Identity-Management'
 }

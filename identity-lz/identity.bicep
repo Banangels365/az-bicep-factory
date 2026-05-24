@@ -3,74 +3,56 @@
 
 targetScope = 'subscription'
 
-@description('Organization name')
+@description('Nom de l\'organisation')
 param organizationName string
 
-@description('Environment')
+@description('Environnement')
 @allowed([
   'prod' // production
+  'dev' // development
   'logs' // logging/monitoring
   'quar' // quarantine
   'sbox' // sandbox
 ])
 param environment string
 
-@description('Azure region')
+@description('Région Azure pour les ressources d\'identité')
 @allowed([
   'cace' // canadacentral
   'caea' // canadaeast
 ])
 param location string = 'caea'
 
-@description('Tags to apply to all resources')
-param tags object = {
-  Environment: environment
-  ManagedBy: 'Bicep'
-  Purpose: 'Identity'
-}
+@description('Tags à appliquer à toutes les ressources d\'identité')
+param tags object
 
-@description('Group IDs from Entra ID creation (loaded from JSON file)')
+@description('ID des groupes Entra pour les affectations RBAC')
 param entraGroupIds object
 
-@description('Management subscription ID')
-param managementSubscriptionId string
+@description('ID de la subscription de production')
+param prodSubscriptionId string = ''
 
-@description('Prod subscription ID')
-param prodSubscriptionId string
+@description('ID de la subscription de logging')
+param loggingSubscriptionId string = ''
 
-@description('Logging subscription ID')
-param loggingSubscriptionId string
+@description('ID de la subscription de quarantine')
+param quarantineSubscriptionId string = ''
 
-@description('Quarantine subscription ID')
-param quarantineSubscriptionId string
-
-@description('Identity Resource Group (must exist prior to deployment)')
+@description('Group de ressources d\'identité (doit exister avant le déploiement)')
 param identityResourceGroupName string
 
-// Variables
-// var resourceGroupName = 'rg-${organizationName}-identity-${environment}-${location}'
-
 // Managed Identity names
-var miPlatformName = 'mi-${organizationName}-platform-${environment}'
-var miNetworkName = 'mi-${organizationName}-network-${environment}'
-var miAppDeployName = 'mi-${organizationName}-app-deploy-${environment}'
-var miBackupName = 'mi-${organizationName}-backup-${environment}'
-var miMonitoringName = 'mi-${organizationName}-monitoring-${environment}'
-
-// ============================================
-// RESOURCE GROUP
-// ============================================
-
-// resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
-//   name: resourceGroupName
-//   location: location
-//   tags: tags
-// }
+var miPlatformName = 'mi-${organizationName}-${environment}-${location}-platform'
+var miNetworkName = 'mi-${organizationName}-${environment}-${location}-network'
+var miAppDeployName = 'mi-${organizationName}-${environment}-${location}-app-deploy'
+var miBackupName = 'mi-${organizationName}-${environment}-${location}-backup'
+var miMonitoringName = 'mi-${organizationName}-${environment}-${location}-monitoring'
 
 // ============================================
 // MANAGED IDENTITIES
 // ============================================
 
+// Platform MI - Utilisé pour les tâches d'automatisation et de gestion au niveau de la plateforme-lz
 module miPlatform './modules/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-platform'
@@ -83,6 +65,7 @@ module miPlatform './modules/managed_identity.bicep' = {
   }
 }
 
+// Network MI - Utilisé pour les opérations liées au réseau (ex: NSG, Firewall, etc.)
 module miNetwork './modules/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-network'
@@ -95,6 +78,7 @@ module miNetwork './modules/managed_identity.bicep' = {
   }
 }
 
+// Application Deploy MI - Utilisé pour les déploiements d'applications
 module miAppDeploy './modules/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-app-deploy'
@@ -107,6 +91,7 @@ module miAppDeploy './modules/managed_identity.bicep' = {
   }
 }
 
+// Backup MI - Utilisé pour les opérations de sauvegarde
 module miBackup './modules/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-backup'
@@ -119,6 +104,7 @@ module miBackup './modules/managed_identity.bicep' = {
   }
 }
 
+// Monitoring MI - Utilisé pour les opérations de surveillance et d'alerting
 module miMonitoring './modules/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-monitoring'
@@ -135,68 +121,10 @@ module miMonitoring './modules/managed_identity.bicep' = {
 // RBAC ASSIGNMENTS - SUBSCRIPTION LEVEL
 // ============================================
 
-// Platform Admins Group - Contributor on Management Subscription
-module rbacPlatformAdmins './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(managementSubscriptionId)
-  name: 'rbac-platform-admins-mgmt'
-  params: {
-    principalId: entraGroupIds.platformAdmins
-    roleDefinitionIdOrName: 'Contributor'
-    principalType: 'Group'
-    roleAssignmentDescription: 'Platform Admins - Contributor on Management Subscription'
-  }
-}
-
-// Network Admins Group - Network Contributor
-module rbacNetworkAdmins './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(prodSubscriptionId)
-  name: 'rbac-network-admins-mgmt'
-  params: {
-    principalId: entraGroupIds.networkAdmins
-    roleDefinitionIdOrName: 'Network Contributor'
-    principalType: 'Group'
-    roleAssignmentDescription: 'Network Admins - Network Contributor'
-  }
-}
-
-// Security Admins Group - Security Admin
-module rbacSecurityAdmins './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(prodSubscriptionId)
-  name: 'rbac-security-admins-mgmt'
-  params: {
-    principalId: entraGroupIds.securityAdmins
-    roleDefinitionIdOrName: 'Security Admin'
-    principalType: 'Group'
-    roleAssignmentDescription: 'Security Admins - Security Admin'
-  }
-}
-
-// Cost Managers - Cost Management Contributor
-module rbacCostManagers './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(managementSubscriptionId)
-  name: 'rbac-cost-managers'
-  params: {
-    principalId: entraGroupIds.costManagers
-    roleDefinitionIdOrName: 'Cost Management Contributor'
-    principalType: 'Group'
-    roleAssignmentDescription: 'Cost Managers - Cost Management Contributor'
-  }
-}
-
-// Billing Readers - Cost Management Reader
-module rbacBillingReaders './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(managementSubscriptionId)
-  name: 'rbac-billing-readers'
-  params: {
-    principalId: entraGroupIds.billingReaders
-    roleDefinitionIdOrName: 'Cost Management Reader'
-    principalType: 'Group'
-    roleAssignmentDescription: 'Billing Readers - Cost Management Reader'
-  }
-}
+// ---------- RBAC for Production Subscription ----------------- //
 
 // Prod Admins - Contributor on Prod Subscription
-module rbacProdAdmins './modules/rbac_subscription_assignment.bicep' = {
+module rbacProdAdmins './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-prod-admins'
   params: {
@@ -208,7 +136,7 @@ module rbacProdAdmins './modules/rbac_subscription_assignment.bicep' = {
 }
 
 // Prod Readers - Reader on Prod Subscription
-module rbacProdReaders './modules/rbac_subscription_assignment.bicep' = {
+module rbacProdReaders './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-prod-readers'
   params: {
@@ -219,8 +147,57 @@ module rbacProdReaders './modules/rbac_subscription_assignment.bicep' = {
   }
 }
 
+// Network Admins Group - Network Contributor
+module rbacNetworkAdmins './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
+  name: 'rbac-network-admins-mgmt'
+  params: {
+    principalId: entraGroupIds.networkAdmins
+    roleDefinitionIdOrName: 'Network Contributor'
+    principalType: 'Group'
+    roleAssignmentDescription: 'Network Admins - Network Contributor'
+  }
+}
+
+// Security Admins Group - Security Admin
+module rbacSecurityAdmins './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
+  name: 'rbac-security-admins-mgmt'
+  params: {
+    principalId: entraGroupIds.securityAdmins
+    roleDefinitionIdOrName: 'Security Admin'
+    principalType: 'Group'
+    roleAssignmentDescription: 'Security Admins - Security Admin'
+  }
+}
+
+// Cost Managers - Cost Management Contributor
+module rbacCostManagers './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
+  name: 'rbac-cost-managers'
+  params: {
+    principalId: entraGroupIds.costManagers
+    roleDefinitionIdOrName: 'Cost Management Contributor'
+    principalType: 'Group'
+    roleAssignmentDescription: 'Cost Managers - Cost Management Contributor'
+  }
+}
+
+// Billing Readers - Cost Management Reader
+module rbacBillingReaders './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
+  name: 'rbac-billing-readers'
+  params: {
+    principalId: entraGroupIds.billingReaders
+    roleDefinitionIdOrName: 'Cost Management Reader'
+    principalType: 'Group'
+    roleAssignmentDescription: 'Billing Readers - Cost Management Reader'
+  }
+}
+
+// ---------- RBAC for Logging Subscription ----------------- //
 // Logging Admins - Contributor on Logging Subscription
-module rbacLoggingAdmins './modules/rbac_subscription_assignment.bicep' = {
+module rbacLoggingAdmins './modules/rbac_subscription_assignment.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-logging-admins'
   params: {
@@ -232,7 +209,7 @@ module rbacLoggingAdmins './modules/rbac_subscription_assignment.bicep' = {
 }
 
 // Logging Contributors - Contributor on Logging Subscription
-module rbacLoggingContributors './modules/rbac_subscription_assignment.bicep' = {
+module rbacLoggingContributors './modules/rbac_subscription_assignment.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-logging-contributors'
   params: {
@@ -244,7 +221,7 @@ module rbacLoggingContributors './modules/rbac_subscription_assignment.bicep' = 
 }
 
 // Logging Readers - Reader on Logging Subscription
-module rbacLoggingReaders './modules/rbac_subscription_assignment.bicep' = {
+module rbacLoggingReaders './modules/rbac_subscription_assignment.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-logging-readers'
   params: {
@@ -255,8 +232,9 @@ module rbacLoggingReaders './modules/rbac_subscription_assignment.bicep' = {
   }
 }
 
+// ---------- RBAC for Quarantine Subscription ----------------- //
 // Quarantine Admins - Contributor on Quarantine Subscription
-module rbacQuarantineAdmins './modules/rbac_subscription_assignment.bicep' = {
+module rbacQuarantineAdmins './modules/rbac_subscription_assignment.bicep' = if (!empty(quarantineSubscriptionId)) {
   scope: subscription(quarantineSubscriptionId)
   name: 'rbac-quarantine-admins'
   params: {
@@ -268,7 +246,7 @@ module rbacQuarantineAdmins './modules/rbac_subscription_assignment.bicep' = {
 }
 
 // Quarantine Contributors - Contributor on Quarantine Subscription
-module rbacQuarantineContributors './modules/rbac_subscription_assignment.bicep' = {
+module rbacQuarantineContributors './modules/rbac_subscription_assignment.bicep' = if (!empty(quarantineSubscriptionId)) {
   scope: subscription(quarantineSubscriptionId)
   name: 'rbac-quarantine-contributors'
   params: {
@@ -280,7 +258,7 @@ module rbacQuarantineContributors './modules/rbac_subscription_assignment.bicep'
 }
 
 // Quarantine Readers - Reader on Quarantine Subscription
-module rbacQuarantineReaders './modules/rbac_subscription_assignment.bicep' = {
+module rbacQuarantineReaders './modules/rbac_subscription_assignment.bicep' = if (!empty(quarantineSubscriptionId)) {
   scope: subscription(quarantineSubscriptionId)
   name: 'rbac-quarantine-readers'
   params: {
@@ -296,8 +274,8 @@ module rbacQuarantineReaders './modules/rbac_subscription_assignment.bicep' = {
 // ============================================
 
 // Platform MI - Contributor on Management Subscription
-module rbacPlatformMI './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(managementSubscriptionId)
+module rbacPlatformMI './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
   name: 'rbac-platform-mi'
   params: {
     principalId: miPlatform.outputs.principalId
@@ -308,8 +286,8 @@ module rbacPlatformMI './modules/rbac_subscription_assignment.bicep' = {
 }
 
 // Network MI - Network Contributor on Management Subscription
-module rbacNetworkMI './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(managementSubscriptionId)
+module rbacNetworkMI './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
   name: 'rbac-network-mi'
   params: {
     principalId: miNetwork.outputs.principalId
@@ -320,7 +298,7 @@ module rbacNetworkMI './modules/rbac_subscription_assignment.bicep' = {
 }
 
 // App Deploy MI - Contributor on logging subscriptions
-module rbacAppDeployMILog './modules/rbac_subscription_assignment.bicep' = {
+module rbacAppDeployMILog './modules/rbac_subscription_assignment.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-app-deploy-mi-logging'
   params: {
@@ -331,7 +309,7 @@ module rbacAppDeployMILog './modules/rbac_subscription_assignment.bicep' = {
   }
 }
 
-module rbacAppDeployMIProd './modules/rbac_subscription_assignment.bicep' = {
+module rbacAppDeployMIProd './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-app-deploy-mi-prod'
   params: {
@@ -343,8 +321,8 @@ module rbacAppDeployMIProd './modules/rbac_subscription_assignment.bicep' = {
 }
 
 // Backup MI - Backup Contributor
-module rbacBackupMI './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(managementSubscriptionId)
+module rbacBackupMI './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
   name: 'rbac-backup-mi'
   params: {
     principalId: miBackup.outputs.principalId
@@ -354,10 +332,22 @@ module rbacBackupMI './modules/rbac_subscription_assignment.bicep' = {
   }
 }
 
-// Monitoring MI - Monitoring Reader on all subscriptions
-module rbacMonitoringMIMgmt './modules/rbac_subscription_assignment.bicep' = {
-  scope: subscription(managementSubscriptionId)
+// Monitoring MI - Monitoring Reader on production subscription
+module rbacMonitoringMIMgmt './modules/rbac_subscription_assignment.bicep' = if (!empty(prodSubscriptionId)) {
+  scope: subscription(prodSubscriptionId)
   name: 'rbac-monitoring-mi-mgmt'
+  params: {
+    principalId: miMonitoring.outputs.principalId
+    roleDefinitionIdOrName: 'Monitoring Reader'
+    principalType: 'ServicePrincipal'
+    roleAssignmentDescription: 'Monitoring Managed Identity - Monitoring Reader'
+  }
+}
+
+// Monitoring MI - Monitoring Reader on logging subscription
+module rbacMonitoringMILogging './modules/rbac_subscription_assignment.bicep' = if (!empty(loggingSubscriptionId)) {
+  scope: subscription(loggingSubscriptionId)
+  name: 'rbac-monitoring-mi-logging'
   params: {
     principalId: miMonitoring.outputs.principalId
     roleDefinitionIdOrName: 'Monitoring Reader'
@@ -369,9 +359,6 @@ module rbacMonitoringMIMgmt './modules/rbac_subscription_assignment.bicep' = {
 // ============================================
 // OUTPUTS
 // ============================================
-
-// output resourceGroupName string = resourceGroup.name
-// output resourceGroupId string = resourceGroup.id
 
 output managedIdentities object = {
   platform: {
