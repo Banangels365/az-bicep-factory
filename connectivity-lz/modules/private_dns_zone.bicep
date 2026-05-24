@@ -1,16 +1,16 @@
 // connectivity-lz/modules/private_dns_zone.bicep
 // Private DNS Zone module for Private Endpoints
 
-@description('Private DNS Zone name')
+@description('Nom de la Zone Private DNS')
 param privateDnsZoneName string
 
-@description('Virtual Network IDs to link to the DNS zone')
+@description('IDs des Réseaux Virtuels à lier à la zone DNS')
 param vnetLinksVnetIds array = []
 
-@description('Enable auto-registration for VNet links')
+@description('Activer l\'enregistrement automatique des VMs. Limité à un seul VNet par zone DNS privée.')
 param enableAutoRegistration bool = false
 
-@description('Tags to apply to the private DNS zone')
+@description('Tags à appliquer à la zone DNS privée')
 param tags object = {}
 
 // Private DNS Zone Resource
@@ -38,11 +38,11 @@ resource vnetLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-0
 ]
 
 // Outputs
-@description('Private DNS Zone resource ID')
+@description('ID de la Zone Private DNS')
 output privateDnsZoneId string = privateDnsZone.id
 
-@description('Private DNS Zone name')
+@description('Nom de la Zone Private DNS')
 output privateDnsZoneName string = privateDnsZone.name
 
-@description('Virtual Network Link IDs')
+@description('IDs des Liens de Réseau Virtuel')
 output vnetLinkIds array = [for (vnetId, i) in vnetLinksVnetIds: vnetLinks[i].id]

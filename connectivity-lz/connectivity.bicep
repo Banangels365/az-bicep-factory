@@ -116,7 +116,7 @@ var pipBastionName = 'pip-bas-${organizationName}-${environment}'
 var rtManagementName = 'rt-hub-${organizationName}-${environment}-${location}'
 
 // ============================================
-// DDoS PROTECTION PLAN
+// PLAN DE PROTECTION DDoS
 // ============================================
 
 module ddosProtection './modules/ddos_protection.bicep' = if (deployDdosProtection) {
@@ -465,7 +465,7 @@ module managementSubnet './modules/subnet.bicep' = {
 }
 
 // ============================================
-// VPN GATEWAY
+// Passerelle VPN (VPN Gateway)
 // ============================================
 
 module vpnGateway './modules/vpn_gateway.bicep' = if (deployVpnGateway) {

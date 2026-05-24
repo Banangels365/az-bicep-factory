@@ -1,27 +1,27 @@
 // connectivity-lz/modules/vpn_gateway.bicep
 // VPN Gateway module for site-to-site and point-to-site connectivity
 
-@description('VPN Gateway name')
+@description('Nom de la VPN Gateway')
 param vpnGatewayName string
 
-@description('Location for the VPN gateway')
+@description('Région pour la VPN Gateway')
 param location string
 
-@description('Gateway type')
+@description('Type de passerelle')
 @allowed([
   'Vpn'
   'ExpressRoute'
 ])
 param gatewayType string = 'Vpn'
 
-@description('VPN type')
+@description('Type de VPN')
 @allowed([
   'RouteBased'
   'PolicyBased'
 ])
 param vpnType string = 'RouteBased'
 
-@description('Gateway SKU')
+@description('SKU de la passerelle VPN')
 @allowed([
   'Basic'
   'VpnGw1'
@@ -37,7 +37,7 @@ param vpnType string = 'RouteBased'
 ])
 param gatewaySku string = 'VpnGw1'
 
-@description('Gateway generation')
+@description('Génération de la passerelle VPN')
 @allowed([
   'Generation1'
   'Generation2'
@@ -45,123 +45,129 @@ param gatewaySku string = 'VpnGw1'
 ])
 param vpnGatewayGeneration string = 'Generation1'
 
-@description('Subnet ID for the gateway (GatewaySubnet)')
+@description('ID de sous-réseau pour la passerelle (GatewaySubnet)')
 param subnetId string
 
-@description('Public IP Address resource ID for the gateway')
+@description('ID de ressource d\'adresse IP publique pour la passerelle')
 param publicIpAddressId string
 
-@description('Second Public IP Address resource ID (for active-active)')
+@description('ID de ressource d\'adresse IP publique secondaire pour la passerelle (optionnel, requis pour active-active)')
 param publicIpAddressId2 string = ''
 
-@description('Enable BGP')
+@description('Activer BGP')
 param enableBgp bool = false
 
-@description('BGP ASN number')
+@description('Numéro ASN BGP')
 param bgpAsn int = 65515
 
-@description('BGP peering address')
+@description('Adresse de peering BGP')
 param bgpPeeringAddress string = ''
 
-@description('Enable active-active mode')
+@description('Activer le mode active-active')
 param activeActive bool = false
 
-@description('Point-to-site configuration')
+@description('Configuration point-to-site')
 param p2sConfiguration object = {}
 
-@description('Custom BGP IP addresses for active-active')
+@description('Custom BGP IP addresses for active-active configuration (optionnel, si non fourni, Azure assignera automatiquement les adresses IP de peering BGP)')
 param customBgpIpAddresses array = []
 
-@description('Tags to apply to the VPN gateway')
+@description('Tags à appliquer à la Passerelle VPN')
 param tags object = {}
 
-@description('Enable diagnostic settings')
+@description('Activer les paramètres de diagnostic')
 param enableDiagnostics bool = true
 
-@description('Log Analytics Workspace ID for diagnostics')
+@description('ID de l\'espace de travail Log Analytics pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
+
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // VPN Gateway Resource
 resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-09-01' = {
   name: vpnGatewayName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: resolvedLocation
   tags: tags
-  properties: {
-    gatewayType: gatewayType
-    vpnType: vpnType
-    vpnGatewayGeneration: vpnGatewayGeneration
-    enableBgp: enableBgp
-    activeActive: activeActive
-    sku: {
-      name: gatewaySku
-      tier: gatewaySku
-    }
-    ipConfigurations: activeActive && !empty(publicIpAddressId2)
-      ? [
-          {
-            name: 'ipConfig1'
-            properties: {
-              privateIPAllocationMethod: 'Dynamic'
-              subnet: {
-                id: subnetId
-              }
-              publicIPAddress: {
-                id: publicIpAddressId
+  properties: union(
+    {
+      gatewayType: gatewayType
+      vpnType: vpnType
+      vpnGatewayGeneration: vpnGatewayGeneration
+      enableBgp: enableBgp
+      activeActive: activeActive
+      sku: {
+        name: gatewaySku
+        tier: gatewaySku
+      }
+      ipConfigurations: activeActive && !empty(publicIpAddressId2)
+        ? [
+            {
+              name: 'ipConfig1'
+              properties: {
+                privateIPAllocationMethod: 'Dynamic'
+                subnet: { id: subnetId }
+                publicIPAddress: { id: publicIpAddressId }
               }
             }
-          }
-          {
-            name: 'ipConfig2'
-            properties: {
-              privateIPAllocationMethod: 'Dynamic'
-              subnet: {
-                id: subnetId
-              }
-              publicIPAddress: {
-                id: publicIpAddressId2
+            {
+              name: 'ipConfig2'
+              properties: {
+                privateIPAllocationMethod: 'Dynamic'
+                subnet: { id: subnetId }
+                publicIPAddress: { id: publicIpAddressId2 }
               }
             }
-          }
-        ]
-      : [
-          {
-            name: 'ipConfig1'
-            properties: {
-              privateIPAllocationMethod: 'Dynamic'
-              subnet: {
-                id: subnetId
-              }
-              publicIPAddress: {
-                id: publicIpAddressId
+          ]
+        : [
+            {
+              name: 'ipConfig1'
+              properties: {
+                privateIPAllocationMethod: 'Dynamic'
+                subnet: { id: subnetId }
+                publicIPAddress: { id: publicIpAddressId }
               }
             }
-          }
-        ]
-    bgpSettings: enableBgp
+          ]
+    },
+    enableBgp
       ? {
-          asn: bgpAsn
-          bgpPeeringAddress: !empty(bgpPeeringAddress) ? bgpPeeringAddress : null
-          peerWeight: 0
-          bgpPeeringAddresses: !empty(customBgpIpAddresses) ? customBgpIpAddresses : null
+          bgpSettings: union(
+            { asn: bgpAsn, peerWeight: 0 },
+            !empty(bgpPeeringAddress) ? { bgpPeeringAddress: bgpPeeringAddress } : {},
+            !empty(customBgpIpAddresses) ? { bgpPeeringAddresses: customBgpIpAddresses } : {}
+          )
         }
-      : null
-    vpnClientConfiguration: !empty(p2sConfiguration)
+      : {},
+    !empty(p2sConfiguration)
       ? {
-          vpnClientAddressPool: {
-            addressPrefixes: p2sConfiguration.vpnClientAddressPool
-          }
-          vpnClientProtocols: p2sConfiguration.?vpnClientProtocols ?? ['OpenVPN']
-          vpnAuthenticationTypes: p2sConfiguration.?vpnAuthenticationTypes ?? ['Certificate']
-          vpnClientRootCertificates: p2sConfiguration.?vpnClientRootCertificates ?? []
-          vpnClientRevokedCertificates: p2sConfiguration.?vpnClientRevokedCertificates ?? []
-          radiusServerAddress: p2sConfiguration.?radiusServerAddress ?? null
-          radiusServerSecret: p2sConfiguration.?radiusServerSecret ?? null
-          aadTenant: p2sConfiguration.?aadTenant ?? null
-          aadAudience: p2sConfiguration.?aadAudience ?? null
-          aadIssuer: p2sConfiguration.?aadIssuer ?? null
+          vpnClientConfiguration: union(
+            {
+              vpnClientAddressPool: { addressPrefixes: p2sConfiguration.vpnClientAddressPool }
+              vpnClientProtocols: p2sConfiguration.?vpnClientProtocols ?? ['OpenVPN']
+              vpnAuthenticationTypes: p2sConfiguration.?vpnAuthenticationTypes ?? ['Certificate']
+              vpnClientRootCertificates: p2sConfiguration.?vpnClientRootCertificates ?? []
+              vpnClientRevokedCertificates: p2sConfiguration.?vpnClientRevokedCertificates ?? []
+            },
+            !empty(p2sConfiguration.?radiusServerAddress ?? '')
+              ? { radiusServerAddress: p2sConfiguration.radiusServerAddress }
+              : {},
+            !empty(p2sConfiguration.?radiusServerSecret ?? '')
+              ? { radiusServerSecret: p2sConfiguration.radiusServerSecret }
+              : {},
+            !empty(p2sConfiguration.?aadTenant ?? '') ? { aadTenant: p2sConfiguration.aadTenant } : {},
+            !empty(p2sConfiguration.?aadAudience ?? '') ? { aadAudience: p2sConfiguration.aadAudience } : {},
+            !empty(p2sConfiguration.?aadIssuer ?? '') ? { aadIssuer: p2sConfiguration.aadIssuer } : {}
+          )
         }
-      : null
-  }
+      : {}
+  )
+}
+
+// Resource pour récupérer les détails de l'adresse IP publique associée à la VPN Gateway
+
+resource vpnGatewayPublicIp 'Microsoft.Network/publicIPAddresses@2023-09-01' existing = {
+  name: last(split(publicIpAddressId, '/'))
 }
 
 // Diagnostic Settings
@@ -172,23 +178,7 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
     workspaceId: logAnalyticsWorkspaceId
     logs: [
       {
-        category: 'GatewayDiagnosticLog'
-        enabled: true
-      }
-      {
-        category: 'TunnelDiagnosticLog'
-        enabled: true
-      }
-      {
-        category: 'RouteDiagnosticLog'
-        enabled: true
-      }
-      {
-        category: 'IKEDiagnosticLog'
-        enabled: true
-      }
-      {
-        category: 'P2SDiagnosticLog'
+        categoryGroup: 'allLogs'
         enabled: true
       }
     ]
@@ -202,14 +192,14 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // Outputs
-@description('VPN Gateway resource ID')
+@description('ID de la VPN Gateway')
 output vpnGatewayId string = vpnGateway.id
 
-@description('VPN Gateway name')
+@description('Nom de la VPN Gateway')
 output vpnGatewayName string = vpnGateway.name
 
-@description('BGP settings')
+@description('Paramètres BGP de la VPN Gateway (si BGP est activé)')
 output bgpSettings object = enableBgp ? vpnGateway.properties.bgpSettings : {}
 
-@description('Gateway public IP address')
-output publicIpAddress string = reference(publicIpAddressId, '2023-09-01').ipAddress
+@description('Adresse IP publique du VPN Gateway')
+output publicIpAddress string = vpnGatewayPublicIp.properties.ipAddress ?? ''

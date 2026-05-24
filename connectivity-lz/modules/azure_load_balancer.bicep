@@ -1,13 +1,13 @@
 // connectivity-lz/modules/azure_load_balancer.bicep
 // Azure Load Balancer module with frontend and backend configuration
 
-@description('Load Balancer name')
+@description('Nom du Load Balancer')
 param loadBalancerName string
 
-@description('Location for the load balancer')
+@description('Région pour le load balancer')
 param location string
 
-@description('Load Balancer SKU')
+@description('SKU du Load Balancer')
 @allowed([
   'Basic'
   'Standard'
@@ -15,63 +15,63 @@ param location string
 ])
 param sku string = 'Standard'
 
-@description('Load Balancer type (Public or Internal)')
+@description('Type de Load Balancer (Public ou Internal)')
 @allowed([
   'Public'
   'Internal'
 ])
 param type string = 'Public'
 
-@description('Public IP Address resource ID (for public load balancer)')
+@description('ID de ressource d\'adresse IP publique pour le load balancer (pour LB public)')
 param publicIpAddressId string = ''
 
-@description('Subnet ID (for internal load balancer)')
+@description('ID du sous-réseau pour le load balancer (pour LB interne)')
 param subnetId string = ''
 
-@description('Private IP address (for internal load balancer)')
+@description('Adresse IP privée (pour le load balancer interne)')
 param privateIpAddress string = ''
 
-@description('Private IP allocation method')
+@description('Method de allocation d\'adresse IP privée')
 @allowed([
   'Dynamic'
   'Static'
 ])
 param privateIpAllocationMethod string = 'Dynamic'
 
-@description('Availability zones')
-param zones array = []
-
-@description('Frontend IP configurations')
+@description('Configuration des frontend IP')
 param frontendIpConfigurations array = []
 
-@description('Backend address pools')
+@description('Pools d\'adresses backend')
 param backendAddressPools array = []
 
-@description('Load balancing rules')
+@description('Règles de load balancing')
 param loadBalancingRules array = []
 
-@description('Health probes')
+@description('Health probes pour le load balancer')
 param probes array = []
 
-@description('Inbound NAT rules')
+@description('Règles NAT entrantes (inbound NAT rules)')
 param inboundNatRules array = []
 
-@description('Outbound rules')
+@description('Règles sortantes (outbound rules)')
 param outboundRules array = []
 
-@description('Tags to apply to the load balancer')
+@description('Tags à appliquer au load balancer')
 param tags object = {}
 
-@description('Enable diagnostic settings')
+@description('Activer les paramètres de diagnostic')
 param enableDiagnostics bool = true
 
-@description('Log Analytics Workspace ID for diagnostics')
+@description('ID du Log Analytics Workspace pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
+
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // Load Balancer Resource
 resource loadBalancer 'Microsoft.Network/loadBalancers@2023-09-01' = {
   name: loadBalancerName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: resolvedLocation
   tags: tags
   sku: {
     name: sku
@@ -83,17 +83,10 @@ resource loadBalancer 'Microsoft.Network/loadBalancers@2023-09-01' = {
       : [
           {
             name: 'frontendIpConfig'
-            zones: !empty(zones) ? zones : null
             properties: type == 'Public'
-              ? {
-                  publicIPAddress: {
-                    id: publicIpAddressId
-                  }
-                }
+              ? { publicIPAddress: { id: publicIpAddressId } }
               : {
-                  subnet: {
-                    id: subnetId
-                  }
+                  subnet: { id: subnetId }
                   privateIPAddress: !empty(privateIpAddress) ? privateIpAddress : null
                   privateIPAllocationMethod: privateIpAllocationMethod
                 }
@@ -121,11 +114,7 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
     workspaceId: logAnalyticsWorkspaceId
     logs: [
       {
-        category: 'LoadBalancerAlertEvent'
-        enabled: true
-      }
-      {
-        category: 'LoadBalancerProbeHealthStatus'
+        categoryGroup: 'allLogs'
         enabled: true
       }
     ]
@@ -139,23 +128,23 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // Outputs
-@description('Load Balancer resource ID')
+@description('ID du Load Balancer')
 output loadBalancerId string = loadBalancer.id
 
-@description('Load Balancer name')
+@description('Nom du Load Balancer')
 output loadBalancerName string = loadBalancer.name
 
-@description('Frontend IP configuration IDs')
+@description('IDs des configurations frontend IP')
 output frontendIpConfigurationIds array = [
   for (config, i) in frontendIpConfigurations: '${loadBalancer.id}/frontendIPConfigurations/${config.name}'
 ]
 
-@description('Backend address pool IDs')
+@description('IDs des pools d\'adresses backend')
 output backendAddressPoolIds array = [
   for (pool, i) in backendAddressPools: '${loadBalancer.id}/backendAddressPools/${pool.name}'
 ]
 
-@description('Frontend private IP address (for internal LB)')
-output privateIpAddress string = type == 'Internal'
-  ? loadBalancer.properties.frontendIPConfigurations[0].properties.privateIPAddress
+@description('Adresse IP privée frontend (pour le load balancer interne)')
+output privateIpAddress string = (type == 'Internal' && !empty(loadBalancer.properties.frontendIPConfigurations))
+  ? loadBalancer.properties.frontendIPConfigurations[0].properties.privateIPAddress ?? ''
   : ''

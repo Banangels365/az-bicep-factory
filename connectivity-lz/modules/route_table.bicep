@@ -1,47 +1,52 @@
 // connectivity-lz/modules/route_table.bicep
 // Route Table module with custom routes
 
-@description('Route Table name')
+@description('Nom de la table de routage')
 param routeTableName string
 
-@description('Location for the route table')
+@description('Région pour la table de routage')
 param location string
 
-@description('Disable BGP route propagation')
-param disableBgpRoutePropagation bool = false
+@description('Désactiver la propagation des routes BGP')
+param disableBgpRoutePropagation bool
 
-@description('Routes to create in the route table')
+@description('Routes à créer dans la table de routage')
 param routes array = []
 
-@description('Tags to apply to the route table')
+@description('Tags à appliquer à la table de routage')
 param tags object = {}
+
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // Route Table Resource
 resource routeTable 'Microsoft.Network/routeTables@2023-09-01' = {
   name: routeTableName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: resolvedLocation
   tags: tags
   properties: {
     disableBgpRoutePropagation: disableBgpRoutePropagation
     routes: [
       for route in routes: {
         name: route.name
-        properties: {
-          addressPrefix: route.addressPrefix
-          nextHopType: route.nextHopType
-          nextHopIpAddress: route.?nextHopIpAddress
-        }
+        properties: union(
+          {
+            addressPrefix: route.addressPrefix
+            nextHopType: route.nextHopType
+          },
+          !empty(route.?nextHopIpAddress ?? '') ? { nextHopIpAddress: route.nextHopIpAddress } : {}
+        )
       }
     ]
   }
 }
 
 // Outputs
-@description('Route Table resource ID')
+@description('ID de la table de routage')
 output routeTableId string = routeTable.id
 
-@description('Route Table name')
+@description('Nom de la table de routage')
 output routeTableName string = routeTable.name
 
-@description('Routes in the table')
+@description('Routes définies dans la table de routage')
 output routes array = routeTable.properties.routes

@@ -1,45 +1,46 @@
 // connectivity-lz/modules/subnet.bicep
 // Subnet module for creating individual subnets
 
-@description('Virtual Network name')
+@description('Nom du VNet parent')
 param vnetName string
 
-@description('Subnet name')
+@description('Nom du subnet')
 param subnetName string
 
-@description('Subnet address prefix (CIDR notation)')
+@description('Préfixe d\'adresse du subnet (CIDR)')
 param addressPrefix string
 
-@description('Network Security Group resource ID')
+@description('ID du groupe de sécurité réseau')
 param networkSecurityGroupId string = ''
 
-@description('Route Table resource ID')
+@description('ID de la table de routage')
 param routeTableId string = ''
 
-@description('Service endpoints to enable')
+@description('Points de terminaison de service à associer au subnet')
 param serviceEndpoints array = []
 
 @description('Subnet delegations')
 param delegations array = []
 
-@description('Private endpoint network policies (Disabled or Enabled)')
+@description('Stratégie de réseau privé pour les points de terminaison privés (Disabled ou Enabled)')
 @allowed([
   'Disabled'
   'Enabled'
 ])
 param privateEndpointNetworkPolicies string = 'Disabled'
 
-@description('Private link service network policies (Disabled or Enabled)')
+@description('Stratégie de réseau privé pour les services de lien privé (Disabled or Enabled)')
 @allowed([
   'Disabled'
   'Enabled'
 ])
 param privateLinkServiceNetworkPolicies string = 'Enabled'
 
-@description('NAT Gateway resource ID')
+@description('ID du NAT Gateway à associer au subnet')
 param natGatewayId string = ''
 
-// Reference to existing VNet
+// Note: ce module doit être appelé avec scope: resourceGroup(...)
+// pointant vers le RG contenant le VNet parent.
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
   name: vnetName
 }
@@ -48,36 +49,26 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-09-01' existing 
 resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = {
   parent: virtualNetwork
   name: subnetName
-  properties: {
-    addressPrefix: addressPrefix
-    networkSecurityGroup: !empty(networkSecurityGroupId)
-      ? {
-          id: networkSecurityGroupId
-        }
-      : null
-    routeTable: !empty(routeTableId)
-      ? {
-          id: routeTableId
-        }
-      : null
-    serviceEndpoints: serviceEndpoints
-    delegations: delegations
-    privateEndpointNetworkPolicies: privateEndpointNetworkPolicies
-    privateLinkServiceNetworkPolicies: privateLinkServiceNetworkPolicies
-    natGateway: !empty(natGatewayId)
-      ? {
-          id: natGatewayId
-        }
-      : null
-  }
+  properties: union(
+    {
+      addressPrefix: addressPrefix
+      serviceEndpoints: serviceEndpoints
+      delegations: delegations
+      privateEndpointNetworkPolicies: privateEndpointNetworkPolicies
+      privateLinkServiceNetworkPolicies: privateLinkServiceNetworkPolicies
+    },
+    !empty(networkSecurityGroupId) ? { networkSecurityGroup: { id: networkSecurityGroupId } } : {},
+    !empty(routeTableId) ? { routeTable: { id: routeTableId } } : {},
+    !empty(natGatewayId) ? { natGateway: { id: natGatewayId } } : {}
+  )
 }
 
 // Outputs
-@description('Subnet resource ID')
+@description('ID du subnet')
 output subnetId string = subnet.id
 
-@description('Subnet name')
+@description('Nom du subnet')
 output subnetName string = subnet.name
 
-@description('Subnet address prefix')
+@description('Préfixe d\'adresse du subnet')
 output addressPrefix string = subnet.properties.addressPrefix

@@ -1,97 +1,78 @@
 // connectivity-lz/modules/network_security_group.bicep
 // Network Security Group module with security rules
 
-@description('Network Security Group name')
+@description('Nom du Network Security Group')
 param nsgName string
 
-@description('Location for the NSG')
-param location string = resourceGroup().location
+@description('Région pour le NSG')
+param location string
 
-@description('Security rules for the NSG')
+@description('Nom du Network Watcher optionnel à utiliser pour les logs de flux. Si vide, le module utilisera "NetworkWatcher_<location>"')
+param networkWatcherName string = ''
+
+@description('Règles de sécurité du NSG')
 param securityRules array = []
 
-@description('Tags to apply to the NSG')
+@description('Tags à appliquer au NSG')
 param tags object = {}
 
-@description('Enable diagnostic settings')
+@description('Activer les paramètres de diagnostic')
 param enableDiagnostics bool = true
 
-@description('Log Analytics Workspace ID for diagnostics')
+@description('ID du Log Analytics Workspace pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
 
-@description('Storage Account ID for NSG flow logs')
+@description('ID du compte de stockage pour les logs de flux NSG')
 param flowLogsStorageAccountId string = ''
 
-@description('Enable NSG flow logs')
+@description('Activer les flow logs NSG')
 param enableFlowLogs bool = false
 
-@description('Flow logs retention in days')
+@description('Rétention des flow logs NSG en jours (7-365)')
 param flowLogsRetentionDays int = 7
 
-@description('Network Watcher resource group name')
+@description('Groupe de ressources du Network Watcher (pour les flow logs)')
 param networkWatcherRg string = 'NetworkWatcherRG'
 
-@description('Network Watcher name')
-param networkWatcherName string = 'NetworkWatcher_${location}'
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
+
+// Variable pour le Network Watcher (requis pour les flow logs)
+// Nom effectif du Network Watcher: prioriser le param `networkWatcherName` s'il est fourni.
+var effectiveNetworkWatcherName = empty(networkWatcherName) ? 'NetworkWatcher_${resolvedLocation}' : networkWatcherName
 
 // Network Security Group Resource
 resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
   name: nsgName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: resolvedLocation
   tags: tags
   properties: {
     securityRules: [
       for rule in securityRules: {
         name: rule.name
-        properties: {
-          description: rule.?description ?? ''
-          protocol: rule.protocol
-          access: rule.access
-          priority: rule.priority
-          direction: rule.direction
-
-          ...(rule.?sourcePortRange != null
-            ? {
-                sourcePortRange: rule.sourcePortRange
-              }
-            : {})
-
-          ...(rule.?destinationPortRange != null
-            ? {
-                destinationPortRange: rule.destinationPortRange
-              }
-            : {})
-
-          ...(rule.?destinationPortRanges != null
-            ? {
-                destinationPortRanges: rule.destinationPortRanges
-              }
-            : {})
-
-          ...(rule.?sourceAddressPrefix != null
-            ? {
-                sourceAddressPrefix: rule.sourceAddressPrefix
-              }
-            : {})
-
-          ...(rule.?sourceAddressPrefixes != null
-            ? {
-                sourceAddressPrefixes: rule.sourceAddressPrefixes
-              }
-            : {})
-
-          ...(rule.?destinationAddressPrefix != null
-            ? {
-                destinationAddressPrefix: rule.destinationAddressPrefix
-              }
-            : {})
-
-          ...(rule.?destinationAddressPrefixes != null
-            ? {
-                destinationAddressPrefixes: rule.destinationAddressPrefixes
-              }
-            : {})
-        }
+        properties: union(
+          // Propriétés obligatoires
+          {
+            description: rule.?description ?? ''
+            protocol: rule.protocol
+            access: rule.access
+            priority: rule.priority
+            direction: rule.direction
+          },
+          // Propriétés optionnelles — omises si absentes
+          !empty(rule.?sourcePortRange ?? '') ? { sourcePortRange: rule.sourcePortRange } : {},
+          !empty(rule.?sourcePortRanges ?? []) ? { sourcePortRanges: rule.sourcePortRanges } : {},
+          !empty(rule.?destinationPortRange ?? '') ? { destinationPortRange: rule.destinationPortRange } : {},
+          !empty(rule.?destinationPortRanges ?? []) ? { destinationPortRanges: rule.destinationPortRanges } : {},
+          !empty(rule.?sourceAddressPrefix ?? '') ? { sourceAddressPrefix: rule.sourceAddressPrefix } : {},
+          !empty(rule.?sourceAddressPrefixes ?? []) ? { sourceAddressPrefixes: rule.sourceAddressPrefixes } : {},
+          !empty(rule.?destinationAddressPrefix ?? '')
+            ? { destinationAddressPrefix: rule.destinationAddressPrefix }
+            : {},
+          !empty(rule.?destinationAddressPrefixes ?? [])
+            ? { destinationAddressPrefixes: rule.destinationAddressPrefixes }
+            : {}
+        )
       }
     ]
   }
@@ -119,7 +100,7 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 // Network Watcher (reference to existing)
 resource networkWatcher 'Microsoft.Network/networkWatchers@2023-09-01' existing = if (enableFlowLogs) {
   scope: resourceGroup(networkWatcherRg)
-  name: networkWatcherName
+  name: effectiveNetworkWatcherName
 }
 
 // NSG Flow Logs
@@ -129,10 +110,10 @@ module flowLogsModule './network_watcher_flowlogs.bicep' = if (enableFlowLogs &&
   scope: resourceGroup(networkWatcherRg)
 
   params: {
-    networkWatcherName: networkWatcherName
+    networkWatcherName: effectiveNetworkWatcherName
     nsgId: networkSecurityGroup.id
     flowLogsStorageAccountId: flowLogsStorageAccountId
-    location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+    location: resolvedLocation
     tags: tags
     flowLogsRetentionDays: flowLogsRetentionDays
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
@@ -144,11 +125,11 @@ module flowLogsModule './network_watcher_flowlogs.bicep' = if (enableFlowLogs &&
 }
 
 // Outputs
-@description('Network Security Group resource ID')
+@description('ID du Network Security Group')
 output nsgId string = networkSecurityGroup.id
 
-@description('Network Security Group name')
+@description('Nom du Network Security Group')
 output nsgName string = networkSecurityGroup.name
 
-@description('Security rules')
+@description('Règles de sécurité du NSG')
 output securityRules array = networkSecurityGroup.properties.securityRules
