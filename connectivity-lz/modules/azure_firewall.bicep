@@ -125,11 +125,7 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
     workspaceId: logAnalyticsWorkspaceId
     logs: [
       {
-        categoryGroup: 'allLogs' // ✅ categoryGroup seul — couvre tous les logs Firewall
-        enabled: true
-      }
-      {
-        categoryGroup: 'audit' // ✅ même famille, pas de mélange
+        categoryGroup: 'allLogs'
         enabled: true
       }
     ]
