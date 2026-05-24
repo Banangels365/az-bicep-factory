@@ -11,8 +11,8 @@ param identityResourceGroupName = 'rg-${organizationName}-${environment}-${locat
 
 // Subscription IDs
 param prodSubscriptionId = '0061dc3e-7704-4778-bcda-b566d000d486'
-param loggingSubscriptionId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
-param quarantineSubscriptionId = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
+// param loggingSubscriptionId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+// param quarantineSubscriptionId = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
 
 // Entra ID Group IDs (from create_entra_groups_script.sh output)
 // Load these from the JSON file created by the script
