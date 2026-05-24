@@ -1,39 +1,44 @@
 // connectivity-lz/modules/nat_gateway.bicep
 // NAT Gateway module for outbound internet connectivity
 
-@description('NAT Gateway name')
+@description('Nom du NAT Gateway')
 param natGatewayName string
 
-@description('Location for the NAT gateway')
+@description('Région pour le NAT gateway')
 param location string
 
-@description('Public IP Address resource IDs')
+@description('ID des adresses IP publiques pour le NAT gateway')
 param publicIpAddressIds array = []
 
-@description('Public IP Prefix resource IDs')
+@description('ID des préfixes IP publics pour le NAT gateway')
 param publicIpPrefixIds array = []
 
-@description('Idle timeout in minutes')
+@description('Temps d\'inactivité avant déconnexion (en minutes, 4-120)')
 @minValue(4)
 @maxValue(120)
 param idleTimeoutInMinutes int = 4
 
-@description('Availability zones')
+// Ajouter une validation
+@description('Zone de disponibilité (0 ou 1 élément — NAT Gateway ne supporte qu\'une seule zone)')
+@maxLength(1)
 param zones array = []
 
-@description('Tags to apply to the NAT gateway')
+@description('Tags à appliquer au NAT gateway')
 param tags object = {}
 
-@description('Enable diagnostic settings')
+@description('Activer les paramètres de diagnostic')
 param enableDiagnostics bool = true
 
-@description('Log Analytics Workspace ID for diagnostics')
+@description('ID du Log Analytics Workspace pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
+
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // NAT Gateway Resource
 resource natGateway 'Microsoft.Network/natGateways@2023-09-01' = {
   name: natGatewayName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: resolvedLocation
   tags: tags
   sku: {
     name: 'Standard'
@@ -60,7 +65,6 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
   name: '${natGatewayName}-diagnostics'
   properties: {
     workspaceId: logAnalyticsWorkspaceId
-    logs: []
     metrics: [
       {
         category: 'AllMetrics'
@@ -71,8 +75,8 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // Outputs
-@description('NAT Gateway resource ID')
+@description('ID du NAT Gateway')
 output natGatewayId string = natGateway.id
 
-@description('NAT Gateway name')
+@description('Nom du NAT Gateway')
 output natGatewayName string = natGateway.name

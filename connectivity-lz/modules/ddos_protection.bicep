@@ -1,26 +1,29 @@
 // connectivity-lz/modules/ddos_protection.bicep
 // DDoS Protection Plan module
 
-@description('DDoS Protection Plan name')
+@description('Nom du plan de protection DDoS')
 param ddosProtectionPlanName string
 
-@description('Location for the DDoS protection plan')
+@description('Région pour le plan de protection DDoS')
 param location string
 
-@description('Tags to apply to the DDoS protection plan')
+@description('Tags à appliquer au plan de protection DDoS')
 param tags object = {}
+
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // DDoS Protection Plan Resource
 resource ddosProtectionPlan 'Microsoft.Network/ddosProtectionPlans@2023-09-01' = {
   name: ddosProtectionPlanName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: resolvedLocation
   tags: tags
   properties: {}
 }
 
 // Outputs
-@description('DDoS Protection Plan resource ID')
+@description('ID du plan de protection DDoS')
 output ddosProtectionPlanId string = ddosProtectionPlan.id
 
-@description('DDoS Protection Plan name')
+@description('Nom du plan de protection DDoS')
 output ddosProtectionPlanName string = ddosProtectionPlan.name

@@ -1,13 +1,13 @@
 // connectivity-lz/modules/azure_firewall.bicep
 // Azure Firewall module with policy support
 
-@description('Azure Firewall name')
+@description('Nom Azure Firewall')
 param firewallName string
 
-@description('Location for the firewall')
+@description('Région Azure Firewall')
 param location string
 
-@description('Azure Firewall SKU')
+@description('SKU Azure Firewall')
 @allowed([
   'AZFW_VNet'
   'AZFW_Hub'
@@ -22,31 +22,31 @@ param skuName string = 'AZFW_VNet'
 ])
 param skuTier string = 'Standard'
 
-@description('Subnet ID for the firewall (AzureFirewallSubnet)')
+@description('ID du sous-réseau du firewall (AzureFirewallSubnet)')
 param subnetId string
 
-@description('Public IP Address resource IDs for the firewall')
+@description('Address publiques du firewall (liste de resource IDs de public IPs)')
 param publicIpAddressIds array
 
-@description('Firewall Policy resource ID')
+@description('ID de la Firewall Policy à associer (optionnel)')
 param firewallPolicyId string = ''
 
-@description('Management subnet ID for Basic SKU')
+@description('ID du sous-réseau de gestion pour le SKU Basic (optionnel)')
 param managementSubnetId string = ''
 
-@description('Management public IP resource ID for Basic SKU')
+@description('ID de l\'adresse IP publique de gestion pour le SKU Basic (optionnel)')
 param managementPublicIpId string = ''
 
-@description('Availability zones')
+@description('Zones de disponibilité pour le firewall')
 param zones array = []
 
-@description('Enable DNS proxy')
+@description('Activer le proxy DNS')
 param enableDnsProxy bool = true
 
-@description('DNS servers for the firewall')
+@description('Serveurs DNS pour le firewall')
 param dnsServers array = []
 
-@description('Threat Intelligence mode')
+@description('Mode Threat Intelligence')
 @allowed([
   'Alert'
   'Deny'
@@ -54,13 +54,13 @@ param dnsServers array = []
 ])
 param threatIntelMode string = 'Alert'
 
-@description('Tags to apply to the firewall')
+@description('Tags à appliquer au firewall')
 param tags object = {}
 
-@description('Enable diagnostic settings')
+@description('Activer les paramètres de diagnostic')
 param enableDiagnostics bool = true
 
-@description('Log Analytics Workspace ID for diagnostics')
+@description('ID du Log Analytics Workspace pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
 
 // Azure Firewall Resource
@@ -125,19 +125,11 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
     workspaceId: logAnalyticsWorkspaceId
     logs: [
       {
-        category: 'AzureFirewallApplicationRule'
+        categoryGroup: 'allLogs' // ✅ categoryGroup seul — couvre tous les logs Firewall
         enabled: true
       }
       {
-        category: 'AzureFirewallNetworkRule'
-        enabled: true
-      }
-      {
-        category: 'AzureFirewallDnsProxy'
-        enabled: true
-      }
-      {
-        categoryGroup: 'allLogs'
+        categoryGroup: 'audit' // ✅ même famille, pas de mélange
         enabled: true
       }
     ]
@@ -151,16 +143,16 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // Outputs
-@description('Azure Firewall resource ID')
+@description('ID Azure Firewall')
 output firewallId string = azureFirewall.id
 
-@description('Azure Firewall name')
+@description('Nom Azure Firewall')
 output firewallName string = azureFirewall.name
 
-@description('Azure Firewall private IP address')
+@description('Adresse privée Azure Firewall')
 output privateIpAddress string = azureFirewall.properties.ipConfigurations[0].properties.privateIPAddress
 
-@description('Azure Firewall public IP addresses')
+@description('Adresses publiques Azure Firewall')
 output publicIpAddresses array = [
   for (pipId, i) in publicIpAddressIds: {
     name: 'ipConfig${i + 1}'

@@ -1,29 +1,29 @@
 // connectivity-lz/modules/virtual_network_peering.bicep
 // VNet Peering module for Hub-Spoke topology
 
-@description('Local Virtual Network name')
+@description('Nom du Virtual Network local')
 param localVnetName string
 
-@description('Remote Virtual Network resource ID')
+@description('ID de la ressource du Virtual Network distant')
 param remoteVnetId string
 
-@description('Peering name (optional, auto-generated if not provided)')
-param peeringName string = '${localVnetName}-to-${last(split(remoteVnetId, '/'))}'
+@description('Nom du peering VNet (optionnel)')
+param peeringName string = '' // vide = calculé automatiquement
 
-@description('Allow virtual network access')
+@description('Autoriser l\'accès entre les réseaux virtuels')
 param allowVirtualNetworkAccess bool = true
 
-@description('Allow forwarded traffic')
+@description('Autoriser le trafic transmis')
 param allowForwardedTraffic bool = true
 
-@description('Allow gateway transit')
+@description('Autoriser la traversée de la passerelle')
 param allowGatewayTransit bool = false
 
-@description('Use remote gateways')
+@description('Utiliser les passerelles distantes (si allowGatewayTransit est vrai)')
 param useRemoteGateways bool = false
 
-@description('Enable peering on both sides (bidirectional)')
-param createReversePeering bool = false
+// Variable pour résoudre le nom du peering
+var resolvedPeeringName = !empty(peeringName) ? peeringName : '${localVnetName}-to-${last(split(remoteVnetId, '/'))}'
 
 // Reference to local VNet
 resource localVnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
@@ -33,11 +33,13 @@ resource localVnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
 // VNet Peering from Local to Remote
 resource vnetPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-09-01' = {
   parent: localVnet
-  name: peeringName
+  name: resolvedPeeringName
   properties: {
     allowVirtualNetworkAccess: allowVirtualNetworkAccess
     allowForwardedTraffic: allowForwardedTraffic
-    allowGatewayTransit: allowGatewayTransit
+    // Note: allowGatewayTransit et useRemoteGateways sont mutuellement exclusifs.
+    // Si les deux sont true, useRemoteGateways prend précédence (comportement hub-spoke standard).
+    allowGatewayTransit: allowGatewayTransit && !useRemoteGateways
     useRemoteGateways: useRemoteGateways
     remoteVirtualNetwork: {
       id: remoteVnetId
@@ -45,27 +47,12 @@ resource vnetPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2
   }
 }
 
-// Reverse VNet Peering (optional)
-resource reversePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-09-01' = if (createReversePeering) {
-  parent: localVnet
-  name: '${last(split(remoteVnetId, '/'))}-to-${localVnetName}'
-  properties: {
-    allowVirtualNetworkAccess: allowVirtualNetworkAccess
-    allowForwardedTraffic: allowForwardedTraffic
-    allowGatewayTransit: useRemoteGateways
-    useRemoteGateways: allowGatewayTransit
-    remoteVirtualNetwork: {
-      id: remoteVnetId
-    }
-  }
-}
-
 // Outputs
-@description('VNet Peering resource ID')
+@description('ID du peering VNet')
 output peeringId string = vnetPeering.id
 
-@description('VNet Peering name')
+@description('Nom du peering VNet')
 output peeringName string = vnetPeering.name
 
-@description('Peering state')
+@description('État du peering')
 output peeringState string = vnetPeering.properties.peeringState

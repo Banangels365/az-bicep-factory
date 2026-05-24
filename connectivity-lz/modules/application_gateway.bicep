@@ -1,63 +1,63 @@
 // connectivity-lz/modules/application_gateway.bicep
 // Application Gateway module for Layer 7 load balancing
 
-@description('Application Gateway name')
+@description('Nom du Application Gateway')
 param applicationGatewayName string
 
-@description('Location for the application gateway')
+@description('Région pour le Application Gateway')
 param location string
 
-@description('Application Gateway SKU')
+@description('SKU du Application Gateway')
 @allowed([
   'Standard_v2'
   'WAF_v2'
 ])
 param skuName string = 'Standard_v2'
 
-@description('Application Gateway tier')
+@description('Tier de l\'Application Gateway')
 @allowed([
   'Standard_v2'
   'WAF_v2'
 ])
 param tier string = 'Standard_v2'
 
-@description('Capacity (instance count)')
+@description('Capacité de l\'Application Gateway (pour les SKU Standard_v2, 1-125 unités)')
 @minValue(1)
 @maxValue(125)
 param capacity int = 2
 
-@description('Enable autoscaling')
+@description('Activer l\'autoscaling (pour les SKU Standard_v2)')
 param enableAutoscaling bool = true
 
-@description('Minimum autoscale capacity')
+@description('Capacité minimale pour l\'autoscaling (pour les SKU Standard_v2, 0 ou 2-125 unités)')
 @minValue(0)
 @maxValue(100)
 param minCapacity int = 2
 
-@description('Maximum autoscale capacity')
+@description('Capacité maximale pour l\'autoscaling (pour les SKU Standard_v2, 2-125 unités)')
 @minValue(2)
 @maxValue(125)
 param maxCapacity int = 10
 
-@description('Subnet ID for the application gateway')
+@description('ID du sous-réseau pour le Application Gateway (AzureSubnet)')
 param subnetId string
 
-@description('Public IP Address resource ID')
+@description('ID de ressource d\'adresse IP publique pour le Application Gateway')
 param publicIpAddressId string
 
-@description('Backend address pools')
+@description('Pools d\'adresses backend')
 param backendAddressPools array
 
-@description('Backend HTTP settings')
+@description('Paramètres HTTP backend')
 param backendHttpSettingsCollection array
 
-@description('HTTP listeners')
+@description('Ecouteurs HTTP')
 param httpListeners array
 
-@description('Request routing rules')
+@description('Règles de routage des requêtes')
 param requestRoutingRules array
 
-@description('Frontend ports')
+@description('Ports frontend')
 param frontendPorts array = [
   {
     name: 'port_80'
@@ -69,36 +69,41 @@ param frontendPorts array = [
   }
 ]
 
-@description('SSL certificates')
+@description('Certificats SSL (pour les règles HTTPS)')
 param sslCertificates array = []
 
-@description('WAF configuration (for WAF_v2 SKU)')
+@description('Configuration du Web Application Firewall (WAF) pour le SKU WAF_v2')
 param wafConfiguration object = {}
 
 @description('Availability zones')
 param zones array = []
 
-@description('Tags to apply to the application gateway')
+@description('Tags à appliquer au Application Gateway')
 param tags object = {}
 
-@description('Enable diagnostic settings')
+@description('Activer les paramètres de diagnostic')
 param enableDiagnostics bool = true
 
-@description('Log Analytics Workspace ID for diagnostics')
+@description('ID du Log Analytics Workspace pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
+
+// Variable pour résoudre la location en fonction de l'abréviation
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // Application Gateway Resource
 resource applicationGateway 'Microsoft.Network/applicationGateways@2023-09-01' = {
   name: applicationGatewayName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: resolvedLocation
   tags: tags
   zones: !empty(zones) ? zones : null
   properties: {
-    sku: {
-      name: skuName
-      tier: tier
-      capacity: enableAutoscaling ? null : capacity
-    }
+    sku: union(
+      {
+        name: skuName
+        tier: tier
+      },
+      !enableAutoscaling ? { capacity: capacity } : {} // propriété omise si autoscaling actif
+    )
     autoscaleConfiguration: enableAutoscaling
       ? {
           minCapacity: minCapacity
@@ -142,20 +147,26 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
   name: '${applicationGatewayName}-diagnostics'
   properties: {
     workspaceId: logAnalyticsWorkspaceId
-    logs: [
-      {
-        category: 'ApplicationGatewayAccessLog'
-        enabled: true
-      }
-      {
-        category: 'ApplicationGatewayPerformanceLog'
-        enabled: true
-      }
-      {
-        category: 'ApplicationGatewayFirewallLog'
-        enabled: true
-      }
-    ]
+    logs: concat(
+      [
+        {
+          category: 'ApplicationGatewayAccessLog'
+          enabled: true
+        }
+        {
+          category: 'ApplicationGatewayPerformanceLog'
+          enabled: true
+        }
+      ],
+      tier == 'WAF_v2'
+        ? [
+            {
+              category: 'ApplicationGatewayFirewallLog'
+              enabled: true
+            }
+          ]
+        : []
+    )
     metrics: [
       {
         category: 'AllMetrics'
@@ -166,13 +177,13 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // Outputs
-@description('Application Gateway resource ID')
+@description('ID du Application Gateway')
 output applicationGatewayId string = applicationGateway.id
 
-@description('Application Gateway name')
+@description('Nom du Application Gateway')
 output applicationGatewayName string = applicationGateway.name
 
-@description('Backend address pool IDs')
+@description('IDs des pools d\'adresses backend')
 output backendAddressPoolIds array = [
   for (pool, i) in backendAddressPools: '${applicationGateway.id}/backendAddressPools/${pool.name}'
 ]
