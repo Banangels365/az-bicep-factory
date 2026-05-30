@@ -16,7 +16,7 @@ param organizationName string
 ])
 param environment string
 
-@description('Région Azure pour les ressources de la plateforme. Valeurs possibles : cace (canadacentral), caea (canadaeast)')
+@description('Région Azure de déploiement des ressources de la plateforme.')
 @allowed([
   'cace' // canadacentral
   'caea' // canadaeast
@@ -37,12 +37,9 @@ param logRetentionDays int = 90
 @description('Activer Microsoft Sentinel')
 param enableSentinel bool = false
 
-// Variables
-// var logAnalyticsWorkspaceName = 'law-${organizationName}-platform-${environment}'
-
-// ============================================
-// MANAGEMENT GROUP HIERARCHY
-// ============================================
+// =================================================
+// HIERARCHIE DE MANAGEMENT GROUPS ET SUBSCRIPTIONS
+// =================================================
 
 // Root Management Group (Tenant Root Group is implicit)
 module rootMg './modules/management_group.bicep' = {
@@ -119,16 +116,7 @@ module quarantineMg './modules/management_group.bicep' = {
 // POLICY INITIATIVES AND ASSIGNMENTS
 // ============================================
 
-//---------------------------------
 // 01-Tagging-Policy Creation
-//---------------------------------
-
-// param initiativeCustomPoliciesName string
-// param initiativeCustomPoliciesDisplayName string
-// param initiativeBuiltinPoliciesName string
-// param initiativeBuiltinPoliciesDisplayName string
-// param customPoliciesTags array = []
-// param builtinPoliciesTags array = []
 module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
   name: 'deploy-01-tagging-policy'
   scope: subscription(managementSubscriptionId)
@@ -189,36 +177,11 @@ module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
         type: 'requiredOnResourceGroup'
         nonComplianceMessage: 'Le tag CreeLe est obligatoire sur les Resource Groups.'
       }
-      // Tags hérités du parent
-      // {
-      //   name: 'Environnement'
-      //   type: 'inheritFromParent'
-      //   nonComplianceMessage: 'Le tag Environnement doit être hérité du parent.'
-      // }
-      // {
-      //   name: 'Application'
-      //   type: 'inheritFromParent'
-      //   nonComplianceMessage: 'Le tag Application doit être hérité du parent.'
-      // }
-      // {
-      //   name: 'Criticite'
-      //   type: 'inheritFromParent'
-      //   nonComplianceMessage: 'Le tag Criticite doit être hérité du parent.'
-      // }
     ]
   }
 }
 
-//---------------------------------
 // 02-General-Policy Creation
-//---------------------------------
-
-// param initiativeName02 string //= '02-General Initiative'
-// param assignmentName02 string //= '02-General-Assignment'
-// param initiativeDisplayName02 string //= '02-General Initiative'
-// param assignmentDisplayName02 string //= '02-General Assignment'
-// param allowedLocations array = []
-
 module generalPolicy './policies/02_General_Policy.bicep' = {
   name: 'deploy-02-general-policy'
   scope: subscription(managementSubscriptionId)
@@ -234,20 +197,9 @@ module generalPolicy './policies/02_General_Policy.bicep' = {
   }
 }
 
-// ---------------------------
 // 03-network-Policy Creation
-// ---------------------------
-
-// param initiativeName03 string //='03-network-Initiative'
-// param assignmentName03 string //='03-network-Assignment' //ne doit pas depasse 24 
-// param assignmentDisplayName03 string //= '03-network-Assignment'
-// param initiativeDisplayName03 string //= '03-network-Initiative'
-// param initiativeCategory string //=  'General'
-// param enforcementMode string //= 'Default'
-
 module networkPolicy './policies/03_Network_Policy.bicep' = {
   name: 'deploy-03-network-policy'
-  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: '03-network-Initiative'
     assignmentName: '03-network-Assignment' //ne doit pas depasse 24 
@@ -258,19 +210,9 @@ module networkPolicy './policies/03_Network_Policy.bicep' = {
   }
 }
 
-// ---------------------------
 // 04-keyVault-Policy Creation
-// ---------------------------
-
-// param initiativeName04 string //= '04-Keyvault-RBAC-Initiative'
-// param assignmentName04 string //= '04-Key-RBAC-Assignment' //ne doit pas depasse 24 characteres
-// param initiativeDisplayName04 string //= '04-Keyvault-RBAC-Initiative'
-// param assignmentDisplayName04 string //= '04-Keyvault-RBAC-Assignment'
-// param kvRbacEffect string //= 'Audit'
-
 module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
   name: 'deploy-04-keyVault-policy'
-  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: '04-Keyvault-RBAC-Initiative'
     assignmentName: '04-Key-RBAC-Assignment'
@@ -280,30 +222,9 @@ module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
   }
 }
 
-// ---------------------------
 // 05-VM-Policy Creation
-// ---------------------------
-
-// param initiativeName05 string //= '05-VM-Initiative'
-// param assignmentName05 string //= '05-VM-Assignment' //ne doit pas depasse 24 characteres
-// param initiativeDisplayName05 string //= '05-VM Initiative'
-// param assignmentDisplayName05 string //= '05-VM Assignment'
-
-// // Liste d’exemple des SKUs autorisés
-// param allowedVmSkus array /*= [
-//   'Standard_B2s'
-//   'Standard_DS1_v2'
-//   'Standard_DS2_v2'
-// ]*/
-
-// Azure Backup (Audit) — tu peux commenter cette ligne pour utiliser la defaultValue de l’initiative
-// param backupEffect = 'AuditIfNotExists'
-// Pour désactiver l’audit (temporairement) :
-// param backupEffect string = 'Disabled'
-
 module vmPolicy './policies/05_VM_Policy.bicep' = {
   name: 'deploy-05-vm-policy'
-  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: '05-VM-Initiative'
     assignmentName: '05-VM-Assignment'
@@ -318,27 +239,9 @@ module vmPolicy './policies/05_VM_Policy.bicep' = {
   }
 }
 
-// ----------------------------------
 // 06-StorageAccount-Policy Creation
-// ----------------------------------
-
-// param initiativeName06 string //= '06-StorageAccountInitiative'
-// param assignmentName06 string //= '06-StorageAccountAssign' //ne doit pas depasse 24 characteres
-// param initiativeDisplayName06 string //= '06-StorageAccount Initiative' // The policy assignment name length must not exceed '24' characters
-// param assignmentDisplayName06 string //= '06-StorageAccount Assignment'
-
-// // région pour la Managed Identity de l’assignation (utile si un effet Modify est actif).
-// param assignmentLocation string //= 'canadacentral'
-
-// // Effects au choix
-// param secureTransferEffect string //= 'Modify'   // ou 'Disabled'
-// param tlsEffect string //= 'Audit'    // 'Audit' | 'Deny' | 'Disabled'
-// param minimumTlsVersion string //= 'TLS1_2'   // 'TLS1_0' | 'TLS1_1' | 'TLS1_2'
-// param publicAccessEffect string //= 'Deny'     // 'Audit' | 'Deny' | 'Disabled'
-
 module storageAccount './policies/06_StorageAccount_Policy.bicep' = {
   name: 'deploy-06-storageaccount-policy'
-  //scope: subscription(managementSubscriptionId)
   params: {
     initiativeName: '06-StorageAccountInitiative'
     assignmentName: '06-StorageAccountAssign' //ne doit pas depasse 24 characteres
@@ -353,7 +256,7 @@ module storageAccount './policies/06_StorageAccount_Policy.bicep' = {
 }
 
 // ============================================
-// RESOURCES GROUP CREATION
+// CREATION DES GROUPES DE RESSOURCES 
 // ============================================
 
 // Resource Group for Platform Management Resources (e.g. Log Analytics, policies, etc.)
@@ -412,9 +315,9 @@ module monitoringRg './modules/resource_group.bicep' = if (!empty(managementSubs
   ]
 }
 
-// ============================================
-// PLATFORM RESOURCES (Logging)
-// ============================================
+// ========================================
+// JOURNALISATION DES RESOURCES (LOGGING)
+// ========================================
 
 // Log Analytics Workspace
 module logAnalytics './modules/log_analytics_workspace.bicep' = {
@@ -442,15 +345,16 @@ module logAnalytics './modules/log_analytics_workspace.bicep' = {
   ]
 }
 
-// ============================================
+// ========================================
 // OUTPUTS
-// ============================================
+// ========================================
 
 output managementGroupIds object = {
   root: rootMg.outputs.managementGroupId
   prod: prodMg.outputs.managementGroupId
   logging: loggingMg.outputs.managementGroupId
   quarantine: quarantineMg.outputs.managementGroupId
+  // dev: devMg.outputs.managementGroupId
 }
 
 output resourceGroupIds object = {
@@ -473,7 +377,3 @@ output policyInitiatives object = {
 output logAnalyticsWorkspaceId string = logAnalytics.outputs.workspaceId
 output logAnalyticsWorkspaceName string = logAnalytics.outputs.workspaceName
 output logAnalyticsCustomerId string = logAnalytics.outputs.customerId
-
-// output policyInitiativeId string = lzBaselineInitiative.outputs.initiativeId
-// output prodPolicyAssignmentId string = prodPolicyAssignment.outputs.assignmentId
-// output devPolicyAssignmentId string = devPolicyAssignment.outputs.assignmentId

@@ -1,3 +1,6 @@
+[![ALZ - Platform-LZ Validation](https://github.com/Banangels365/az-bicep-factory/actions/workflows/platform-lz-validation.yml/badge.svg)](https://github.com/Banangels365/az-bicep-factory/actions/workflows/platform-lz-validation.yml) 
+[![ALZ - Platform-LZ Deployment](https://github.com/Banangels365/az-bicep-factory/actions/workflows/platform-lz-deploy.yml/badge.svg?branch=main)](https://github.com/Banangels365/az-bicep-factory/actions/workflows/platform-lz-deploy.yml)
+
 # Platform Landing Zone — Bicep Modules
 
 > **Version** : 2.0.0 | **Région supportée** : `canadacentral` (`cace`), `canadaeast` (`caea`)  
@@ -42,7 +45,7 @@ avant connectivity-lz et identity-lz.
 - **Diagnostic Settings** pour configurer la collecte de logs sur les ressources cibles
 - **Azure Policy Initiatives** pour appliquer les standards de gouvernance (tagging, réseau, sécurité)
 
-> **Ordre de déploiement global** : Platform LZ → Connectivity LZ → Identity LZ → Spoke LZs.
+> **Ordre de déploiement global** : Platform LZ → Connectivity LZ → Identity LZ → Workload LZs.
 > Le Log Analytics Workspace déployé ici est référencé par `logAnalyticsWorkspaceId`
 > dans tous les orchestrateurs suivants.
 
