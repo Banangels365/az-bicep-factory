@@ -21,4 +21,4 @@ reports/
 *.txt
 
 # Temp folder
-_Temp/*
+_temp/*
