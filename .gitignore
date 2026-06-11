@@ -19,3 +19,6 @@ Thumbs.db
 reports/
 *.log
 *.txt
+
+# Temp folder
+_temp/

@@ -37,12 +37,15 @@ param logRetentionDays int = 90
 @description('Activer Microsoft Sentinel')
 param enableSentinel bool = false
 
+// Variables
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
+
 // =================================================
 // HIERARCHIE DE MANAGEMENT GROUPS ET SUBSCRIPTIONS
 // =================================================
 
 // Root Management Group (Tenant Root Group is implicit)
-module rootMg './modules/management_group.bicep' = {
+module rootMg '../modules/management/management_group.bicep' = {
   name: 'deploy-root-mg'
   scope: tenant()
   params: {
@@ -54,7 +57,7 @@ module rootMg './modules/management_group.bicep' = {
 }
 
 // Production Management Group
-module prodMg './modules/management_group.bicep' = {
+module prodMg '../modules/management/management_group.bicep' = {
   name: 'deploy-prod-mg'
   scope: tenant()
   params: {
@@ -69,7 +72,7 @@ module prodMg './modules/management_group.bicep' = {
 }
 
 // Development Management Group
-// module devMg './modules/management_group.bicep' = {
+// module devMg '../modules/management/management_group.bicep' = {
 //   name: 'deploy-dev-mg'
 //   scope: tenant()
 //   params: {
@@ -83,7 +86,7 @@ module prodMg './modules/management_group.bicep' = {
 // }
 
 // Logging Management Group
-module loggingMg './modules/management_group.bicep' = {
+module loggingMg '../modules/management/management_group.bicep' = {
   name: 'deploy-logging-mg'
   scope: tenant()
   params: {
@@ -98,7 +101,7 @@ module loggingMg './modules/management_group.bicep' = {
 }
 
 // Quarantine Management Group
-module quarantineMg './modules/management_group.bicep' = {
+module quarantineMg '../modules/management/management_group.bicep' = {
   name: 'deploy-quarantine-mg'
   scope: tenant()
   params: {
@@ -117,7 +120,7 @@ module quarantineMg './modules/management_group.bicep' = {
 // ============================================
 
 // 01-Tagging-Policy Creation
-module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
+module taggingPolicy '../modules/authorization/policy-assignment/01_Tagging_Policy.bicep' = {
   name: 'deploy-01-tagging-policy'
   scope: subscription(managementSubscriptionId)
   params: {
@@ -182,7 +185,7 @@ module taggingPolicy './policies/01_Tagging_Policy.bicep' = {
 }
 
 // 02-General-Policy Creation
-module generalPolicy './policies/02_General_Policy.bicep' = {
+module generalPolicy '../modules/authorization/policy-assignment/02_General_Policy.bicep' = {
   name: 'deploy-02-general-policy'
   scope: subscription(managementSubscriptionId)
   params: {
@@ -198,7 +201,7 @@ module generalPolicy './policies/02_General_Policy.bicep' = {
 }
 
 // 03-network-Policy Creation
-module networkPolicy './policies/03_Network_Policy.bicep' = {
+module networkPolicy '../modules/authorization/policy-assignment/03_Network_Policy.bicep' = {
   name: 'deploy-03-network-policy'
   params: {
     initiativeName: '03-network-Initiative'
@@ -211,7 +214,7 @@ module networkPolicy './policies/03_Network_Policy.bicep' = {
 }
 
 // 04-keyVault-Policy Creation
-module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
+module keyVaultPolicy '../modules/authorization/policy-assignment/04_KeyVault_Policy.bicep' = {
   name: 'deploy-04-keyVault-policy'
   params: {
     initiativeName: '04-Keyvault-RBAC-Initiative'
@@ -223,7 +226,7 @@ module keyVaultPolicy './policies/04_KeyVault_Policy.bicep' = {
 }
 
 // 05-VM-Policy Creation
-module vmPolicy './policies/05_VM_Policy.bicep' = {
+module vmPolicy '../modules/authorization/policy-assignment/05_VM_Policy.bicep' = {
   name: 'deploy-05-vm-policy'
   params: {
     initiativeName: '05-VM-Initiative'
@@ -240,7 +243,7 @@ module vmPolicy './policies/05_VM_Policy.bicep' = {
 }
 
 // 06-StorageAccount-Policy Creation
-module storageAccount './policies/06_StorageAccount_Policy.bicep' = {
+module storageAccount '../modules/authorization/policy-assignment/06_StorageAccount_Policy.bicep' = {
   name: 'deploy-06-storageaccount-policy'
   params: {
     initiativeName: '06-StorageAccountInitiative'
@@ -260,12 +263,12 @@ module storageAccount './policies/06_StorageAccount_Policy.bicep' = {
 // ============================================
 
 // Resource Group for Platform Management Resources (e.g. Log Analytics, policies, etc.)
-module managementRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+module managementRg '../modules/management/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
   name: 'deploy-management-rg'
   scope: subscription(managementSubscriptionId)
   params: {
     resourceGroupName: 'rg-${organizationName}-${environment}-${location}-management'
-    location: location
+    location: resolvedLocation
     tags: tags
   }
   dependsOn: [
@@ -274,12 +277,12 @@ module managementRg './modules/resource_group.bicep' = if (!empty(managementSubs
 }
 
 // Resource Groups for identity and access management (e.g. Privileged Identity Management, etc.)
-module identityRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+module identityRg '../modules/management/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
   name: 'deploy-identity-rg'
   scope: subscription(managementSubscriptionId)
   params: {
     resourceGroupName: 'rg-${organizationName}-${environment}-${location}-identity'
-    location: location
+    location: resolvedLocation
     tags: tags
   }
   dependsOn: [
@@ -288,12 +291,12 @@ module identityRg './modules/resource_group.bicep' = if (!empty(managementSubscr
 }
 
 // Resource Group for networking resources (e.g. Virtual Networks, Subnets, etc.)
-module networkingRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+module networkingRg '../modules/management/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
   name: 'deploy-networking-rg'
   scope: subscription(managementSubscriptionId)
   params: {
     resourceGroupName: 'rg-${organizationName}-${environment}-${location}-networking'
-    location: location
+    location: resolvedLocation
     tags: tags
   }
   dependsOn: [
@@ -302,12 +305,12 @@ module networkingRg './modules/resource_group.bicep' = if (!empty(managementSubs
 }
 
 // Resource Group for Monitoring resources (e.g. Azure Monitor, Log Analytics, etc.)
-module monitoringRg './modules/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
+module monitoringRg '../modules/management/resource_group.bicep' = if (!empty(managementSubscriptionId)) {
   name: 'deploy-monitoring-rg'
   scope: subscription(managementSubscriptionId)
   params: {
     resourceGroupName: 'rg-${organizationName}-${environment}-${location}-monitoring'
-    location: location
+    location: resolvedLocation
     tags: tags
   }
   dependsOn: [
@@ -320,12 +323,12 @@ module monitoringRg './modules/resource_group.bicep' = if (!empty(managementSubs
 // ========================================
 
 // Log Analytics Workspace
-module logAnalytics './modules/log_analytics_workspace.bicep' = {
+module logAnalytics '../modules/logging/log_analytics_workspace.bicep' = {
   name: 'deploy-log-analytics'
   scope: resourceGroup(managementSubscriptionId, 'rg-${organizationName}-${environment}-${location}-monitoring')
   params: {
     workspaceName: 'law-${organizationName}-${environment}-${location}'
-    location: location
+    location: resolvedLocation
     sku: 'PerGB2018'
     retentionInDays: logRetentionDays
     dailyQuotaGb: -1 // -1 = pas de limite quotidienne (recommandé pour sandbox). Valeur minimale acceptée par Azure : > 0.023
