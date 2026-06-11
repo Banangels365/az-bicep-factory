@@ -3,7 +3,7 @@ sp-credentials*.json
 *.json.bak
 
 # Bicep generated files
-*.json
+# *.json
 !main.bicepparam
 !**/parameters/*.json
 
