@@ -43,7 +43,7 @@ resource encryptionProtector 'Microsoft.Sql/servers/encryptionProtector@2023-08-
   }
 }
 
-@description('Nom de l’encryption protector configuré.')
+@description('Nom de l\'encryption protector configuré.')
 output name string = encryptionProtector.name
 
 @description('ID complet de la ressource encryption protector.')

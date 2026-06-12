@@ -1,41 +1,41 @@
 # Modules Budget Azure Consumption
 
-Ces modules Bicep permettent de déployer des budgets Azure Consumption aux scopes **Resource Group**, **Subscription** et **Management Group**. Ils reprennent la logique essentielle des modules AVM Microsoft pour les budgets — mêmes concepts de montant, période, dates, notifications par seuils et filtre optionnel — tout en restant plus simples et adaptés à un usage interne privé.[cite:64][cite:65][cite:66]
+Ces modules Bicep permettent de déployer des budgets Azure Consumption aux scopes **Resource Group**, **Subscription** et **Management Group**. Ils reprennent la logique essentielle des modules AVM Microsoft pour les budgets — mêmes concepts de montant, période, dates, notifications par seuils et filtre optionnel — tout en restant plus simples et adaptés à un usage interne privé.
 
-Les trois modules reposent sur la ressource `Microsoft.Consumption/budgets@2023-11-01` et conservent une structure volontairement homogène pour simplifier la maintenance dans un dépôt IaC. Les différences portent surtout sur le `targetScope` et sur certains outputs contextuels comme `resourceGroupName`, `subscriptionName` ou `managementGroupId`.[cite:64][cite:65][cite:66]
+Les trois modules reposent sur la ressource `Microsoft.Consumption/budgets@2023-11-01` et conservent une structure volontairement homogène pour simplifier la maintenance dans un dépôt IaC. Les différences portent surtout sur le `targetScope` et sur certains outputs contextuels comme `resourceGroupName`, `subscriptionName` ou `managementGroupId`.
 
 ## Modules disponibles
 
 | Module | Scope | Usage principal |
 |---|---|---|
 | `modules/consumption/budget_resource_group.bicep` | Resource Group | Suivi budgétaire d’un groupe de ressources précis.[cite:64] |
-| `modules/consumption/budget_subscription.bicep` | Subscription | Suivi budgétaire global ou partiel à l’échelle d’une subscription.[cite:65] |
-| `modules/consumption/budget_management_group.bicep` | Management Group | Suivi budgétaire transversal sur plusieurs subscriptions rattachées à un management group.[cite:66] |
+| `modules/consumption/budget_subscription.bicep` | Subscription | Suivi budgétaire global ou partiel à l’échelle d’une subscription. |
+| `modules/consumption/budget_management_group.bicep` | Management Group | Suivi budgétaire transversal sur plusieurs subscriptions rattachées à un management group. |
 
 ## Paramètres communs
 
-Les trois modules partagent les mêmes paramètres d’entrée principaux, ce qui permet de passer facilement d’un scope à l’autre sans changer la logique métier.[cite:64][cite:65][cite:66]
+Les trois modules partagent les mêmes paramètres d’entrée principaux, ce qui permet de passer facilement d’un scope à l’autre sans changer la logique métier.
 
 | Paramètre | Type | Obligatoire | Description |
 |---|---|---:|---|
-| `name` | `string` | Oui | Nom du budget Azure Consumption.[cite:64][cite:65][cite:66] |
-| `category` | `string` | Non | Catégorie du budget, `Cost` ou `Usage`.[cite:64][cite:65][cite:66] |
-| `amount` | `int` | Oui | Montant total du budget à suivre.[cite:64][cite:65][cite:66] |
-| `resetPeriod` | `string` | Non | Période de réinitialisation, par exemple `Monthly`, `Quarterly` ou `Annually`.[cite:64][cite:65][cite:66] |
-| `startDate` | `string` | Non | Date de début du budget, généralement le premier jour du mois.[cite:64][cite:65][cite:66] |
+| `name` | `string` | Oui | Nom du budget Azure Consumption. |
+| `category` | `string` | Non | Catégorie du budget, `Cost` ou `Usage`. |
+| `amount` | `int` | Oui | Montant total du budget à suivre. |
+| `resetPeriod` | `string` | Non | Période de réinitialisation, par exemple `Monthly`, `Quarterly` ou `Annually`. |
+| `startDate` | `string` | Non | Date de début du budget, généralement le premier jour du mois.|
 | `endDate` | `string` | Non | Date de fin du budget ; si vide, le module calcule une date à 10 ans. |
-| `operator` | `string` | Non | Opérateur de comparaison pour les notifications.[cite:64][cite:65][cite:66] |
-| `thresholds` | `array` | Non | Liste des seuils en pourcentage qui déclenchent des notifications.[cite:64][cite:65][cite:66] |
-| `contactEmails` | `array` | Non | Adresses e-mail notifiées quand les seuils sont atteints.[cite:64][cite:65][cite:66] |
-| `contactRoles` | `array` | Non | Rôles Azure notifiés quand les seuils sont atteints.[cite:64][cite:65][cite:66] |
-| `actionGroups` | `array` | Non | Action Groups à notifier.[cite:64][cite:65][cite:66] |
-| `thresholdType` | `string` | Non | Type de seuil, `Actual` ou `Forecasted`.[cite:64][cite:65][cite:66] |
-| `filter` | `object` | Non | Filtre avancé appliqué au budget.[cite:64][cite:65][cite:66] |
-| `resourceGroupFilter` | `array` | Non | Filtre simplifié par noms de resource groups lorsque `filter` n’est pas renseigné.[cite:64][cite:65][cite:66] |
+| `operator` | `string` | Non | Opérateur de comparaison pour les notifications. |
+| `thresholds` | `array` | Non | Liste des seuils en pourcentage qui déclenchent des notifications. |
+| `contactEmails` | `array` | Non | Adresses e-mail notifiées quand les seuils sont atteints. |
+| `contactRoles` | `array` | Non | Rôles Azure notifiés quand les seuils sont atteints. |
+| `actionGroups` | `array` | Non | Action Groups à notifier. |
+| `thresholdType` | `string` | Non | Type de seuil, `Actual` ou `Forecasted`. |
+| `filter` | `object` | Non | Filtre avancé appliqué au budget. |
+| `resourceGroupFilter` | `array` | Non | Filtre simplifié par noms de resource groups lorsque `filter` n’est pas renseigné. |
 
 ## Outputs
 
-Les modules exposent des sorties cohérentes pour faciliter leur consommation dans d’autres templates Bicep.[cite:64][cite:65][cite:66]
+Les modules exposent des sorties cohérentes pour faciliter leur consommation dans d’autres templates Bicep.
 
 | Module | Outputs principaux |
 |---|---|
@@ -71,7 +71,7 @@ module rgBudget '../modules/consumption/budget_resource_group.bicep' = {
 
 ## Exemple Subscription
 
-Exemple de budget mensuel appliqué à une subscription cible depuis un déploiement au scope management group.[cite:65]
+Exemple de budget mensuel appliqué à une subscription cible depuis un déploiement au scope management group.
 
 ```bicep
 targetScope = 'managementGroup'
@@ -114,7 +114,7 @@ module subBudget '../modules/consumption/budget_subscription.bicep' = {
 
 ## Exemple Management Group
 
-Exemple de budget de gouvernance appliqué à un management group cible.[cite:66]
+Exemple de budget de gouvernance appliqué à un management group cible.
 
 ```bicep
 targetScope = 'tenant'
@@ -145,7 +145,7 @@ module mgBudget '../modules/consumption/budget_management_group.bicep' = {
 
 ## Exemple avec filtre avancé
 
-Le paramètre `filter` est prioritaire sur `resourceGroupFilter` et permet de cibler des dimensions ou des tags plus finement.[cite:64][cite:65][cite:66]
+Le paramètre `filter` est prioritaire sur `resourceGroupFilter` et permet de cibler des dimensions ou des tags plus finement.
 
 ```bicep
 module filteredBudget '../modules/consumption/budget_subscription.bicep' = {
@@ -186,7 +186,7 @@ module filteredBudget '../modules/consumption/budget_subscription.bicep' = {
 
 ## Bonnes pratiques
 
-- Fournir au moins un canal de notification parmi `contactEmails`, `contactRoles` ou `actionGroups`, car les modules AVM budget sont conçus pour fonctionner avec un mécanisme de notification explicite.[cite:64][cite:65][cite:66]
-- Utiliser une `startDate` alignée sur le premier jour du mois pour garder une lecture budgétaire cohérente.[cite:64][cite:65][cite:66]
-- Utiliser `resourceGroupFilter` pour les cas simples et `filter` pour les cas avancés, afin de conserver un code IaC lisible.[cite:64][cite:65][cite:66]
-- Limiter le nombre de seuils à des valeurs réellement exploitables opérationnellement, par exemple `80`, `100` et `120`.[cite:64][cite:65][cite:66]
+- Fournir au moins un canal de notification parmi `contactEmails`, `contactRoles` ou `actionGroups`, car les modules AVM budget sont conçus pour fonctionner avec un mécanisme de notification explicite.
+- Utiliser une `startDate` alignée sur le premier jour du mois pour garder une lecture budgétaire cohérente.
+- Utiliser `resourceGroupFilter` pour les cas simples et `filter` pour les cas avancés, afin de conserver un code IaC lisible.
+- Limiter le nombre de seuils à des valeurs réellement exploitables opérationnellement, par exemple `80`, `100` et `120`.

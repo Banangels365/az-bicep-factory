@@ -13,7 +13,7 @@ param databaseName string
 param diffBackupIntervalInHours int = 24
 
 @description('Nombre de jours de rétention des sauvegardes à court terme. Par défaut, cela est défini sur 7 jours.')
-param retentionDays int = 7
+param retentionDays int = 90
 
 resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName

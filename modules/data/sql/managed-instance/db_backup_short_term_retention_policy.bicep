@@ -13,7 +13,7 @@ param databaseName string
 param managedInstanceName string
 
 @description('Nombre de jours de rétention')
-param retentionDays int = 35
+param retentionDays int = 90
 
 // Ressource de l'instance SQL managée existante
 resource managedInstance 'Microsoft.Sql/managedInstances@2024-05-01-preview' existing = {
