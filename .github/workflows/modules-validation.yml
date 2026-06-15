@@ -37,6 +37,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Nettoyage Unicode AVANT toute analyse
+      - name: Clean filenames (remove Unicode)
+        working-directory: .
+        run: |
+          echo "Cleaning filenames..."
+          find . -type f | while read -r file; do
+            clean=$(printf "%s" "$file" | sed 's/[^ -~]//g')
+            if [[ "$clean" != "$file" ]]; then
+              echo "Fixing: '$file' → '$clean'"
+              mkdir -p "$(dirname "$clean")"
+              mv "$file" "$clean"
+            fi
+          done
+
       - name: Install Bicep
         run: az bicep install
 
@@ -60,24 +74,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Nettoyage Unicode AVANT Checkov (sécurité supplémentaire)
       - name: Clean filenames (remove Unicode)
+        working-directory: .
         run: |
           echo "Cleaning filenames..."
           find . -type f | while read -r file; do
-            # Remove ALL non-ASCII characters (including invisible combining marks)
             clean=$(printf "%s" "$file" | sed 's/[^ -~]//g')
-
             if [[ "$clean" != "$file" ]]; then
               echo "Fixing: '$file' → '$clean'"
               mkdir -p "$(dirname "$clean")"
               mv "$file" "$clean"
             fi
           done
-
-      - name: Debug filenames
-        run: |
-          echo "Listing raw filenames..."
-          find . -type f -print0 | xargs -0 ls -b
 
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12.2934.0
