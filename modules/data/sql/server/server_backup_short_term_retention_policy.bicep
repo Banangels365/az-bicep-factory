@@ -15,13 +15,11 @@ param diffBackupIntervalInHours int = 24
 @description('Nombre de jours de rétention des sauvegardes à court terme. Par défaut, cela est défini sur 7 jours.')
 param retentionDays int = 90
 
-// checkov:skip=CKV_AZURE_23: Target resource is defined existing
-// checkov:skip=CKV_AZURE_24: Target resource is defined existing
+// checkov:skip=CKV_AZURE_23: Existing SQL server, auditing configured elsewhere
+// checkov:skip=CKV_AZURE_24: Existing SQL server, retention configured elsewhere
 resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName
 
-  // checkov:skip=CKV_AZURE_23: Target nested resource is defined existing
-  // checkov:skip=CKV_AZURE_24: Target nested resource is defined existing
   resource database 'databases@2023-08-01' existing = {
     name: databaseName
   }

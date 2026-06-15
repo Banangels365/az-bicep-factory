@@ -29,9 +29,8 @@ param autoRotationEnabled bool = true
 ])
 param serverKeyType string = 'ServiceManaged'
 
-// checkov:skip=CKV_AZURE_23: Ignore existing resource reference
-// checkov:skip=CKV_AZURE_24: Ignore existing resource reference
-// checkov:skip=CKV_AZURE_25: Ignore existing resource reference
+// checkov:skip=CKV_AZURE_23: Existing SQL server, auditing configured elsewhere
+// checkov:skip=CKV_AZURE_24: Existing SQL server, retention configured elsewhere
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: sqlServerName
 }

@@ -23,9 +23,6 @@ defaults:
   run:
     working-directory: ./modules
 
-# env:
-#   LOCATION: canadaeast
-
 jobs:
 
   # =========================================================
@@ -63,13 +60,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Clean filenames (remove Unicode)
+        run: |
+          echo "Cleaning filenames..."
+          find . -type f | while read -r file; do
+            clean=$(printf "%s" "$file" | iconv -f utf8 -t ascii//TRANSLIT 2>/dev/null)
+            if [[ "$clean" != "$file" ]]; then
+              echo "Fixing: $file → $clean"
+              mv "$file" "$clean"
+            fi
+          done
+
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12.2934.0
         with:
           framework: bicep
           directory: ./modules
           soft_fail: true
-          checkov_version: 3.3.1
 
       - name: PSRule for Azure
         uses: microsoft/ps-rule@v2.9.0
