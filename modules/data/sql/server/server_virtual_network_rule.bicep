@@ -3,11 +3,11 @@
 /*
   Module : Azure SQL Server Virtual Network Rule
   Fonction :
-    Ce module crée ou met à jour une règle d’accès réseau (Virtual Network Rule)
+    Ce module crée ou met à jour une règle d'accès réseau (Virtual Network Rule)
     pour un serveur Azure SQL. Il permet :
-      - D’autoriser un subnet spécifique à accéder au serveur SQL
-      - De gérer l’option ignoreMissingVnetServiceEndpoint
-      - D’appliquer la règle directement sur le serveur SQL existant
+      - D'autoriser un subnet spécifique à accéder au serveur SQL
+      - De gérer l'option ignoreMissingVnetServiceEndpoint
+      - D'appliquer la règle directement sur le serveur SQL existant
 */
 
 targetScope = 'resourceGroup'
@@ -15,7 +15,7 @@ targetScope = 'resourceGroup'
 @description('Nom de la règle de réseau virtuel à créer.')
 param name string
 
-@description('Indique si la règle doit être créée même si le service endpoint SQL n’est pas activé sur le subnet.')
+@description('Indique si la règle doit être créée même si le service endpoint SQL n\'est pas activé sur le subnet.')
 param ignoreMissingVnetServiceEndpoint bool = false
 
 @description('ID complet de la ressource subnet autorisée à accéder au serveur SQL.')
@@ -24,6 +24,9 @@ param virtualNetworkSubnetResourceId string
 @description('Nom du serveur SQL existant sur lequel appliquer la règle.')
 param serverName string
 
+// checkov:skip=CKV_AZURE_23: Ignore existing resource reference
+// checkov:skip=CKV_AZURE_24: Ignore existing resource reference
+// checkov:skip=CKV_AZURE_25: Ignore existing resource reference
 resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName
 }

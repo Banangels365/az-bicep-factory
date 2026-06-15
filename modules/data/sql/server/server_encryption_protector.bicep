@@ -29,6 +29,7 @@ param autoRotationEnabled bool = true
 ])
 param serverKeyType string = 'ServiceManaged'
 
+// checkov:skip=CKV_AZURE_23: Ignore existing resource reference
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: sqlServerName
 }

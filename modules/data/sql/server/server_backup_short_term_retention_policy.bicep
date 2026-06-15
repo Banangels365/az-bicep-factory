@@ -15,6 +15,7 @@ param diffBackupIntervalInHours int = 24
 @description('Nombre de jours de rétention des sauvegardes à court terme. Par défaut, cela est défini sur 7 jours.')
 param retentionDays int = 90
 
+// checkov:skip=CKV_AZURE_23: Ignore existing resource reference
 resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName
 
