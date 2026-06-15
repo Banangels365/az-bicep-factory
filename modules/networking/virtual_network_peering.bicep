@@ -1,4 +1,4 @@
-// connectivity-lz/modules/virtual_network_peering.bicep
+// modules/networking/virtual_network_peering.bicep
 // VNet Peering module for Hub-Spoke topology
 
 @description('Nom du Virtual Network local')

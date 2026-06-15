@@ -1,4 +1,4 @@
-// connectivity-lz/modules/virtual_network.bicep
+// modules/networking/virtual_network.bicep
 // Virtual Network module with advanced configuration
 
 @description('Nom du VNet')

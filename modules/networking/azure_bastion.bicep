@@ -1,4 +1,4 @@
-// connectivity-lz/modules/azure_bastion.bicep
+// modules/networking/azure_bastion.bicep
 // Azure Bastion module for secure RDP/SSH access
 
 @description('Nom Azure Bastion')

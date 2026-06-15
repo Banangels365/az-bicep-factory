@@ -45,7 +45,7 @@ Le module `virtual_machine_core.bicep` permet de déployer une machine virtuelle
 
 ### Exemple d'utilisation du module Virtual Machine Core
 ```bicep
-module virtualMachineCore './modules/vm/virtual_machine_core.bicep' = {
+module virtualMachineCore './modules/compute/vm/virtual_machine_core.bicep' = {
     name: 'vm-core-prod-001'
     params: {
         name: 'vm-core-prod-001'
@@ -76,7 +76,7 @@ Le module `virtual_machine_disk.bicep` permet de créer un disque managé Azure 
 
 ### Exemple d'utilisation du module Virtual Machine Disk
 ```bicep
-module virtualMachineDisk './modules/vm/virtual_machine_disk.bicep' = {
+module virtualMachineDisk './modules/compute/vm/virtual_machine_disk.bicep' = {
   name: 'vm-disk-prod-001'
   params: {
     name: 'vm-disk-prod-001'
@@ -101,7 +101,7 @@ Le module `virtual_machine_nic_configuration.bicep` permet de déployer une inte
 
 ### Exemple d'utilisation du module Virtual Machine NIC Configuration
 ```bicep
-module virtualMachineNicConfig './modules/vm/virtual_machine_nic_configuration.bicep' = {
+module virtualMachineNicConfig './modules/compute/vm/virtual_machine_nic_configuration.bicep' = {
   name: 'vm-nic-config-prod-001'
   params: {
     name: 'vm-nic-config-prod-001'
@@ -129,7 +129,7 @@ Le module `virtual_machine_extension.bicep` permet de déployer une extension su
 
 ### Exemple d'utilisation du module Virtual Machine Extension
 ```bicep
-module virtualMachineExtension './modules/vm/virtual_machine_extension.bicep' = {
+module virtualMachineExtension './modules/compute/vm/virtual_machine_extension.bicep' = {
   name: 'vm-extension-prod-001'
   params: {
     name: 'vm-extension-prod-001'
@@ -161,7 +161,7 @@ Le module `virtual_machine_backup.bicep` permet de déployer une configuration d
 
 ### Exemple d'utilisation du module Virtual Machine Backup
 ```bicep
-module virtualMachineBackup './modules/vm/virtual_machine_backup.bicep' = {
+module virtualMachineBackup './modules/compute/vm/virtual_machine_backup.bicep' = {
   name: 'vm-backup-prod-001'
   params: {
     name: 'vm-backup-prod-001'
@@ -187,7 +187,7 @@ Le module `virtual_machine.bicep` permet de déployer une machine virtuelle Azur
 
 ### Exemple d'utilisation du module Virtual Machine
 ```bicep
-module virtualMachine './modules/vm/virtual_machine.bicep' = {
+module virtualMachine './modules/compute/vm/virtual_machine.bicep' = {
   name: 'vm-prod-001'
   params: {
     name: 'vm-prod-001'

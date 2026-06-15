@@ -1,4 +1,4 @@
-// workload-lz/modules/app_service.bicep
+// modules/compute/app_service.bicep
 // App Service (Web App) module avec support pour Private Endpoint
 
 @description('Nom du Plan App Service')

@@ -1,4 +1,4 @@
-// connectivity-lz/modules/application_gateway.bicep
+// modules/networking/application_gateway.bicep
 // Application Gateway module for Layer 7 load balancing
 
 @description('Nom de l\'Application Gateway')

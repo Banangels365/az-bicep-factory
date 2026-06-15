@@ -1,4 +1,4 @@
-// connectivity-lz/connectivity.bicepparam
+// landing-zone/connectivity-lz/connectivity.bicepparam
 // Parameters for connectivity hub deployment
 
 using './connectivity.bicep'

@@ -1,4 +1,4 @@
-// workload-lz/modules/gallery/compute_gallery.bicep
+// modules/compute/gallery/compute_gallery.bicep
 // Ce module crée une galerie Azure Compute avec des définitions d'images associées.
 
 targetScope = 'resourceGroup'

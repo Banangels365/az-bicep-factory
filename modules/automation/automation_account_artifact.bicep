@@ -1,4 +1,4 @@
-// workload-lz/modules/automation_account_artifact.bicep
+// modules/automation/automation_account_artifact.bicep
 // Sous-module générique pour les artefacts d'un compte Automation.
 
 targetScope = 'resourceGroup'

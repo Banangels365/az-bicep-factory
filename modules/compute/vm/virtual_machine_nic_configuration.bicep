@@ -1,4 +1,4 @@
-// workload-lz/modules/vm/virtual_machine_nic_configuration.bicep
+// modules/compute/vm/virtual_machine_nic_configuration.bicep
 // Ce module déploie une interface réseau (NIC) pour une machine virtuelle Azure, avec une configuration flexible pour les adresses IP, les paramètres de sécurité, et les diagnostics. 
 // Il prend en charge la création d'une adresse IP publique associée à la NIC, ainsi que l'association à un groupe de sécurité réseau (NSG)
 // et la configuration de paramètres avancés tels que l'accélération réseau et le transfert IP.  

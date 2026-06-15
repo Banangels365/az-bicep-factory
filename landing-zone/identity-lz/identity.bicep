@@ -1,4 +1,4 @@
-// identity/main.bicep
+// landing-zone/identity/main.bicep
 // Identity Landing Zone orchestrator
 
 targetScope = 'subscription'
@@ -53,7 +53,7 @@ var miMonitoringName = 'mi-${organizationName}-${environment}-${location}-monito
 // ============================================
 
 // Platform MI - Utilisé pour les tâches d'automatisation et de gestion au niveau de la plateforme-lz
-module miPlatform '../modules/authorization/managed_identity.bicep' = {
+module miPlatform '../../modules/authorization/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-platform'
   params: {
@@ -66,7 +66,7 @@ module miPlatform '../modules/authorization/managed_identity.bicep' = {
 }
 
 // Network MI - Utilisé pour les opérations liées au réseau (ex: NSG, Firewall, etc.)
-module miNetwork '../modules/authorization/managed_identity.bicep' = {
+module miNetwork '../../modules/authorization/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-network'
   params: {
@@ -79,7 +79,7 @@ module miNetwork '../modules/authorization/managed_identity.bicep' = {
 }
 
 // Application Deploy MI - Utilisé pour les déploiements d'applications
-module miAppDeploy '../modules/authorization/managed_identity.bicep' = {
+module miAppDeploy '../../modules/authorization/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-app-deploy'
   params: {
@@ -92,7 +92,7 @@ module miAppDeploy '../modules/authorization/managed_identity.bicep' = {
 }
 
 // Backup MI - Utilisé pour les opérations de sauvegarde
-module miBackup '../modules/authorization/managed_identity.bicep' = {
+module miBackup '../../modules/authorization/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-backup'
   params: {
@@ -105,7 +105,7 @@ module miBackup '../modules/authorization/managed_identity.bicep' = {
 }
 
 // Monitoring MI - Utilisé pour les opérations de surveillance et d'alerting
-module miMonitoring '../modules/authorization/managed_identity.bicep' = {
+module miMonitoring '../../modules/authorization/managed_identity.bicep' = {
   scope: resourceGroup(identityResourceGroupName)
   name: 'deploy-mi-monitoring'
   params: {
@@ -124,7 +124,7 @@ module miMonitoring '../modules/authorization/managed_identity.bicep' = {
 // ---------- RBAC for Production Subscription ----------------- //
 
 // Prod Admins - Contributor on Prod Subscription
-module rbacProdAdmins '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacProdAdmins '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-prod-admins'
   params: {
@@ -136,7 +136,7 @@ module rbacProdAdmins '../modules/authorization/role-assignment/rbac_sub_scope.b
 }
 
 // Prod Readers - Reader on Prod Subscription
-module rbacProdReaders '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacProdReaders '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-prod-readers'
   params: {
@@ -148,7 +148,7 @@ module rbacProdReaders '../modules/authorization/role-assignment/rbac_sub_scope.
 }
 
 // Network Admins Group - Network Contributor
-module rbacNetworkAdmins '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacNetworkAdmins '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-network-admins-mgmt'
   params: {
@@ -160,7 +160,7 @@ module rbacNetworkAdmins '../modules/authorization/role-assignment/rbac_sub_scop
 }
 
 // Security Admins Group - Security Admin
-module rbacSecurityAdmins '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacSecurityAdmins '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-security-admins-mgmt'
   params: {
@@ -172,7 +172,7 @@ module rbacSecurityAdmins '../modules/authorization/role-assignment/rbac_sub_sco
 }
 
 // Cost Managers - Cost Management Contributor
-module rbacCostManagers '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacCostManagers '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-cost-managers'
   params: {
@@ -184,7 +184,7 @@ module rbacCostManagers '../modules/authorization/role-assignment/rbac_sub_scope
 }
 
 // Billing Readers - Cost Management Reader
-module rbacBillingReaders '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacBillingReaders '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-billing-readers'
   params: {
@@ -197,7 +197,7 @@ module rbacBillingReaders '../modules/authorization/role-assignment/rbac_sub_sco
 
 // ---------- RBAC for Logging Subscription ----------------- //
 // Logging Admins - Contributor on Logging Subscription
-module rbacLoggingAdmins '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
+module rbacLoggingAdmins '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-logging-admins'
   params: {
@@ -209,7 +209,7 @@ module rbacLoggingAdmins '../modules/authorization/role-assignment/rbac_sub_scop
 }
 
 // Logging Contributors - Contributor on Logging Subscription
-module rbacLoggingContributors '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
+module rbacLoggingContributors '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-logging-contributors'
   params: {
@@ -221,7 +221,7 @@ module rbacLoggingContributors '../modules/authorization/role-assignment/rbac_su
 }
 
 // Logging Readers - Reader on Logging Subscription
-module rbacLoggingReaders '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
+module rbacLoggingReaders '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-logging-readers'
   params: {
@@ -234,7 +234,7 @@ module rbacLoggingReaders '../modules/authorization/role-assignment/rbac_sub_sco
 
 // ---------- RBAC for Quarantine Subscription ----------------- //
 // Quarantine Admins - Contributor on Quarantine Subscription
-module rbacQuarantineAdmins '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(quarantineSubscriptionId)) {
+module rbacQuarantineAdmins '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(quarantineSubscriptionId)) {
   scope: subscription(quarantineSubscriptionId)
   name: 'rbac-quarantine-admins'
   params: {
@@ -246,7 +246,7 @@ module rbacQuarantineAdmins '../modules/authorization/role-assignment/rbac_sub_s
 }
 
 // Quarantine Contributors - Contributor on Quarantine Subscription
-module rbacQuarantineContributors '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(quarantineSubscriptionId)) {
+module rbacQuarantineContributors '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(quarantineSubscriptionId)) {
   scope: subscription(quarantineSubscriptionId)
   name: 'rbac-quarantine-contributors'
   params: {
@@ -258,7 +258,7 @@ module rbacQuarantineContributors '../modules/authorization/role-assignment/rbac
 }
 
 // Quarantine Readers - Reader on Quarantine Subscription
-module rbacQuarantineReaders '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(quarantineSubscriptionId)) {
+module rbacQuarantineReaders '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(quarantineSubscriptionId)) {
   scope: subscription(quarantineSubscriptionId)
   name: 'rbac-quarantine-readers'
   params: {
@@ -274,7 +274,7 @@ module rbacQuarantineReaders '../modules/authorization/role-assignment/rbac_sub_
 // ============================================
 
 // Platform MI - Contributor on Management Subscription
-module rbacPlatformMI '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacPlatformMI '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-platform-mi'
   params: {
@@ -286,7 +286,7 @@ module rbacPlatformMI '../modules/authorization/role-assignment/rbac_sub_scope.b
 }
 
 // Network MI - Network Contributor on Management Subscription
-module rbacNetworkMI '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacNetworkMI '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-network-mi'
   params: {
@@ -298,7 +298,7 @@ module rbacNetworkMI '../modules/authorization/role-assignment/rbac_sub_scope.bi
 }
 
 // App Deploy MI - Contributor on logging subscriptions
-module rbacAppDeployMILog '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
+module rbacAppDeployMILog '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-app-deploy-mi-logging'
   params: {
@@ -309,7 +309,7 @@ module rbacAppDeployMILog '../modules/authorization/role-assignment/rbac_sub_sco
   }
 }
 
-module rbacAppDeployMIProd '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacAppDeployMIProd '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-app-deploy-mi-prod'
   params: {
@@ -321,7 +321,7 @@ module rbacAppDeployMIProd '../modules/authorization/role-assignment/rbac_sub_sc
 }
 
 // Backup MI - Backup Contributor
-module rbacBackupMI '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacBackupMI '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-backup-mi'
   params: {
@@ -333,7 +333,7 @@ module rbacBackupMI '../modules/authorization/role-assignment/rbac_sub_scope.bic
 }
 
 // Monitoring MI - Monitoring Reader on production subscription
-module rbacMonitoringMIMgmt '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
+module rbacMonitoringMIMgmt '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(prodSubscriptionId)) {
   scope: subscription(prodSubscriptionId)
   name: 'rbac-monitoring-mi-mgmt'
   params: {
@@ -345,7 +345,7 @@ module rbacMonitoringMIMgmt '../modules/authorization/role-assignment/rbac_sub_s
 }
 
 // Monitoring MI - Monitoring Reader on logging subscription
-module rbacMonitoringMILogging '../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
+module rbacMonitoringMILogging '../../modules/authorization/role-assignment/rbac_sub_scope.bicep' = if (!empty(loggingSubscriptionId)) {
   scope: subscription(loggingSubscriptionId)
   name: 'rbac-monitoring-mi-logging'
   params: {

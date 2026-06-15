@@ -1,4 +1,4 @@
-// workload-lz/modules/vm/virtual_machine_backup.bicep
+// modules/compute/vm/virtual_machine_backup.bicep
 // Ce module déploie une configuration de backup pour une machine virtuelle Azure, en associant la VM à une policy de backup définie dans un Recovery Services Vault.
 // Il prend en charge la création d'un protected item dans le vault, qui représente la VM à protéger, et permet de spécifier les paramètres essentiels tels que le type de protected item, 
 // l'ID de la policy de backup, et l'ID de la ressource source à protéger.  

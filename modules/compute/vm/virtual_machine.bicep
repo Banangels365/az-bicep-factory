@@ -1,4 +1,4 @@
-// workload-lz/modules/vm/virtual-machine.bicep
+// modules/compute/vm/virtual-machine.bicep
 // Module de déploiement d'une machine virtuelle Azure avec des configurations flexibles pour les systèmes Linux et Windows, incluant la gestion des disques, des extensions et des options de sécurité.
 // Ce module intègre les meilleures pratiques pour la configuration des machines virtuelles, telles que l'utilisation d'identités managées, l'activation des diagnostics et la configuration de la mise à jour automatique des correctifs.  
 

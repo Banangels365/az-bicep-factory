@@ -20,7 +20,7 @@ Le module `key_vault_key.bicep` permet de déployer des clés dans un Key Vault 
 
 ### Exemple d'utilisation du module Key Vault Key
 ```bicep
-module keyVaultKeys './modules/key-vault/key_vault_key.bicep' = [
+module keyVaultKeys './modules/security/key-vault/key_vault_key.bicep' = [
   {
     name: 'key-prod-001'
     params: {
@@ -67,7 +67,7 @@ Le module `key_vault_secret.bicep` permet de déployer des secrets dans un Key V
 
 ### Exemple d'utilisation du module Key Vault Secret
 ```bicep
-module keyVaultSecrets './modules/key-vault/key_vault_secret.bicep' = [
+module keyVaultSecrets './modules/security/key-vault/key_vault_secret.bicep' = [
   {
     name: 'secret-prod-001'
     params: {
@@ -111,7 +111,7 @@ Le module `key_vault_access_policy.bicep` permet de configurer les politiques d'
 
 ### Exemple d'utilisation du module Key Vault Access Policy
 ```bicep
-module keyVaultAccessPolicies './modules/key-vault/key_vault_access_policy.bicep' = [
+module keyVaultAccessPolicies './modules/security/key-vault/key_vault_access_policy.bicep' = [
   {
     name: 'access-policy-prod-001'
     params: {
@@ -167,7 +167,7 @@ Le module `key_vault.bicep` permet de déployer un Key Vault avec des configurat
 
 ### Exemple d'utilisation complète du module Key Vault avec les modules enfants
 ```bicep
-module keyVault './modules/key-vault/key_vault.bicep' = {
+module keyVault './modules/security/key-vault/key_vault.bicep' = {
     name: 'kv-prod-001'
     params: {
         name: 'kv-prod-001'

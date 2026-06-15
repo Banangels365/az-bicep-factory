@@ -1,4 +1,4 @@
-// connectivity-lz/modules/network_watcher_flowlogs.bicep
+// modules/networking/network_watcher_flowlogs.bicep
 // This module deploys NSG Flow Logs for a given NSG and Network Watcher, with optional integration to Log Analytics for Traffic Analytics.
 
 @description('Nom du Network Watcher')

@@ -1,4 +1,4 @@
-// connectivity-lz/modules/private_dns_zone.bicep
+// modules/networking/private_dns_zone.bicep
 // Private DNS Zone module for Private Endpoints
 
 @description('Nom de la Zone Private DNS')

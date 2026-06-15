@@ -19,7 +19,7 @@ Le module `compute_gallery.bicep` permet de déployer une galerie Azure Compute 
 
 ### Exemple d'utilisation du module Compute Gallery
 ```bicep
-module computeGallery './modules/gallery/compute_gallery.bicep' = {
+module computeGallery './modules/compute/gallery/compute_gallery.bicep' = {
   name: 'compute-gallery-prod-001'
   params: {
     name: 'compute-gallery-prod-001'
@@ -66,7 +66,7 @@ Le module `compute_gallery_image_definition.bicep` permet de déployer une défi
 
 ### Exemple d'utilisation du module Compute Gallery Image Definition
 ```bicep
-module computeGalleryImageDef './modules/gallery/compute_gallery_image_definition.bicep' = {
+module computeGalleryImageDef './modules/compute/gallery/compute_gallery_image_definition.bicep' = {
   name: 'compute-gallery-image-def-prod-001'
   params: {
     name: 'compute-gallery-image-def-prod-001'

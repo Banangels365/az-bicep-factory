@@ -1,4 +1,4 @@
-// connectivity-lz/modules/public_ip.bicep
+// modules/networking/public_ip.bicep
 // Public IP Address module
 
 @description('Nom de l\'adresse IP publique')

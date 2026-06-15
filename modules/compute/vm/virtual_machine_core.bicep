@@ -1,4 +1,4 @@
-// workload-lz/modules/vm/virtual_machine_core.bicep  
+// modules/compute/vm/virtual_machine_core.bicep  
 // Ce module déploie une machine virtuelle Azure avec une configuration flexible pour les disques, les identités managées, les interfaces réseau, et d'autres paramètres essentiels. 
 // Il prend en charge à la fois les systèmes d'exploitation Windows et Linux, avec des options spécifiques pour chaque type. 
 // Les disques de données peuvent être créés ou attachés selon les besoins, et le module gère également les diagnostics de démarrage et les configurations de patching.

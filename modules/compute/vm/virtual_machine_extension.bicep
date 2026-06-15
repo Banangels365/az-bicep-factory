@@ -1,4 +1,4 @@
-// workload-lz/modules/vm/virtual_machine_extension.bicep
+// modules/compute/vm/virtual_machine_extension.bicep
 // Ce module déploie une extension sur une machine virtuelle existante.
 
 targetScope = 'resourceGroup'

@@ -1,4 +1,4 @@
-// connectivity-lz/modules/ddos_protection.bicep
+// modules/networking/ddos_protection.bicep
 // DDoS Protection Plan module
 
 @description('Nom du plan de protection DDoS')

@@ -1,4 +1,4 @@
-// connectivity-lz/modules/route_table.bicep
+// modules/networking/route_table.bicep
 // Route Table module with custom routes
 
 @description('Nom de la table de routage')

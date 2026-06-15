@@ -1,4 +1,4 @@
-// workload-lz/demo-avd-01/main.bicep
+// landing-zone/workload-lz/demo-avd-01/main.bicep
 // Déploiement d'une infrastructure Azure Virtual Desktop complète avec un Host Pool, deux groupes d'applications (Desktop et RemoteApp), un Workspace et un Scaling Plan.
 // Ce déploiement inclut également des paramètres pour les diagnostics et la configuration du Private Endpoint du Workspace.
 
@@ -91,7 +91,7 @@ var diagnosticSettings = enableDiagnostics && !empty(logAnalyticsWorkspaceId)
     ]
   : []
 
-module hostPool '../modules/avd/host_pool.bicep' = {
+module hostPool '../../../modules/compute/avd/host_pool.bicep' = {
   name: 'hostPoolDeployment'
   params: {
     name: hostPoolName
@@ -113,7 +113,7 @@ module hostPool '../modules/avd/host_pool.bicep' = {
   }
 }
 
-module desktopApplicationGroup '../modules/avd/application_group.bicep' = {
+module desktopApplicationGroup '../../../modules/compute/avd/application_group.bicep' = {
   name: 'desktopApplicationGroupDeployment'
   params: {
     name: desktopApplicationGroupName
@@ -129,7 +129,7 @@ module desktopApplicationGroup '../modules/avd/application_group.bicep' = {
   }
 }
 
-module remoteApplicationGroup '../modules/avd/application_group.bicep' = {
+module remoteApplicationGroup '../../../modules/compute/avd/application_group.bicep' = {
   name: 'remoteApplicationGroupDeployment'
   params: {
     name: remoteApplicationGroupName
@@ -145,7 +145,7 @@ module remoteApplicationGroup '../modules/avd/application_group.bicep' = {
   }
 }
 
-module workspace '../modules/avd/workspace.bicep' = {
+module workspace '../../../modules/compute/avd/workspace.bicep' = {
   name: 'workspaceDeployment'
   params: {
     name: workspaceName
@@ -166,7 +166,7 @@ module workspace '../modules/avd/workspace.bicep' = {
   }
 }
 
-module scalingPlan '../modules/avd/scaling_plan.bicep' = {
+module scalingPlan '../../../modules/compute/avd/scaling_plan.bicep' = {
   name: 'scalingPlanDeployment'
   params: {
     name: scalingPlanName

@@ -1,4 +1,4 @@
-// workload-lz/modules/sql/types.bicep
+// modules/data/sql/types.bicep
 
 @export()
 type roleAssignmentType = {

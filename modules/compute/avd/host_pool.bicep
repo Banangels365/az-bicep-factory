@@ -1,3 +1,7 @@
+// modules/compute/avd/host_pool.bicep
+// Azure Virtual Desktop — Pool d'hôtes
+// Module de déploiement d'un Host Pool Azure Virtual Desktop (AVD) avec configuration et paramètres personnalisés.
+
 targetScope = 'resourceGroup'
 
 @description('Nom du Host Pool')

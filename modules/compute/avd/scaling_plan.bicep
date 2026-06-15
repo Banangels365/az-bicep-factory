@@ -1,4 +1,4 @@
-// workload-lz/modules/avd/scaling_plan.bicep
+// modules/compute/avd/scaling_plan.bicep
 // Azure Virtual Desktop — Scaling Plan
 // Permet de définir des règles d'auto-scaling pour les Host Pools AVD, en fonction de planifications et de conditions spécifiques. 
 // Le scaling plan aide à optimiser les coûts et les performances en ajustant dynamiquement le nombre de machines virtuelles en fonction de la demande.

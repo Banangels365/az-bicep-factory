@@ -1,4 +1,4 @@
-// platform-lz/modules/management_group.bicep
+// modules/management/management_group.bicep
 // Module de création de Management Group pour Azure Landing Zone
 
 targetScope = 'tenant'
@@ -17,9 +17,6 @@ param parentManagementGroupId string = ''
 @description('Liste des abonnements à associer au groupe d\'administration')
 param subscriptionIds array = []
 
-// ======================================================================
-// 1) Création du Management Group
-// ======================================================================
 resource managementGroup 'Microsoft.Management/managementGroups@2023-04-01' = {
   name: managementGroupId
   properties: {
@@ -36,9 +33,6 @@ resource managementGroup 'Microsoft.Management/managementGroups@2023-04-01' = {
   }
 }
 
-// ======================================================================
-// 2) Association des abonnements au Management Group
-// ======================================================================
 resource subscriptionAssociations 'Microsoft.Management/managementGroups/subscriptions@2023-04-01' = [
   for subscriptionId in subscriptionIds: {
     parent: managementGroup
@@ -46,9 +40,6 @@ resource subscriptionAssociations 'Microsoft.Management/managementGroups/subscri
   }
 ]
 
-// ======================================================================
-// 3) Sorties
-// ======================================================================
 @description('ID du groupe d\'administration')
 output managementGroupId string = managementGroup.id
 

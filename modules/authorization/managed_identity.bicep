@@ -1,4 +1,4 @@
-// identity-lz/modules/managed_identity.bicep
+// modules/authorization/managed_identity.bicep
 // Managed Identity module (User-Assigned)
 
 @description('Nom de l\'identité managée')

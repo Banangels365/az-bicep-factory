@@ -1,4 +1,4 @@
-// connectivity-lz/modules/azure_load_balancer.bicep
+// modules/networking/azure_load_balancer.bicep
 // Azure Load Balancer module with frontend and backend configuration
 
 @description('Nom du Load Balancer')

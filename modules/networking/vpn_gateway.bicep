@@ -1,4 +1,4 @@
-// connectivity-lz/modules/vpn_gateway.bicep
+// modules/networking/vpn_gateway.bicep
 // VPN Gateway module for site-to-site and point-to-site connectivity
 
 @description('Nom de la VPN Gateway')

@@ -1,4 +1,4 @@
-// workload-lz/modules/key-vault/key_vault.bicep
+// modules/security/key-vault/key_vault.bicep
 // Ce module déploie un Key Vault avec des configurations flexibles, incluant les access policies, secrets, clés, private endpoints, et plus encore. 
 // Il est conçu pour être réutilisable et adaptable à divers scénarios de sécurité et de gestion des clés dans Azure.
 

@@ -1,4 +1,4 @@
-// workload-lz/modules/key-vault/key_vault_key.bicep
+// modules/security/key-vault/key_vault_key.bicep
 // Ce module permet de créer une clé dans un Key Vault existant,  
 // avec des options de configuration pour les attributs de la clé, les tags, les policies de release et de rotation, 
 // et les role assignments associés.

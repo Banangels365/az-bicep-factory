@@ -1,4 +1,4 @@
-// connectivity-lz/modules/subnet.bicep
+// modules/networking/subnet.bicep
 // Subnet module for creating individual subnets
 
 @description('Nom du VNet parent')

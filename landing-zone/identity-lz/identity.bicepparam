@@ -1,4 +1,5 @@
-// identity-lz/identity.bicepparam
+// landing-zone/identity-lz/identity.bicepparam
+
 using './identity.bicep'
 
 // Organization configuration

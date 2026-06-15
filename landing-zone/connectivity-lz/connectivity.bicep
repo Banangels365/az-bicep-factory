@@ -1,4 +1,4 @@
-// connectivity-lz/connectivity.bicep
+// landing-zone/connectivity-lz/connectivity.bicep
 // Hub Network orchestrator for Hub-Spoke topology
 
 targetScope = 'subscription'
@@ -119,7 +119,7 @@ var rtManagementName = 'rt-hub-${organizationName}-${environment}-${location}'
 // PLAN DE PROTECTION DDoS
 // ============================================
 
-module ddosProtection '../modules/networking/ddos_protection.bicep' = if (deployDdosProtection) {
+module ddosProtection '../../modules/networking/ddos_protection.bicep' = if (deployDdosProtection) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-ddos-protection'
   params: {
@@ -133,7 +133,7 @@ module ddosProtection '../modules/networking/ddos_protection.bicep' = if (deploy
 // NETWORK SECURITY GROUPS
 // ============================================
 
-module nsgManagement '../modules/networking/network_security_group.bicep' = {
+module nsgManagement '../../modules/networking/network_security_group.bicep' = {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-nsg-management'
   params: {
@@ -182,7 +182,7 @@ module nsgManagement '../modules/networking/network_security_group.bicep' = {
 }
 
 // NSG dédié au subnet Bastion pour permettre des règles spécifiques (ex: autoriser uniquement le port 22/3389 depuis le subnet management, et pas depuis tout le VNet)
-module nsgBastion '../modules/networking/network_security_group.bicep' = if (deployBastion) {
+module nsgBastion '../../modules/networking/network_security_group.bicep' = if (deployBastion) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-nsg-bastion'
   params: {
@@ -300,7 +300,7 @@ module nsgBastion '../modules/networking/network_security_group.bicep' = if (dep
 // avant la création de la route table.
 // ============================================
 
-module pipVpnGateway '../modules/networking/public_ip.bicep' = if (deployVpnGateway) {
+module pipVpnGateway '../../modules/networking/public_ip.bicep' = if (deployVpnGateway) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-pip-vpngw'
   params: {
@@ -315,7 +315,7 @@ module pipVpnGateway '../modules/networking/public_ip.bicep' = if (deployVpnGate
   }
 }
 
-module pipFirewall '../modules/networking/public_ip.bicep' = if (deployAzureFirewall) {
+module pipFirewall '../../modules/networking/public_ip.bicep' = if (deployAzureFirewall) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-pip-firewall'
   params: {
@@ -330,7 +330,7 @@ module pipFirewall '../modules/networking/public_ip.bicep' = if (deployAzureFire
   }
 }
 
-module pipBastion '../modules/networking/public_ip.bicep' = if (deployBastion) {
+module pipBastion '../../modules/networking/public_ip.bicep' = if (deployBastion) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-pip-bastion'
   params: {
@@ -353,7 +353,7 @@ module pipBastion '../modules/networking/public_ip.bicep' = if (deployBastion) {
 // le module subnet.bicep (phase 2, voir plus bas).
 // ============================================
 
-module hubVnet '../modules/networking/virtual_network.bicep' = {
+module hubVnet '../../modules/networking/virtual_network.bicep' = {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-hub-vnet'
   params: {
@@ -399,7 +399,7 @@ module hubVnet '../modules/networking/virtual_network.bicep' = {
 // qui sera utilisée dans la route table (phase 2).
 // ============================================
 
-module azureFirewall '../modules/networking/azure_firewall.bicep' = if (deployAzureFirewall) {
+module azureFirewall '../../modules/networking/azure_firewall.bicep' = if (deployAzureFirewall) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-azure-firewall'
   params: {
@@ -425,7 +425,7 @@ module azureFirewall '../modules/networking/azure_firewall.bicep' = if (deployAz
 // Créée après le Firewall pour utiliser son IP privée.
 // ============================================
 
-module routeTableManagement '../modules/networking/route_table.bicep' = {
+module routeTableManagement '../../modules/networking/route_table.bicep' = {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-rt-management'
   params: {
@@ -452,7 +452,7 @@ module routeTableManagement '../modules/networking/route_table.bicep' = {
 // maintenant que le Firewall et son IP sont disponibles.
 // ============================================
 
-module managementSubnet '../modules/networking/subnet.bicep' = {
+module managementSubnet '../../modules/networking/subnet.bicep' = {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-subnet-management-phase2'
   params: {
@@ -468,7 +468,7 @@ module managementSubnet '../modules/networking/subnet.bicep' = {
 // Passerelle VPN (VPN Gateway)
 // ============================================
 
-module vpnGateway '../modules/networking/vpn_gateway.bicep' = if (deployVpnGateway) {
+module vpnGateway '../../modules/networking/vpn_gateway.bicep' = if (deployVpnGateway) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-vpn-gateway'
   params: {
@@ -492,7 +492,7 @@ module vpnGateway '../modules/networking/vpn_gateway.bicep' = if (deployVpnGatew
 // AZURE BASTION
 // ============================================
 
-module bastion '../modules/networking/azure_bastion.bicep' = if (deployBastion) {
+module bastion '../../modules/networking/azure_bastion.bicep' = if (deployBastion) {
   scope: resourceGroup(connectivityResourceGroupName)
   name: 'deploy-bastion'
   params: {
@@ -500,7 +500,6 @@ module bastion '../modules/networking/azure_bastion.bicep' = if (deployBastion) 
     location: location
     sku: 'Standard'
     subnetId: '${hubVnet.outputs.vnetId}/subnets/AzureBastionSubnet'
-    // FIX BCP318 : opérateur ?. sur le module conditionnel pipBastion.
     publicIpAddressId: pipBastion.?outputs.publicIpId ?? ''
     enableFileCopy: true
     enableTunneling: true

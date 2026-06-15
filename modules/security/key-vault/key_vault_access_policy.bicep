@@ -1,3 +1,5 @@
+// modules/security/key-vault/key_vault_access_policy.bicep
+
 targetScope = 'resourceGroup'
 
 @description('Nom du Key Vault parent.')

@@ -1,4 +1,5 @@
-// workload-lz/modules/sql/instance-pool/main.bicep
+// modules/data/sql/instance-pool/main.bicep
+
 targetScope = 'resourceGroup'
 
 @description('Nom du pool d\'instances SQL.')

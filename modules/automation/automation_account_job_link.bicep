@@ -1,4 +1,4 @@
-// workload-lz/modules/automation_account_job_link.bicep
+// modules/automation/automation_account_job_link.bicep
 // Sous-module de liaison entre un runbook et un schedule.
 
 targetScope = 'resourceGroup'

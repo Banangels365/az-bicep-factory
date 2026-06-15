@@ -1,4 +1,4 @@
-// workload-lz/modules/key-vault/key_vault_secret.bicep
+// modules/security/key-vault/key_vault_secret.bicep
 // Ce module permet de créer un secret dans un Key Vault existant, 
 // avec des options de configuration pour les attributs du secret, les tags, et les role assignments associés.
 

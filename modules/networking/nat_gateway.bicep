@@ -1,4 +1,4 @@
-// connectivity-lz/modules/nat_gateway.bicep
+// modules/networking/nat_gateway.bicep
 // NAT Gateway module for outbound internet connectivity
 
 @description('Nom du NAT Gateway')

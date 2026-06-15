@@ -1,4 +1,4 @@
-// workload-lz/modules/avd/workspace.bicep
+// modules/compute/avd/workspace.bicep
 // Azure Virtual Desktop — Workspace
 // Point d'entrée pour les utilisateurs finaux — agrège les Application Groups.
 // Le Workspace est ce que les utilisateurs voient dans le client AVD (Windows App).

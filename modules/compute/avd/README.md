@@ -22,7 +22,7 @@ Le module `host_pool.bicep` permet de déployer un Host Pool AVD avec une config
 
 ### Exemple d'utilisation du module Host Pool
 ```bicep
-module hostPool './modules/avd/host_pool.bicep' = {
+module hostPool './modules/compute/avd/host_pool.bicep' = {
   name: 'hp-avd-prod-001'
   params: {
     name: 'hp-avd-prod-001'
@@ -50,7 +50,7 @@ Le module `application.bicep` permet de déployer une application dans un groupe
 
 ### Exemple d'utilisation du module Application
 ```bicep
-module application './modules/avd/application.bicep' = {
+module application './modules/compute/avd/application.bicep' = {
   name: 'app-office365'
   params: {
     applicationGroupName: 'ag-avd-prod-001'
@@ -76,7 +76,7 @@ Le module `application_group.bicep` permet de déployer un groupe d'applications
 
 ### Exemple d'utilisation du module Application Group
 ```bicep
-module applicationGroup './modules/avd/application_group.bicep' = {
+module applicationGroup './modules/compute/avd/application_group.bicep' = {
   name: 'ag-avd-prod-001'
   params: {
     hostPoolName: 'hp-avd-prod-001'
@@ -101,7 +101,7 @@ Le module `scaling_plan.bicep` permet de déployer un plan de mise à l'échelle
 
 ### Exemple d'utilisation du module Scaling Plan
 ```bicep
-module scalingPlan './modules/avd/scaling_plan.bicep' = {
+module scalingPlan './modules/compute/avd/scaling_plan.bicep' = {
   name: 'sp-avd-prod-001'
   params: {
     hostPoolName: 'hp-avd-prod-001'
@@ -146,7 +146,7 @@ Le module `workspace.bicep` permet de déployer un espace de travail AVD et d'y 
 
 ### Exemple d'utilisation du module Workspace
 ```bicep
-module workspace './modules/avd/workspace.bicep' = {
+module workspace './modules/compute/avd/workspace.bicep' = {
   name: 'ws-avd-prod-001'
   params: {
     name: 'ws-avd-prod-001'

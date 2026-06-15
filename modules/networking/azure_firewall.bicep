@@ -1,4 +1,4 @@
-// connectivity-lz/modules/azure_firewall.bicep
+// modules/networking/azure_firewall.bicep
 // Azure Firewall module with policy support
 
 @description('Nom Azure Firewall')

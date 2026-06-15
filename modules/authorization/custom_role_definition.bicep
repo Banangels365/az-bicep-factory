@@ -1,4 +1,4 @@
-// identity-lz/modules/custom_role_definition.bicep
+// modules/authorization/custom_role_definition.bicep
 // Custom RBAC Role Definition module
 
 targetScope = 'subscription'

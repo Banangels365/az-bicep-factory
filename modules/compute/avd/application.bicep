@@ -1,4 +1,4 @@
-// workload-lz/modules/avd/application.bicep
+// modules/compute/avd/application.bicep
 // Azure Virtual Desktop — Application
 // Permet de créer une application RemoteApp dans un groupe d'applications AVD existant.
 

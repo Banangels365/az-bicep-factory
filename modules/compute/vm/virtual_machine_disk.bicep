@@ -1,4 +1,4 @@
-// workload-lz/modules/vm/virtual_machine_disk.bicep
+// modules/compute/vm/virtual_machine_disk.bicep
 // Module pour la création d'un disque managé Azure attachable à une machine virtuelle. 
 
 targetScope = 'resourceGroup'

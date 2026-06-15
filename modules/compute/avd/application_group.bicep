@@ -1,4 +1,4 @@
-// workload-lz/modules/avd/application_group.bicep
+// modules/compute/avd/application_group.bicep
 // Azure Virtual Desktop — Application Group
 // Permet de créer un groupe d'applications AVD, qui peut être de type Desktop ou RemoteApp. 
 // Le groupe d'applications est associé à un Host Pool existant et peut contenir une liste d'applications à publier (pour les RemoteApp).

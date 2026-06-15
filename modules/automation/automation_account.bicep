@@ -1,4 +1,4 @@
-// workload-lz/modules/automation_account.bicep
+// modules/automation/automation_account.bicep
 // Compte Azure Automation avec artefacts principaux.
 
 targetScope = 'resourceGroup'

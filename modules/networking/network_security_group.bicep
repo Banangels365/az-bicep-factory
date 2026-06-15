@@ -1,4 +1,4 @@
-// connectivity-lz/modules/network_security_group.bicep
+// modules/networking/network_security_group.bicep
 // Network Security Group module with security rules
 
 @description('Nom du Network Security Group')
