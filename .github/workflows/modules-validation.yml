@@ -64,12 +64,13 @@ jobs:
         run: |
           echo "Cleaning filenames..."
           find . -type f | while read -r file; do
-            clean=$(printf "%s" "$file" | iconv -f utf8 -t ascii//TRANSLIT 2>/dev/null)
+            clean=$(printf "%s" "$file" | sed 's/[^ -~]//g')
             if [[ "$clean" != "$file" ]]; then
-              echo "Fixing: $file → $clean"
+              echo "Fixing: '$file' → '$clean'"
               mv "$file" "$clean"
             fi
           done
+
 
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12.2934.0
