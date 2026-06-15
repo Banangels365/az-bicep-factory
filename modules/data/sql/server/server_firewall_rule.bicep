@@ -24,13 +24,13 @@ param startIpAddress string = '0.0.0.0'
 @description('Nom du serveur SQL existant sur lequel appliquer la règle de pare-feu.')
 param serverName string
 
+// checkov:skip=CKV_AZURE_23: Ignore existing resource reference
+// checkov:skip=CKV_AZURE_24: Ignore existing resource reference
+// checkov:skip=CKV_AZURE_25: Ignore existing resource reference
 resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName
 }
 
-// checkov:skip=CKV_AZURE_23: Ignore existing resource reference
-// checkov:skip=CKV_AZURE_24: Ignore existing resource reference
-// checkov:skip=CKV_AZURE_25: Ignore existing resource reference
 resource firewallRule 'Microsoft.Sql/servers/firewallRules@2023-08-01' = {
   name: name
   parent: server
