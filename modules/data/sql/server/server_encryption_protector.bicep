@@ -29,10 +29,14 @@ param autoRotationEnabled bool = true
 ])
 param serverKeyType string = 'ServiceManaged'
 
-// checkov:skip=CKV_AZURE_23: Existing SQL server, auditing configured elsewhere
-// checkov:skip=CKV_AZURE_24: Existing SQL server, retention configured elsewhere
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: sqlServerName
+}
+
+#disable-next-line no-unused-existing-resources
+resource auditSettings 'Microsoft.Sql/servers/auditingSettings@2023-08-01' existing = {
+  name: 'default'
+  parent: sqlServer
 }
 
 resource encryptionProtector 'Microsoft.Sql/servers/encryptionProtector@2023-08-01' = {

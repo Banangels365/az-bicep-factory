@@ -25,6 +25,12 @@ resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   }
 }
 
+#disable-next-line no-unused-existing-resources
+resource auditSettings 'Microsoft.Sql/servers/auditingSettings@2023-08-01' existing = {
+  name: 'default'
+  parent: server
+}
+
 resource policy 'Microsoft.Sql/servers/databases/backupShortTermRetentionPolicies@2023-08-01' = {
   name: 'default'
   parent: server::database

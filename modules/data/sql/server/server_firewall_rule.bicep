@@ -24,10 +24,14 @@ param startIpAddress string = '0.0.0.0'
 @description('Nom du serveur SQL existant sur lequel appliquer la règle de pare-feu.')
 param serverName string
 
-// checkov:skip=CKV_AZURE_23: Existing SQL server, auditing configured elsewhere
-// checkov:skip=CKV_AZURE_24: Existing SQL server, retention configured elsewhere
 resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName
+}
+
+#disable-next-line no-unused-existing-resources
+resource auditSettings 'Microsoft.Sql/servers/auditingSettings@2023-08-01' existing = {
+  name: 'default'
+  parent: server
 }
 
 resource firewallRule 'Microsoft.Sql/servers/firewallRules@2023-08-01' = {
