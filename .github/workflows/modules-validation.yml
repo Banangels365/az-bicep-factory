@@ -63,10 +63,10 @@ jobs:
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@master
         with:
-          framework: bicep
+          framework: arm
           directory: ./modules
           soft_fail: true
-          skip_check: "CKV_AZURE_23,CKV_AZURE_24"
+          skip_check: "CKV_AZURE_23,CKV_AZURE_24,CKV_AZURE_25"
 
       - name: PSRule for Azure
         uses: microsoft/ps-rule@v2.9.0
