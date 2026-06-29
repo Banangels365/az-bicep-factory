@@ -28,12 +28,6 @@ resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName
 }
 
-#disable-next-line no-unused-existing-resources
-resource auditSettings 'Microsoft.Sql/servers/auditingSettings@2023-08-01' existing = {
-  name: 'default'
-  parent: server
-}
-
 resource virtualNetworkRule 'Microsoft.Sql/servers/virtualNetworkRules@2023-08-01' = {
   name: name
   parent: server

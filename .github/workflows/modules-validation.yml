@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Checkov
-        uses: bridgecrewio/checkov-action@v12.2943.0
+        uses: bridgecrewio/checkov-action@master
         with:
           framework: bicep
           directory: ./modules

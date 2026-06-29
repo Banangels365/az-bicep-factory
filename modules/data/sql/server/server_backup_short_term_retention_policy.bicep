@@ -15,20 +15,12 @@ param diffBackupIntervalInHours int = 24
 @description('Nombre de jours de rétention des sauvegardes à court terme. Par défaut, cela est défini sur 7 jours.')
 param retentionDays int = 90
 
-// checkov:skip=CKV_AZURE_23: Existing SQL server, auditing configured elsewhere
-// checkov:skip=CKV_AZURE_24: Existing SQL server, retention configured elsewhere
 resource server 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: serverName
 
   resource database 'databases@2023-08-01' existing = {
     name: databaseName
   }
-}
-
-#disable-next-line no-unused-existing-resources
-resource auditSettings 'Microsoft.Sql/servers/auditingSettings@2023-08-01' existing = {
-  name: 'default'
-  parent: server
 }
 
 resource policy 'Microsoft.Sql/servers/databases/backupShortTermRetentionPolicies@2023-08-01' = {

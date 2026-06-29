@@ -33,12 +33,6 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01' existing = {
   name: sqlServerName
 }
 
-#disable-next-line no-unused-existing-resources
-resource auditSettings 'Microsoft.Sql/servers/auditingSettings@2023-08-01' existing = {
-  name: 'default'
-  parent: sqlServer
-}
-
 resource encryptionProtector 'Microsoft.Sql/servers/encryptionProtector@2023-08-01' = {
   name: 'current'
   parent: sqlServer
