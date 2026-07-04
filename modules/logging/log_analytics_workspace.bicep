@@ -1,5 +1,8 @@
-// platform-lz/modules/log_analytics_workspace.bicep
-// Log Analytics Workspace module for centralized logging
+// modules/logging/log_analytics_workspace.bicep
+
+/* Ce module de workspace Log Analytics est utilisé pour créer et configurer un espace de travail Log Analytics 
+   pour la collecte et l'analyse de données de journalisation dans Azure.
+*/
 
 @description('Nom du workspace Log Analytics')
 @minLength(4)

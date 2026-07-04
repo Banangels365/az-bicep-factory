@@ -7,7 +7,7 @@ Les trois modules reposent sur la ressource `Microsoft.Consumption/budgets@2023-
 ## Modules disponibles
 
 | Module | Scope | Usage principal |
-|---|---|---|
+| --- | --- | --- |
 | `modules/consumption/budget_resource_group.bicep` | Resource Group | Suivi budgétaire d’un groupe de ressources précis.[cite:64] |
 | `modules/consumption/budget_subscription.bicep` | Subscription | Suivi budgétaire global ou partiel à l’échelle d’une subscription. |
 | `modules/consumption/budget_management_group.bicep` | Management Group | Suivi budgétaire transversal sur plusieurs subscriptions rattachées à un management group. |
@@ -17,12 +17,12 @@ Les trois modules reposent sur la ressource `Microsoft.Consumption/budgets@2023-
 Les trois modules partagent les mêmes paramètres d’entrée principaux, ce qui permet de passer facilement d’un scope à l’autre sans changer la logique métier.
 
 | Paramètre | Type | Obligatoire | Description |
-|---|---|---:|---|
+| --- | --- | :---: | --- |
 | `name` | `string` | Oui | Nom du budget Azure Consumption. |
 | `category` | `string` | Non | Catégorie du budget, `Cost` ou `Usage`. |
 | `amount` | `int` | Oui | Montant total du budget à suivre. |
 | `resetPeriod` | `string` | Non | Période de réinitialisation, par exemple `Monthly`, `Quarterly` ou `Annually`. |
-| `startDate` | `string` | Non | Date de début du budget, généralement le premier jour du mois.|
+| `startDate` | `string` | Non | Date de début du budget, généralement le premier jour du mois. |
 | `endDate` | `string` | Non | Date de fin du budget ; si vide, le module calcule une date à 10 ans. |
 | `operator` | `string` | Non | Opérateur de comparaison pour les notifications. |
 | `thresholds` | `array` | Non | Liste des seuils en pourcentage qui déclenchent des notifications. |
@@ -38,7 +38,7 @@ Les trois modules partagent les mêmes paramètres d’entrée principaux, ce qu
 Les modules exposent des sorties cohérentes pour faciliter leur consommation dans d’autres templates Bicep.
 
 | Module | Outputs principaux |
-|---|---|
+| --- | --- |
 | `budget_resource_group.bicep` | `name`, `resourceId`, `resourceGroupName`, `scope`, `effectiveStartDate`, `effectiveEndDate` |
 | `budget_subscription.bicep` | `name`, `resourceId`, `subscriptionName`, `scope`, `effectiveStartDate`, `effectiveEndDate` |
 | `budget_management_group.bicep` | `name`, `resourceId`, `managementGroupId`, `scope`, `effectiveStartDate`, `effectiveEndDate` |

@@ -1,5 +1,12 @@
-// platform-lz/modules/diagnostic_settings.bicep
-// Diagnostic Settings module for centralized logging
+// modules/logging/diagnostic_settings.bicep
+
+/* Ce module de paramètres de diagnostic est utilisé pour configurer les paramètres 
+   de journalisation centralisée pour les ressources Azure.
+
+   Il permet de spécifier les catégories de journaux et de métriques à activer, 
+   ainsi que les détails de la configuration du workspace Log Analytics, 
+   du compte de stockage et de la règle d'autorisation du Hub Event.
+*/
 
 @description('Nom du paramètre de diagnostic')
 param diagnosticSettingName string = 'default-diagnostics'
