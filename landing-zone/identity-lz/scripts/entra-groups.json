@@ -1,0 +1,62 @@
+{
+  "platformAdmins": "[0;32m[INFO][0m Processing group: acmy-Platform-Admins
+[0;32m[INFO][0m Creating group: acmy-Platform-Admins
+[0;32m[INFO][0m Successfully created group: acmy-Platform-Admins (ID: 9c69ec76-4d23-4c8f-be44-306fc8673b60)
+9c69ec76-4d23-4c8f-be44-306fc8673b60",
+  "platformContributors": "[0;32m[INFO][0m Processing group: acmy-Platform-Contributors
+[0;32m[INFO][0m Creating group: acmy-Platform-Contributors
+[0;32m[INFO][0m Successfully created group: acmy-Platform-Contributors (ID: 432f270a-b5d8-45fc-9324-b37471b0a24d)
+432f270a-b5d8-45fc-9324-b37471b0a24d",
+  "networkAdmins": "[0;32m[INFO][0m Processing group: acmy-Network-Admins
+[0;32m[INFO][0m Creating group: acmy-Network-Admins
+[0;32m[INFO][0m Successfully created group: acmy-Network-Admins (ID: ebb9bc11-ba5f-4b2d-af04-6c47e28c8c92)
+ebb9bc11-ba5f-4b2d-af04-6c47e28c8c92",
+  "securityAdmins": "[0;32m[INFO][0m Processing group: acmy-Security-Admins
+[0;32m[INFO][0m Creating group: acmy-Security-Admins
+[0;32m[INFO][0m Successfully created group: acmy-Security-Admins (ID: f5e67f5c-38a2-4b72-8db7-c23bb78c7aac)
+f5e67f5c-38a2-4b72-8db7-c23bb78c7aac",
+  "prodAdmins": "[0;32m[INFO][0m Processing group: acmy-Prod-Admins
+[0;32m[INFO][0m Creating group: acmy-Prod-Admins
+[0;32m[INFO][0m Successfully created group: acmy-Prod-Admins (ID: d7d50802-11f2-42e0-850e-d532f82df564)
+d7d50802-11f2-42e0-850e-d532f82df564",
+  "prodContributors": "[0;32m[INFO][0m Processing group: acmy-Prod-Contributors
+[0;32m[INFO][0m Creating group: acmy-Prod-Contributors
+[0;32m[INFO][0m Successfully created group: acmy-Prod-Contributors (ID: b654a1c7-61cd-48a1-9aa4-591aa759dc1c)
+b654a1c7-61cd-48a1-9aa4-591aa759dc1c",
+  "prodReaders": "[0;32m[INFO][0m Processing group: acmy-Prod-Readers
+[0;32m[INFO][0m Creating group: acmy-Prod-Readers
+[0;32m[INFO][0m Successfully created group: acmy-Prod-Readers (ID: fcecfe9f-2595-43a1-bc13-a487bd28f7ef)
+fcecfe9f-2595-43a1-bc13-a487bd28f7ef",
+  "loggingAdmins": "[0;32m[INFO][0m Processing group: acmy-Logs-Admins
+[0;32m[INFO][0m Creating group: acmy-Logs-Admins
+[0;32m[INFO][0m Successfully created group: acmy-Logs-Admins (ID: 70da0ac4-38a1-4765-8ec2-a2c72213a8fc)
+70da0ac4-38a1-4765-8ec2-a2c72213a8fc",
+  "loggingContributors": "[0;32m[INFO][0m Processing group: acmy-Logs-Contributors
+[0;32m[INFO][0m Creating group: acmy-Logs-Contributors
+[0;32m[INFO][0m Successfully created group: acmy-Logs-Contributors (ID: f0f42fd0-4a77-4982-861a-602ce9230f0e)
+f0f42fd0-4a77-4982-861a-602ce9230f0e",
+  "loggingReaders": "[0;32m[INFO][0m Processing group: acmy-Logs-Readers
+[0;32m[INFO][0m Creating group: acmy-Logs-Readers
+[0;32m[INFO][0m Successfully created group: acmy-Logs-Readers (ID: db913e51-0655-422f-90a8-864c33924551)
+db913e51-0655-422f-90a8-864c33924551",
+  "quarantineAdmins": "[0;32m[INFO][0m Processing group: acmy-Quarantine-Admins
+[0;32m[INFO][0m Creating group: acmy-Quarantine-Admins
+[0;32m[INFO][0m Successfully created group: acmy-Quarantine-Admins (ID: 287a5e73-2ff7-49e8-879e-79ae8fbc3541)
+287a5e73-2ff7-49e8-879e-79ae8fbc3541",
+  "quarantineContributors": "[0;32m[INFO][0m Processing group: acmy-Quarantine-Contributors
+[0;32m[INFO][0m Creating group: acmy-Quarantine-Contributors
+[0;32m[INFO][0m Successfully created group: acmy-Quarantine-Contributors (ID: 7f0a8a13-ac35-4027-a513-8cd209b8ba3e)
+7f0a8a13-ac35-4027-a513-8cd209b8ba3e",
+  "quarantineReaders": "[0;32m[INFO][0m Processing group: acmy-Quarantine-Readers
+[0;32m[INFO][0m Creating group: acmy-Quarantine-Readers
+[0;32m[INFO][0m Successfully created group: acmy-Quarantine-Readers (ID: d903c771-8ae2-4283-9b0e-e610dabd34be)
+d903c771-8ae2-4283-9b0e-e610dabd34be",
+  "costManagers": "[0;32m[INFO][0m Processing group: acmy-Cost-Managers
+[0;32m[INFO][0m Creating group: acmy-Cost-Managers
+[0;32m[INFO][0m Successfully created group: acmy-Cost-Managers (ID: bac387dd-a547-47c9-b217-14af468d1f35)
+bac387dd-a547-47c9-b217-14af468d1f35",
+  "billingReaders": "[0;32m[INFO][0m Processing group: acmy-Billing-Readers
+[0;32m[INFO][0m Creating group: acmy-Billing-Readers
+[0;32m[INFO][0m Successfully created group: acmy-Billing-Readers (ID: 67e47d83-f490-4209-8abd-3b47c6570d94)
+67e47d83-f490-4209-8abd-3b47c6570d94"
+}
