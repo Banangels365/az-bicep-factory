@@ -40,6 +40,7 @@ param tags object = {}
 @description('Liste des paramètres de diagnostic à créer sur le groupe.')
 param diagnosticSettings array = []
 
+// création des ressources
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2025-03-01-preview' existing = {
   name: hostPoolName
 }
@@ -109,6 +110,7 @@ resource applicationGroupDiagnosticSettings 'Microsoft.Insights/diagnosticSettin
   }
 ]
 
+// Outputs
 @description('Resource ID du groupe d\'applications.')
 output resourceId string = applicationGroup.id
 

@@ -5,18 +5,15 @@
 param ddosProtectionPlanName string
 
 @description('Région pour le plan de protection DDoS')
-param location string
+param location string = resourceGroup().location
 
 @description('Tags à appliquer au plan de protection DDoS')
 param tags object = {}
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // DDoS Protection Plan Resource
 resource ddosProtectionPlan 'Microsoft.Network/ddosProtectionPlans@2023-09-01' = {
   name: ddosProtectionPlanName
-  location: resolvedLocation
+  location: location
   tags: tags
   properties: {}
 }

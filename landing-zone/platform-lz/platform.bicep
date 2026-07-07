@@ -1,5 +1,5 @@
 // landing-zone/platform-lz/platform.bicep
-// Orchestrateur Bicep pour le déploiement de la plateforme de base (landing zone) dans Azure.
+// Orchestrateur pour le déploiement de la plateforme de base (landing zone) dans Azure.
 
 targetScope = 'managementGroup'
 
@@ -37,7 +37,10 @@ param logRetentionDays int = 90
 @description('Activer Microsoft Sentinel')
 param enableSentinel bool = false
 
-// Variables
+// ============================================
+// VARIABLES
+// ============================================
+
 var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 // =================================================
@@ -323,7 +326,7 @@ module monitoringRg '../../modules/management/resource_group.bicep' = if (!empty
 // ========================================
 
 // Log Analytics Workspace
-module logAnalytics '../../modules/logging/log_analytics_workspace.bicep' = {
+module logAnalytics '../../modules/monitoring/logging/log_analytics_workspace.bicep' = {
   name: 'deploy-log-analytics'
   scope: resourceGroup(managementSubscriptionId, 'rg-${organizationName}-${environment}-${location}-monitoring')
   params: {

@@ -37,6 +37,8 @@ param conditionVersion string = '2.0'
 @description('ID de la ressource d\'identité managée déléguée pour les affectations de rôle nécessitant une identité managée.')
 param delegatedManagedIdentityResourceId string = ''
 
+// Variables
+
 var builtInRoleNames = {
   Owner: '8e3af657-a8ff-42a0-ab88-20f7382dd24c'
   Contributor: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
@@ -53,6 +55,7 @@ var roleDefinitionId = contains(builtInRoleNames, roleDefinitionIdOrName)
       ? roleDefinitionIdOrName
       : managementGroupResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitionIdOrName))
 
+// Création de la ressource d'affectation de rôle
 resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(managementGroupId, roleDefinitionId, principalId)
   properties: union(
@@ -69,6 +72,8 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
       : {}
   )
 }
+
+// Outputs
 
 @description('ID de l\'affectation de rôle.')
 output roleAssignmentId string = roleAssignment.id

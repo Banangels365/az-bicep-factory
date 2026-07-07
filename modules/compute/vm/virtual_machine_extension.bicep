@@ -49,10 +49,12 @@ param protectedSettingsFromKeyVault object?
 @description('Liste d\'extensions devant être provisionnées avant celle-ci.')
 param provisionAfterExtensions array?
 
+// Récupération de la machine virtuelle existante
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-11-01' existing = {
   name: virtualMachineName
 }
 
+// Création de l'extension sur la machine virtuelle
 resource extension 'Microsoft.Compute/virtualMachines/extensions@2024-11-01' = {
   name: name
   parent: virtualMachine
@@ -73,6 +75,7 @@ resource extension 'Microsoft.Compute/virtualMachines/extensions@2024-11-01' = {
   }
 }
 
+// Outputs
 @description('Nom de l\'extension.')
 output name string = extension.name
 

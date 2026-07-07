@@ -42,6 +42,8 @@ param tags object = {}
 @description('Liste des paramètres de diagnostic à créer sur le scaling plan.')
 param diagnosticSettings array = []
 
+// Variables
+
 var defaultSchedules = [
   {
     name: 'WorkWeek'
@@ -91,6 +93,12 @@ var effectiveHostPoolReferences = [
   }
 ]
 
+var hostPoolReferenceIds = [for ref in effectiveHostPoolReferences: ref.hostPoolArmPath]
+
+var scheduleNames = [for schedule in effectiveSchedules: schedule.name]
+
+// Création des ressources
+
 resource scalingPlan 'Microsoft.DesktopVirtualization/scalingPlans@2025-03-01-preview' = {
   name: name
   location: location
@@ -137,9 +145,7 @@ resource scalingPlanDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@20
   }
 ]
 
-var hostPoolReferenceIds = [for ref in effectiveHostPoolReferences: ref.hostPoolArmPath]
-var scheduleNames = [for schedule in effectiveSchedules: schedule.name]
-
+// Outputs
 @description('Resource ID du plan de mise à l\'échelle.')
 output resourceId string = scalingPlan.id
 

@@ -1,10 +1,10 @@
 # Identity Landing Zone - Orchestrateur d'identités et RBAC
 
-> **Version** : 1.0.0
+> **Version** : 1.0.0  
 > **Région supportée** : `canadacentral` (`cace`), `canadaeast` (`caea`)  
-> **Mainteneur** : Angeles Banaka
+> **Mainteneur** : Angeles Banaka  
 > **Dernière mise à jour** : Juillet 2026
----
+----
 
 ## Contenu du dossier
 
@@ -31,8 +31,6 @@ identity-lz/
 - scripts/configure_conditional_access_script.ps1 : configuration des politiques Conditional Access.
 - scripts/entra-groups.json : référentiel de groupes Entra ID utilisé par les scripts.
 
----
-
 ## Ce que déploie l’orchestrateur
 
 Le template principal déploie :
@@ -40,8 +38,6 @@ Le template principal déploie :
 - plusieurs Managed Identities User-Assigned
 - des affectations RBAC au niveau subscription pour les groupes Entra ID
 - les tags de conformité et d’exploitation applicables aux ressources d’identité
-
----
 
 ## Déploiement
 
@@ -61,8 +57,6 @@ az deployment sub create \
   --parameters landing-zone/identity-lz/identity.bicepparam
 ```
 
----
-
 ## Prérequis
 
 Avant le déploiement, vérifier les points suivants :
@@ -72,15 +66,11 @@ Avant le déploiement, vérifier les points suivants :
 - les subscriptions cibles sont connues et accessibles
 - le principal de déploiement dispose des permissions RBAC nécessaires
 
----
-
 ## Notes de conception
 
 - Les objets Entra ID sont créés hors du scope ARM/Bicep.
 - L’orchestrateur Bicep se concentre sur les ressources Azure liées à l’identité et à la sécurité.
 - La logique RBAC est centralisée dans le template principal et les modules partagés sous ../../modules/authorization.
-
----
 
 ## Ressources utiles
 

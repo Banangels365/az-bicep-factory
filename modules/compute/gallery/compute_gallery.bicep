@@ -25,6 +25,8 @@ param softDeletePolicy object
 @description('Tags à appliquer à la galerie et, par défaut, aux images.')
 param tags object = {}
 
+// Création des ressources
+
 resource gallery 'Microsoft.Compute/galleries@2024-03-03' = {
   name: galleryName
   location: location
@@ -92,6 +94,8 @@ module galleryImages './compute_gallery_image_definition.bicep' = [
     }
   }
 ]
+
+// Outputs
 
 @description('ID de la galerie.')
 output galleryId string = gallery.id

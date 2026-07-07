@@ -26,7 +26,7 @@ param deployDdosProtection = true // Doit être activé pour l'environnement Pro
 
 // VPN Gateway configuration
 // VpnGw1AZ nécessite Generation2 — les deux paramètres sont alignés
-param vpnGatewaySku = 'VpnGw1AZ' // SKU zone-redondant recommandé pour prod
+param vpnGatewaySku = 'VpnGw1AZ' // SKU zone-redondant recommandé pour Prod
 param vpnGatewayGeneration = 'Generation2' // Obligatoire pour les SKUs AZ
 
 // Azure Firewall

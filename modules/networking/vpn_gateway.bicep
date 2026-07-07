@@ -5,7 +5,7 @@
 param vpnGatewayName string
 
 @description('Région pour la VPN Gateway')
-param location string
+param location string = resourceGroup().location
 
 @description('Type de passerelle')
 @allowed([
@@ -81,13 +81,10 @@ param enableDiagnostics bool = true
 @description('ID de l\'espace de travail Log Analytics pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // VPN Gateway Resource
 resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-09-01' = {
   name: vpnGatewayName
-  location: resolvedLocation
+  location: location
   tags: tags
   properties: union(
     {

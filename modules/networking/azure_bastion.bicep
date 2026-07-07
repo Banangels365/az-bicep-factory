@@ -5,7 +5,7 @@
 param bastionName string
 
 @description('Région pour le bastion')
-param location string
+param location string = resourceGroup().location
 
 @description('SKU du bastion')
 @allowed([
@@ -46,13 +46,10 @@ param enableDiagnostics bool = true
 @description('ID du Log Analytics Workspace pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // Azure Bastion Resource
 resource bastion 'Microsoft.Network/bastionHosts@2023-09-01' = {
   name: bastionName
-  location: resolvedLocation
+  location: location
   tags: tags
   sku: {
     name: sku

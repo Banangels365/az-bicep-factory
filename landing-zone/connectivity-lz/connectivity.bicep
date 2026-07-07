@@ -1,5 +1,5 @@
 // landing-zone/connectivity-lz/connectivity.bicep
-// Hub Network orchestrator for Hub-Spoke topology
+// Orchestrateur du déploiement de la landing zone "connectivity" (hub network, VPN Gateway, Azure Firewall, Bastion, DDoS Protection Plan)
 
 targetScope = 'subscription'
 
@@ -41,13 +41,13 @@ param bastionSubnetAddressPrefix string = '10.0.2.0/26'
 param managementSubnetAddressPrefix string = '10.0.3.0/24'
 
 @description('Déployer le VPN Gateway')
-param deployVpnGateway bool = true
+param deployVpnGateway bool = false
 
 @description('Déployer Azure Firewall')
-param deployAzureFirewall bool = true
+param deployAzureFirewall bool = false
 
 @description('Déployer Azure Bastion')
-param deployBastion bool = true
+param deployBastion bool = false
 
 @description('Déployer le plan de protection DDoS')
 param deployDdosProtection bool = false
@@ -97,6 +97,8 @@ param tags object = {
 // VARIABLES
 // ============================================
 
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
+
 var hubVnetName = 'vnet-${organizationName}-hub-${environment}-${location}'
 var firewallName = 'afw-${organizationName}-hub-${environment}-${location}'
 var vpnGatewayName = 'vpngw-${organizationName}-hub-${environment}'
@@ -124,7 +126,7 @@ module ddosProtection '../../modules/networking/ddos_protection.bicep' = if (dep
   name: 'deploy-ddos-protection'
   params: {
     ddosProtectionPlanName: ddosProtectionPlanName
-    location: location
+    location: resolvedLocation
     tags: tags
   }
 }
@@ -138,7 +140,7 @@ module nsgManagement '../../modules/networking/network_security_group.bicep' = {
   name: 'deploy-nsg-management'
   params: {
     nsgName: nsgManagementName
-    location: location
+    location: resolvedLocation
     securityRules: [
       // nsgManagement — règles management uniquement
       {
@@ -187,7 +189,7 @@ module nsgBastion '../../modules/networking/network_security_group.bicep' = if (
   name: 'deploy-nsg-bastion'
   params: {
     nsgName: nsgBastionName
-    location: location
+    location: resolvedLocation
     securityRules: [
       // -- INBOUND ---
       {
@@ -305,7 +307,7 @@ module pipVpnGateway '../../modules/networking/public_ip.bicep' = if (deployVpnG
   name: 'deploy-pip-vpngw'
   params: {
     publicIpName: pipVpnGatewayName
-    location: location
+    location: resolvedLocation
     sku: 'Standard'
     allocationMethod: 'Static'
     zones: availabilityZones
@@ -320,7 +322,7 @@ module pipFirewall '../../modules/networking/public_ip.bicep' = if (deployAzureF
   name: 'deploy-pip-firewall'
   params: {
     publicIpName: pipFirewallName
-    location: location
+    location: resolvedLocation
     sku: 'Standard'
     allocationMethod: 'Static'
     zones: availabilityZones
@@ -335,7 +337,7 @@ module pipBastion '../../modules/networking/public_ip.bicep' = if (deployBastion
   name: 'deploy-pip-bastion'
   params: {
     publicIpName: pipBastionName
-    location: location
+    location: resolvedLocation
     sku: 'Standard'
     allocationMethod: 'Static'
     zones: availabilityZones
@@ -358,7 +360,7 @@ module hubVnet '../../modules/networking/virtual_network.bicep' = {
   name: 'deploy-hub-vnet'
   params: {
     vnetName: hubVnetName
-    location: location
+    location: resolvedLocation
     addressPrefixes: [hubVnetAddressPrefix]
     enableDdosProtection: deployDdosProtection
     // Si ddosProtection n'est pas déployé, l'expression retourne null, et ?? fournit ''.
@@ -404,7 +406,7 @@ module azureFirewall '../../modules/networking/azure_firewall.bicep' = if (deplo
   name: 'deploy-azure-firewall'
   params: {
     firewallName: firewallName
-    location: location
+    location: resolvedLocation
     skuName: 'AZFW_VNet'
     skuTier: firewallSkuTier
     subnetId: '${hubVnet.outputs.vnetId}/subnets/AzureFirewallSubnet'
@@ -430,7 +432,7 @@ module routeTableManagement '../../modules/networking/route_table.bicep' = {
   name: 'deploy-rt-management'
   params: {
     routeTableName: rtManagementName
-    location: location
+    location: resolvedLocation
     disableBgpRoutePropagation: true
     routes: deployAzureFirewall
       ? [
@@ -473,13 +475,12 @@ module vpnGateway '../../modules/networking/vpn_gateway.bicep' = if (deployVpnGa
   name: 'deploy-vpn-gateway'
   params: {
     vpnGatewayName: vpnGatewayName
-    location: location
+    location: resolvedLocation
     gatewaySku: vpnGatewaySku
     gatewayType: 'Vpn'
     vpnType: 'RouteBased'
     vpnGatewayGeneration: vpnGatewayGeneration
     subnetId: '${hubVnet.outputs.vnetId}/subnets/GatewaySubnet'
-    // FIX BCP318 : opérateur ?. sur le module conditionnel pipVpnGateway.
     publicIpAddressId: pipVpnGateway.?outputs.publicIpId ?? ''
     enableBgp: false
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
@@ -497,7 +498,7 @@ module bastion '../../modules/networking/azure_bastion.bicep' = if (deployBastio
   name: 'deploy-bastion'
   params: {
     bastionName: bastionName
-    location: location
+    location: resolvedLocation
     sku: 'Standard'
     subnetId: '${hubVnet.outputs.vnetId}/subnets/AzureBastionSubnet'
     publicIpAddressId: pipBastion.?outputs.publicIpId ?? ''

@@ -52,6 +52,7 @@ param msixPackageApplicationId string = ''
 @description('Package family name MSIX.')
 param msixPackageFamilyName string = ''
 
+// Création des ressources
 resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@2025-03-01-preview' existing = {
   name: applicationGroupName
 }
@@ -76,6 +77,7 @@ resource application 'Microsoft.DesktopVirtualization/applicationGroups/applicat
   )
 }
 
+// Outputs
 @description('Resource ID de l\'application.')
 output resourceId string = application.id
 

@@ -5,7 +5,7 @@
 param applicationGatewayName string
 
 @description('Région pour le Application Gateway')
-param location string
+param location string = resourceGroup().location
 
 @description('SKU du Application Gateway')
 @allowed([

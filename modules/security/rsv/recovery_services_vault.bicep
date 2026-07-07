@@ -1,255 +1,289 @@
 // modules/security/rsv/recovery_services_vault.bicep
-// Azure Recovery Services Vault pour la sauvegarde et la reprise après sinistre
+// Azure Recovery Services Vault pour la sauvegarde et la reprise après sinistre.
 
-@description('Nom du Recovery Services Vault')
+targetScope = 'resourceGroup'
+
+@description('Nom du Recovery Services Vault.')
 param vaultName string
 
-@description('Région de déploiement')
+@description('Région de déploiement. Par défaut, la région du resource group.')
+param location string = resourceGroup().location
+
+@description('Tags à appliquer aux ressources.')
+param tags object = {}
+
+@description('Type d\'identité managée à affecter au vault.')
 @allowed([
-  'cace' // canadacentral
-  'caea' // canadaeast
+  'None'
+  'SystemAssigned'
 ])
-param location string = 'caea'
+param managedIdentityType string = 'SystemAssigned'
 
-@description('Type de réplication du stockage')
+@description('État d\'accès réseau public du vault.')
 @allowed([
-  'LocallyRedundant' // LRS — même datacenter
-  'ZoneRedundant' // ZRS — zones dans la même région
-  'GeoRedundant' // GRS — région secondaire (recommandé production)
+  'Enabled'
+  'Disabled'
 ])
-param storageType string = 'GeoRedundant'
+param publicNetworkAccess string = 'Disabled'
 
-@description('Activer la restauration inter-régions — nécessite storageType: GeoRedundant')
-param enableCrossRegionRestore bool = false // ATTENTION : nécessite storageType: GeoRedundant et peut entraîner des coûts supplémentaires en cas de restauration inter-régions
-
-@description('État d\'immuabilité du vault. ATTENTION : une fois passé à \'Locked\', ce paramètre est irréversible et ne peut pas être désactivé même par un administrateur.')
+@description('État d\'immuabilité du coffre. Locked est irréversible.')
 @allowed([
   'Disabled'
-  'Unlocked' // activé mais révocable
-  'Locked' // activé et irrévocable — ATTENTION : irréversible
+  'Unlocked'
+  'Locked'
 ])
 param immutabilityState string = 'Disabled'
 
-@description('Activer la suppression réversible des sauvegardes')
-param enableSoftDelete bool = true
+@description('Paramètres de redondance du vault.')
+param redundancySettings object = {
+  standardTierStorageRedundancy: 'GeoRedundant' // Valeurs possibles : GeoRedundant, LocallyRedundant, ZoneRedundant
+  crossRegionRestore: 'Disabled' // Valeurs possibles : Enabled, Disabled
+}
 
-@description('Durée de rétention de la suppression réversible en jours')
-@minValue(14)
-@maxValue(180)
-param softDeleteRetentionDays int = 14
+@description('Paramètres de restauration. Exemple : crossSubscriptionRestoreState.')
+param restoreSettings object = {}
 
-@description('Activer l\'authentification multi-facteur pour les opérations critiques (MUA)')
-param enableMultiUserAuthorization bool = false
+@description('Paramètres de monitoring du vault, notamment les alertes Azure Monitor et classiques.')
+param monitoringSettings object = {}
 
-@description('Activer l\'accès réseau public')
-param publicNetworkAccess bool = false
+@description('Paramètres de soft delete du vault.')
+param softDeleteSettings object = {
+  softDeleteState: 'Enabled'
+  softDeleteRetentionPeriodInDays: 14
+  enhancedSecurityState: 'Enabled'
+}
 
-@description('Politiques de sauvegarde à créer')
+@description('Configuration de source scan des paramètres de sécurité du vault.')
+param sourceScanConfiguration object = {}
+
+@description('Liste des opérations protégées par Resource Guard / MUA.')
+param resourceGuardOperationRequests array = []
+
+@description('Configuration de chiffrement CMK. Non fournie par défaut pour garder le module simple.')
+param customerManagedKey object = {}
+
+@description('Configuration du backup config du vault.')
+param backupConfig object = {}
+
+@description('Paramètres d\'alertes de réplication Site Recovery.')
+param replicationAlertSettings object = {}
+
+@description('Liste des politiques de sauvegarde à créer dans le vault.')
 param backupPolicies array = []
 
-@description('Activer le Private Endpoint')
+@description('Liste des politiques de réplication Site Recovery à créer dans le vault.')
+param replicationPolicies array = []
+
+@description('Activer la création de private endpoints pour le vault.')
 param enablePrivateEndpoint bool = false
 
-@description('ID du sous-réseau pour le Private Endpoint')
+@description('ID du sous-réseau du private endpoint.')
 param privateEndpointSubnetId string = ''
 
-@description('ID de la zone DNS privée pour le vault (privatelink.{region}.backup.windowsazure.com)')
-param privateDnsZoneIdVault string = ''
+@description('Liste des IDs des zones DNS privées à associer au private endpoint.')
+param privateDnsZoneIds array = []
 
-@description('Tags à appliquer aux ressources')
-param tags object = {}
+@description('Nom du private endpoint. Si vide, une valeur par défaut est calculée.')
+param privateEndpointName string = ''
 
-@description('Activer les paramètres de diagnostic')
-param enableDiagnostics bool = true
+@description('Groupe de sous-ressource Private Link à exposer. AzureBackup et AzureSiteRecovery sont les cas les plus fréquents.')
+@allowed([
+  'AzureBackup'
+  'AzureSiteRecovery'
+])
+param privateEndpointService string = 'AzureBackup'
 
-@description('ID du Log Analytics Workspace pour les diagnostics')
+@description('Activer les diagnostic settings sur le vault.')
+param enableDiagnostics bool = false
+
+@description('Nom des diagnostic settings.')
+param diagnosticSettingsName string = ''
+
+@description('ID du Log Analytics Workspace cible pour les diagnostics.')
 param logAnalyticsWorkspaceId string = ''
 
-// Variables
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
+@description('ID du Storage Account cible pour les diagnostics.')
+param diagnosticStorageAccountId string = ''
 
-// Recovery Services Vault
-resource vault 'Microsoft.RecoveryServices/vaults@2024-01-01' = {
+@description('ID de la règle d\'autorisation Event Hub cible pour les diagnostics.')
+param diagnosticEventHubAuthorizationRuleId string = ''
+
+@description('Nom de l\'Event Hub cible pour les diagnostics.')
+param diagnosticEventHubName string = ''
+
+// Variables
+var identity = managedIdentityType == 'SystemAssigned' ? { type: 'SystemAssigned' } : { type: 'None' }
+
+var resolvedPrivateEndpointName = !empty(privateEndpointName) ? privateEndpointName : '${vaultName}-pe'
+
+var resolvedDiagnosticSettingsName = !empty(diagnosticSettingsName)
+  ? diagnosticSettingsName
+  : '${vaultName}-diagnostics'
+
+var backupConfigName = backupConfig.?name ?? 'vaultconfig'
+
+// Création du Recovery Services Vault
+resource vault 'Microsoft.RecoveryServices/vaults@2025-08-01' = {
   name: vaultName
-  location: resolvedLocation
+  location: location
   tags: tags
+  identity: identity
   sku: {
     name: 'RS0'
     tier: 'Standard'
   }
-  identity: {
-    type: 'SystemAssigned'
+  properties: {
+    publicNetworkAccess: publicNetworkAccess
+
+    monitoringSettings: !empty(monitoringSettings)
+      ? {
+          azureMonitorAlertSettings: !empty(monitoringSettings.?azureMonitorAlertSettings)
+            ? {
+                alertsForAllFailoverIssues: monitoringSettings.azureMonitorAlertSettings.?alertsForAllFailoverIssues ?? 'Enabled'
+                alertsForAllJobFailures: monitoringSettings.azureMonitorAlertSettings.?alertsForAllJobFailures ?? 'Enabled'
+                alertsForAllReplicationIssues: monitoringSettings.azureMonitorAlertSettings.?alertsForAllReplicationIssues ?? 'Enabled'
+              }
+            : null
+          classicAlertSettings: !empty(monitoringSettings.?classicAlertSettings)
+            ? {
+                alertsForCriticalOperations: monitoringSettings.classicAlertSettings.?alertsForCriticalOperations ?? 'Enabled'
+                emailNotificationsForSiteRecovery: monitoringSettings.classicAlertSettings.?emailNotificationsForSiteRecovery ?? 'Enabled'
+              }
+            : null
+        }
+      : null
+
+    securitySettings: {
+      immutabilitySettings: immutabilityState != 'Disabled'
+        ? {
+            state: immutabilityState
+          }
+        : null
+      softDeleteSettings: !empty(softDeleteSettings)
+        ? {
+            softDeleteState: softDeleteSettings.?softDeleteState ?? 'Enabled'
+            softDeleteRetentionPeriodInDays: softDeleteSettings.?softDeleteRetentionPeriodInDays ?? 14
+            enhancedSecurityState: softDeleteSettings.?enhancedSecurityState ?? 'Enabled'
+          }
+        : null
+      sourceScanConfiguration: !empty(sourceScanConfiguration) ? sourceScanConfiguration : null
+    }
+
+    redundancySettings: !empty(redundancySettings)
+      ? {
+          standardTierStorageRedundancy: redundancySettings.standardTierStorageRedundancy
+          crossRegionRestore: redundancySettings.?crossRegionRestore ?? 'Disabled'
+        }
+      : null
+
+    restoreSettings: !empty(restoreSettings) ? restoreSettings : null
+
+    resourceGuardOperationRequests: !empty(resourceGuardOperationRequests) ? resourceGuardOperationRequests : null
+
+    encryption: !empty(customerManagedKey) ? customerManagedKey : null
   }
-  properties: union(
-    {
-      publicNetworkAccess: publicNetworkAccess ? 'Enabled' : 'Disabled'
-    },
-    immutabilityState != 'Disabled'
-      ? {
-          immutabilitySettings: { immutabilityState: immutabilityState }
-        }
-      : {}
-  )
 }
 
-// Configuration de sécurité du vault
-resource vaultSecurityConfig 'Microsoft.RecoveryServices/vaults/backupconfig@2023-06-01' = {
+// Backup configuration du vault.
+// Ce bloc couvre les paramètres de backupConfig AVM sans nécessiter un 4e fichier dédié.
+resource vaultBackupConfig 'Microsoft.RecoveryServices/vaults/backupconfig@2025-08-01' = if (!empty(backupConfig)) {
   parent: vault
-  name: 'vaultconfig'
-  properties: union(
-    {
-      storageType: storageType
-      crossRegionRestoreFlag: enableCrossRegionRestore
-      softDeleteFeatureState: enableSoftDelete ? 'Enabled' : 'Disabled'
-    },
-    enableSoftDelete
-      ? {
-          softDeleteRetentionPeriodInDays: softDeleteRetentionDays
-        }
-      : {},
-    enableMultiUserAuthorization
-      ? {
-          resourceGuardOperationRequests: [
-            'Microsoft.RecoveryServices/vaults/backupSecurityPIN/action'
-            'Microsoft.RecoveryServices/vaults/backupconfig/write'
-          ]
-        }
-      : {}
-  )
+  name: backupConfigName
+  properties: {
+    enhancedSecurityState: backupConfig.?enhancedSecurityState
+    resourceGuardOperationRequests: backupConfig.?resourceGuardOperationRequests ?? []
+    softDeleteFeatureState: backupConfig.?softDeleteFeatureState
+    storageModelType: backupConfig.?storageModelType ?? redundancySettings.?standardTierStorageRedundancy
+    storageType: backupConfig.?storageType ?? redundancySettings.?standardTierStorageRedundancy
+    storageTypeState: backupConfig.?storageTypeState ?? 'Locked'
+    isSoftDeleteFeatureStateEditable: backupConfig.?isSoftDeleteFeatureStateEditable ?? true
+  }
 }
 
-// Politiques de sauvegarde
-// Chaque entrée dans backupPolicies doit avoir :
-//   name, workloadType (AzureIaasVM / AzureStorage / AzureWorkload)
-//   Pour IaasVM : retentionDays, scheduleRunTimes (array de timestamps UTC)
-//   Optionnels : weeklyRetentionDays, monthlyRetentionMonths, yearlyRetentionYears
-resource backupPolicy 'Microsoft.RecoveryServices/vaults/backupPolicies@2023-06-01' = [
-  for policy in backupPolicies: {
-    parent: vault
-    name: policy.name
-    properties: policy.workloadType == 'AzureIaasVM'
-      ? {
-          backupManagementType: 'AzureIaasVM'
-          instantRpRetentionRangeInDays: policy.?instantRpRetentionDays ?? 2
-          schedulePolicy: {
-            schedulePolicyType: 'SimpleSchedulePolicy'
-            scheduleRunFrequency: 'Daily'
-            scheduleRunTimes: policy.scheduleRunTimes
-          }
-          retentionPolicy: {
-            retentionPolicyType: 'LongTermRetentionPolicy'
-            dailySchedule: {
-              retentionTimes: policy.scheduleRunTimes
-              retentionDuration: {
-                count: policy.?retentionDays ?? 30 // 30 jours par défaut
-                durationType: 'Days'
-              }
-            }
-          }
-        }
-      : policy.workloadType == 'AzureStorage'
-          ? {
-              backupManagementType: 'AzureStorage'
-              workLoadType: 'AzureFileShare'
-              schedulePolicy: {
-                schedulePolicyType: 'SimpleSchedulePolicy'
-                scheduleRunFrequency: 'Daily'
-                scheduleRunTimes: policy.scheduleRunTimes
-              }
-              retentionPolicy: {
-                retentionPolicyType: 'SimpleRetentionPolicy'
-                retentionDuration: {
-                  count: policy.retentionDays
-                  durationType: 'Days'
-                }
-              }
-            }
-          : {
-              backupManagementType: 'AzureWorkload'
-              workLoadType: policy.?workloadSubType ?? 'SQLDataBase'
-              settings: {
-                timeZone: policy.?timeZone ?? 'Eastern Standard Time'
-                isCompression: false
-              }
-              subProtectionPolicy: [
-                {
-                  policyType: 'Full'
-                  schedulePolicy: {
-                    schedulePolicyType: 'SimpleSchedulePolicy'
-                    scheduleRunFrequency: 'Weekly'
-                    scheduleRunDays: policy.?fullBackupDays ?? ['Sunday']
-                    scheduleRunTimes: policy.scheduleRunTimes
-                  }
-                  retentionPolicy: {
-                    retentionPolicyType: 'LongTermRetentionPolicy'
-                    weeklySchedule: {
-                      daysOfTheWeek: policy.?fullBackupDays ?? ['Sunday']
-                      retentionTimes: policy.scheduleRunTimes
-                      retentionDuration: {
-                        count: policy.?retentionDays ?? 30 // 30 jours par défaut
-                        durationType: 'Weeks'
-                      }
-                    }
-                  }
-                }
-                {
-                  policyType: 'Log'
-                  schedulePolicy: {
-                    schedulePolicyType: 'LogSchedulePolicy'
-                    scheduleFrequencyInMins: policy.?logBackupFrequencyMins ?? 60
-                  }
-                  retentionPolicy: {
-                    retentionPolicyType: 'SimpleRetentionPolicy'
-                    retentionDuration: {
-                      count: policy.?logRetentionDays ?? 30
-                      durationType: 'Days'
-                    }
-                  }
-                }
-              ]
-            }
+// Paramètres d'alertes Site Recovery.
+// Ce bloc couvre la logique du module AVM replication alert setting.
+resource vaultReplicationAlertSettings 'Microsoft.RecoveryServices/vaults/replicationAlertSettings@2025-08-01' = if (!empty(replicationAlertSettings)) {
+  parent: vault
+  name: replicationAlertSettings.?name ?? 'defaultAlertSetting'
+  properties: {
+    customEmailAddresses: replicationAlertSettings.?customEmailAddresses ?? []
+    locale: replicationAlertSettings.?locale
+    sendToOwners: replicationAlertSettings.?sendToOwners ?? 'Send'
+  }
+}
+
+module backupPoliciesModule './backup_policy.bicep' = [
+  for (policy, index) in backupPolicies: {
+    name: 'backup-policy-${uniqueString(vault.name, policy.name, string(index))}'
+    params: {
+      recoveryVaultName: vault.name
+      name: policy.name
+      properties: policy.properties
+    }
   }
 ]
 
-// Private Endpoint
-resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-09-01' = if (enablePrivateEndpoint && !empty(privateEndpointSubnetId) && !empty(privateDnsZoneIdVault)) {
-  name: '${vaultName}-pe'
-  location: resolvedLocation
+module replicationPoliciesModule './replication_policy.bicep' = [
+  for (policy, index) in replicationPolicies: {
+    name: 'replication-policy-${uniqueString(vault.name, policy.name, string(index))}'
+    params: {
+      recoveryVaultName: vault.name
+      name: policy.name
+      appConsistentFrequencyInMinutes: policy.?appConsistentFrequencyInMinutes ?? 60
+      crashConsistentFrequencyInMinutes: policy.?crashConsistentFrequencyInMinutes ?? 5
+      multiVmSyncStatus: policy.?multiVmSyncStatus ?? 'Enable'
+      recoveryPointHistory: policy.?recoveryPointHistory ?? 1440
+    }
+  }
+]
+
+resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-10-01' = if (enablePrivateEndpoint && !empty(privateEndpointSubnetId)) {
+  name: resolvedPrivateEndpointName
+  location: location
   tags: tags
   properties: {
-    subnet: { id: privateEndpointSubnetId }
+    subnet: {
+      id: privateEndpointSubnetId
+    }
     privateLinkServiceConnections: [
       {
-        name: '${vaultName}-pe-connection'
+        name: '${resolvedPrivateEndpointName}-connection'
         properties: {
           privateLinkServiceId: vault.id
-          groupIds: ['AzureBackup']
+          groupIds: [
+            privateEndpointService
+          ]
         }
       }
     ]
   }
 }
 
-// Private DNS Zone Group
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-09-01' = if (enablePrivateEndpoint && !empty(privateEndpointSubnetId) && !empty(privateDnsZoneIdVault)) {
+resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-10-01' = if (enablePrivateEndpoint && !empty(privateEndpointSubnetId) && !empty(privateDnsZoneIds)) {
   parent: privateEndpoint
-  name: 'vault-dns-zone-group'
+  name: 'default'
   properties: {
     privateDnsZoneConfigs: [
-      {
-        name: 'vault-config'
-        properties: { privateDnsZoneId: privateDnsZoneIdVault }
+      for (zoneId, index) in privateDnsZoneIds: {
+        name: 'dns-zone-${index + 1}'
+        properties: {
+          privateDnsZoneId: zoneId
+        }
       }
     ]
   }
 }
 
-// Diagnostic Settings
-resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableDiagnostics && !empty(logAnalyticsWorkspaceId)) {
+resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableDiagnostics && (!empty(logAnalyticsWorkspaceId) || !empty(diagnosticStorageAccountId) || !empty(diagnosticEventHubAuthorizationRuleId))) {
   scope: vault
-  name: '${vaultName}-diagnostics'
+  name: resolvedDiagnosticSettingsName
   properties: {
-    workspaceId: logAnalyticsWorkspaceId
+    workspaceId: !empty(logAnalyticsWorkspaceId) ? logAnalyticsWorkspaceId : null
+    storageAccountId: !empty(diagnosticStorageAccountId) ? diagnosticStorageAccountId : null
+    eventHubAuthorizationRuleId: !empty(diagnosticEventHubAuthorizationRuleId)
+      ? diagnosticEventHubAuthorizationRuleId
+      : null
+    eventHubName: !empty(diagnosticEventHubName) ? diagnosticEventHubName : null
     logs: [
       {
         categoryGroup: 'allLogs'
@@ -265,23 +299,40 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
   }
 }
 
-// Outputs
-@description('ID du Recovery Services Vault')
+// outputs
+@description('ID du Recovery Services Vault.')
 output vaultId string = vault.id
 
-@description('Nom du Recovery Services Vault')
+@description('Nom du Recovery Services Vault.')
 output vaultName string = vault.name
 
-@description('ID principal du vault (System-Assigned MI)')
-output principalId string = vault.identity.principalId
+@description('Localisation du Recovery Services Vault.')
+output vaultLocation string = vault.location
 
-@description('Noms des politiques de sauvegarde créées')
-output backupPolicyNames array = [for (policy, i) in backupPolicies: backupPolicy[i].name]
+@description('ID principal de l\'identité système du vault, si activée.')
+output principalId string = managedIdentityType == 'SystemAssigned' ? vault.identity.principalId : ''
 
-@description('IDs des politiques de sauvegarde créées')
-output backupPolicyIds array = [for (policy, i) in backupPolicies: backupPolicy[i].id]
+@description('ID de ressource du backup config du vault.')
+output backupConfigId string = !empty(backupConfig) ? vaultBackupConfig.id : ''
 
-@description('ID du Private Endpoint')
-output privateEndpointId string = (enablePrivateEndpoint && !empty(privateEndpointSubnetId) && !empty(privateDnsZoneIdVault))
-  ? privateEndpoint.id
-  : ''
+@description('ID de ressource du paramètre d\'alerte de réplication.')
+output replicationAlertSettingId string = !empty(replicationAlertSettings) ? vaultReplicationAlertSettings.id : ''
+
+@description('Noms des politiques de sauvegarde créées.')
+output backupPolicyNames array = [for (policy, i) in backupPolicies: backupPoliciesModule[i].outputs.name]
+
+@description('IDs des politiques de sauvegarde créées.')
+output backupPolicyIds array = [for (policy, i) in backupPolicies: backupPoliciesModule[i].outputs.resourceId]
+
+@description('Noms des politiques de réplication créées.')
+output replicationPolicyNames array = [
+  for (policy, i) in replicationPolicies: replicationPoliciesModule[i].outputs.name
+]
+
+@description('IDs des politiques de réplication créées.')
+output replicationPolicyIds array = [
+  for (policy, i) in replicationPolicies: replicationPoliciesModule[i].outputs.resourceId
+]
+
+@description('ID du Private Endpoint créé, si activé.')
+output privateEndpointId string = (enablePrivateEndpoint && !empty(privateEndpointSubnetId)) ? privateEndpoint.id : ''

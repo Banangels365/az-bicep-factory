@@ -23,6 +23,7 @@ param policyId string
 @description('ID de la ressource source à protéger.')
 param sourceResourceId string
 
+// Sauvegarde de la machine virtuelle dans le Recovery Services Vault
 resource protectedItem 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems@2025-02-01' = {
   name: '${recoveryVaultName}/Azure/${protectionContainerName}/${name}'
   location: location
@@ -33,6 +34,7 @@ resource protectedItem 'Microsoft.RecoveryServices/vaults/backupFabrics/protecti
   }
 }
 
+// Outputs
 @description('Nom du protected item.')
 output name string = protectedItem.name
 

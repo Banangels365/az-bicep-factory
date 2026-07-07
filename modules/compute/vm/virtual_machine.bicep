@@ -8,26 +8,9 @@ targetScope = 'resourceGroup'
 param vmName string
 
 @description('Région de déploiement')
-@allowed([
-  'cace' // canadacentral
-  'caea' // canadaeast
-])
-param location string = 'caea'
+param location string = resourceGroup().location
 
 @description('Taille de la machine virtuelle')
-// @allowed([
-//   'Standard_B2s'
-//   'Standard_B4ms'
-//   'Standard_D2s_v5'
-//   'Standard_D4s_v5'
-//   'Standard_D8s_v5'
-//   'Standard_D2as_v5'
-//   'Standard_D4as_v5'
-//   'Standard_E2s_v5'
-//   'Standard_E4s_v5'
-//   'Standard_F2s_v2'
-//   'Standard_F4s_v2'
-// ])
 param vmSize string
 
 @description('Nom d\'utilisateur administrateur')
@@ -52,7 +35,7 @@ param imagePublisher string = 'MicrosoftWindowsServer'
 param imageOffer string = 'WindowsServer'
 
 @description('SKU de l\'image OS')
-param imageSku string = '2022-datacenter-azure-edition'
+param imageSku string
 
 @description('Version de l\'image OS')
 param imageVersion string = 'latest'
@@ -63,12 +46,7 @@ param imageVersion string = 'latest'
 param osDiskSizeGb int = 128
 
 @description('Type de stockage du disque OS')
-@allowed([
-  'Standard_LRS'
-  'StandardSSD_LRS'
-  'Premium_LRS'
-])
-param osDiskType string = 'Premium_LRS'
+param osDiskType string
 
 @description('ID du sous-réseau pour la carte réseau')
 param subnetId string
@@ -127,11 +105,17 @@ param backupVaultResourceGroup string = resourceGroup().name
 @description('Nom de la policy de backup')
 param backupPolicyName string = 'DefaultPolicy'
 
+// Variables
 var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
+
 var isLinux = osType == 'Linux'
+
 var nicName = '${vmName}-nic'
+
 var publicIpName = '${vmName}-pip'
+
 var osDiskName = '${vmName}-osdisk'
+
 var availabilityZone = empty(availabilityZones) ? -1 : int(first(availabilityZones))
 
 var nicConfigurations = [
@@ -224,6 +208,10 @@ var publicKeys = isLinux
 var patchMode = isLinux
   ? (enableAutomaticPatching ? 'AutomaticByPlatform' : 'ImageDefault')
   : (enableAutomaticPatching ? 'AutomaticByPlatform' : 'Manual')
+
+//==================================================================
+// Création de la machine virtuelle et de ses ressources associées
+//==================================================================
 
 module vmNic './virtual_machine_nic_configuration.bicep' = {
   name: '${uniqueString(deployment().name, vmName, resolvedLocation)}-nic'
@@ -371,6 +359,7 @@ module backupProtectedItem './virtual_machine_backup.bicep' = if (enableBackup &
   }
 }
 
+// Outputs
 @description('ID de la machine virtuelle')
 output vmId string = vmCore.outputs.vmId
 

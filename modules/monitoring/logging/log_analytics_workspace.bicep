@@ -1,18 +1,17 @@
-// modules/logging/log_analytics_workspace.bicep
+// modules/monitoring/logging/log_analytics_workspace.bicep
+// Déploie un workspace Log Analytics et, en option, Sentinel et d'autres solutions OMS.
 
-/* Ce module de workspace Log Analytics est utilisé pour créer et configurer un espace de travail Log Analytics 
-   pour la collecte et l'analyse de données de journalisation dans Azure.
-*/
+targetScope = 'resourceGroup'
 
-@description('Nom du workspace Log Analytics')
+@description('Nom du workspace Log Analytics.')
 @minLength(4)
 @maxLength(63)
 param workspaceName string
 
-@description('Emplacement du workspace. Valeurs possibles : cace (canadacentral), caea (canadaeast)')
+@description('Région de déploiement. Par défaut, la région du resource group.')
 param location string = resourceGroup().location
 
-@description('SKU du workspace')
+@description('SKU du workspace.')
 @allowed([
   'Free'
   'Standard'
@@ -24,36 +23,44 @@ param location string = resourceGroup().location
 ])
 param sku string = 'PerGB2018'
 
-@description('Rétention des données en jours (30-730)')
+@description('Durée de rétention des données en jours.')
 @minValue(30)
 @maxValue(730)
 param retentionInDays int = 90
 
-@description('Limite quotidienne de données en GB (-1 pour illimité)')
+@description('Quota journalier en Go. Utiliser -1 pour illimité.')
 @minValue(-1)
 param dailyQuotaGb int = -1
 
-@description('Activer l\'accès au réseau public pour l\'ingestion')
+@description('Accès réseau public pour l\'ingestion.')
 @allowed([
   'Enabled'
   'Disabled'
 ])
 param publicNetworkAccessForIngestion string = 'Enabled'
 
-@description('Activer l\'accès au réseau public pour les requêtes')
+@description('Accès réseau public pour les requêtes.')
+@allowed([
+  'Enabled'
+  'Disabled'
+])
 param publicNetworkAccessForQuery string = 'Enabled'
 
-@description('Tags pour le workspace')
+@description('Active l\'usage des permissions Azure RBAC sur les ressources plutôt que les permissions workspace héritées.')
+param enableLogAccessUsingOnlyResourcePermissions bool = true
+
+@description('Tags à appliquer au workspace.')
 param tags object = {}
 
-@description('Activer la solution Sentinel pour ce workspace')
+@description('Déploie Microsoft Sentinel sur ce workspace.')
 param enableSentinel bool = false
 
-@description('Solutions à déployer dans le workspace (ex: Security, AzureActivity, etc.)')
+@description('Liste additionnelle de solutions OMS à déployer, par exemple AzureActivity ou Security.')
 param solutions array = []
 
-// Log Analytics Workspace Resource
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+// Création des ressources
+
+resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: workspaceName
   location: location
   tags: tags
@@ -68,12 +75,11 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09
     publicNetworkAccessForIngestion: publicNetworkAccessForIngestion
     publicNetworkAccessForQuery: publicNetworkAccessForQuery
     features: {
-      enableLogAccessUsingOnlyResourcePermissions: true
+      enableLogAccessUsingOnlyResourcePermissions: enableLogAccessUsingOnlyResourcePermissions
     }
   }
 }
 
-// Sentinel Solution (if enabled)
 resource sentinelSolution 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = if (enableSentinel) {
   name: 'SecurityInsights(${workspaceName})'
   location: location
@@ -85,11 +91,10 @@ resource sentinelSolution 'Microsoft.OperationsManagement/solutions@2015-11-01-p
     promotionCode: ''
   }
   properties: {
-    workspaceResourceId: logAnalyticsWorkspace.id
+    workspaceResourceId: workspace.id
   }
 }
 
-// Additional Solutions
 resource additionalSolutions 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = [
   for solution in solutions: {
     name: '${solution}(${workspaceName})'
@@ -102,17 +107,21 @@ resource additionalSolutions 'Microsoft.OperationsManagement/solutions@2015-11-0
       promotionCode: ''
     }
     properties: {
-      workspaceResourceId: logAnalyticsWorkspace.id
+      workspaceResourceId: workspace.id
     }
   }
 ]
 
 // Outputs
-@description('ID du workspace Log Analytics')
-output workspaceId string = logAnalyticsWorkspace.id
 
-@description('Nom du workspace Log Analytics')
-output workspaceName string = logAnalyticsWorkspace.name
+@description('ID du workspace Log Analytics créé.')
+output workspaceId string = workspace.id
 
-@description('ID du client du workspace Log Analytics')
-output customerId string = logAnalyticsWorkspace.properties.customerId
+@description('Nom du workspace Log Analytics créé.')
+output workspaceName string = workspace.name
+
+@description('Customer ID du workspace Log Analytics.')
+output customerId string = workspace.properties.customerId
+
+@description('Localisation du workspace Log Analytics.')
+output location string = workspace.location

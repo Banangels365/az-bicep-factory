@@ -30,7 +30,7 @@ resource policies 'Microsoft.KeyVault/vaults/accessPolicies@2024-11-01' = {
 @description('Nom du resource group.')
 output resourceGroupName string = resourceGroup().name
 
-@description('Nom de l’assignation.')
+@description('Nom de l\'assignation.')
 output name string = policies.name
 
 @description('ID de la ressource.')

@@ -7,7 +7,7 @@
 param vnetName string
 
 @description('Région pour le VNet')
-param location string
+param location string = resourceGroup().location
 
 @description('Nom du Network Watcher optionnel à utiliser pour les logs de flux. Si vide, le module utilisera "NetworkWatcher_<location>"')
 param networkWatcherName string = ''
@@ -51,12 +51,9 @@ param enableTrafficAnalytics bool = false
 @description('ID du Log Analytics Workspace pour l\'analyse de trafic')
 param trafficAnalyticsWorkspaceId string = ''
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = toLower(location) == 'caea' ? 'canadaeast' : location
-
 // Variable pour le Network Watcher (requis pour les flow logs)
 // Nom effectif du Network Watcher: prioriser le param `networkWatcherName` s'il est fourni.
-var effectiveNetworkWatcherName = empty(networkWatcherName) ? 'NetworkWatcher_${resolvedLocation}' : networkWatcherName
+var effectiveNetworkWatcherName = empty(networkWatcherName) ? 'NetworkWatcher_${location}' : networkWatcherName
 
 // Préparer les propriétés des sous-réseaux en fonction des paramètres d'entrée
 var subnetProperties = [
@@ -77,7 +74,7 @@ var subnetProperties = [
 // Virtual Network Resource
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-09-01' = {
   name: vnetName
-  location: resolvedLocation
+  location: location
   tags: tags
   properties: {
     addressSpace: {
@@ -128,7 +125,7 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 // Flow Logs pour le Network Watcher
 resource flowLogs 'Microsoft.Network/networkWatchers/flowLogs@2023-09-01' = if (enableFlowLogs && !empty(flowLogsStorageAccountId)) {
   name: '${effectiveNetworkWatcherName}/flowLogs-${vnetName}'
-  location: resolvedLocation
+  location: location
   properties: {
     targetResourceId: virtualNetwork.id
     storageId: flowLogsStorageAccountId

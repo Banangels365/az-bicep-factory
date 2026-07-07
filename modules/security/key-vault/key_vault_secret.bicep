@@ -18,11 +18,13 @@ param tags object = {}
 @description('Indique si le secret est activé.')
 param attributesEnabled bool = true
 
-@description('Date d\'expiration en secondes depuis 1970-01-01T00:00:00Z.')
+@description('Date d\'expiration en secondes depuis le 1er janvier 1970 à 00:00:00Z.')
+// Pour des raisons de sécurité, il est recommandé de définir une date d'expiration dans la mesure du possible.
 param attributesExp int?
 
-@description('Date "not before" en secondes depuis 1970-01-01T00:00:00Z.')
+@description('Date minimale d\'expiration en secondes depuis le 1er janvier 1970 à 00:00:00Z.')
 param attributesNbf int?
+
 @description('Content type du secret.')
 @secure()
 param contentType string?
@@ -34,10 +36,12 @@ param value string
 @description('Role assignments au scope du secret.')
 param roleAssignments array = []
 
+// Récupération du Key Vault existant
 resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' existing = {
   name: keyVaultName
 }
 
+// Création du secret dans le Key Vault
 resource secret 'Microsoft.KeyVault/vaults/secrets@2024-11-01' = {
   name: name
   parent: keyVault
@@ -69,6 +73,7 @@ resource secretRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-
   }
 ]
 
+// Outputs
 @description('Nom du secret.')
 output secretName string = secret.name
 

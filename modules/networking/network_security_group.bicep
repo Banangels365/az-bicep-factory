@@ -5,7 +5,7 @@
 param nsgName string
 
 @description('Région pour le NSG')
-param location string
+param location string = resourceGroup().location
 
 @description('Nom du Network Watcher optionnel à utiliser pour les logs de flux. Si vide, le module utilisera "NetworkWatcher_<location>"')
 param networkWatcherName string = ''
@@ -34,17 +34,14 @@ param flowLogsRetentionDays int = 7
 @description('Groupe de ressources du Network Watcher (pour les flow logs)')
 param networkWatcherRg string = 'NetworkWatcherRG'
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // Variable pour le Network Watcher (requis pour les flow logs)
 // Nom effectif du Network Watcher: prioriser le param `networkWatcherName` s'il est fourni.
-var effectiveNetworkWatcherName = empty(networkWatcherName) ? 'NetworkWatcher_${resolvedLocation}' : networkWatcherName
+var effectiveNetworkWatcherName = empty(networkWatcherName) ? 'NetworkWatcher_${location}' : networkWatcherName
 
 // Network Security Group Resource
 resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
   name: nsgName
-  location: resolvedLocation
+  location: location
   tags: tags
   properties: {
     securityRules: [
@@ -109,7 +106,7 @@ module flowLogsModule './network_watcher_flowlogs.bicep' = if (enableFlowLogs &&
     networkWatcherName: effectiveNetworkWatcherName
     nsgId: networkSecurityGroup.id
     flowLogsStorageAccountId: flowLogsStorageAccountId
-    location: resolvedLocation
+    location: location
     tags: tags
     flowLogsRetentionDays: flowLogsRetentionDays
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId

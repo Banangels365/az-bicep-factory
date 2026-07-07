@@ -104,6 +104,8 @@ param disallowed object?
 @description('Tags à appliquer.')
 param tags object = {}
 
+// Création des ressources
+
 resource gallery 'Microsoft.Compute/galleries@2024-03-03' existing = {
   name: galleryName
 }
@@ -173,6 +175,8 @@ resource image 'Microsoft.Compute/galleries/images@2024-03-03' = {
     releaseNoteUri: releaseNoteUri
   }
 }
+
+// Outputs
 
 @description('Resource ID de la définition d\'image.')
 output resourceId string = image.id

@@ -1,13 +1,16 @@
 # Modules pour Key Vault
+
 Ce dossier contient des modules Bicep pour déployer et configurer Azure Key Vault. Ces modules permettent de créer des Key Vaults avec des configurations personnalisées, y compris les politiques d'accès, les secrets, les clés, les points de terminaison privés, et plus encore. Ils sont conçus pour être réutilisables et adaptables à différents scénarios de sécurité et de gestion des clés dans Azure.
 
 ## Modules disponibles
+
 - `key_vault_key.bicep`: Module pour déployer des clés dans un Key Vault.
 - `key_vault_secret.bicep`: Module pour déployer des secrets dans un Key Vault.
-- `key_vault_access_policy.bicep`: Module pour configurer les politiques d'accès dans un Key Vault. 
+- `key_vault_access_policy.bicep`: Module pour configurer les politiques d'accès dans un Key Vault.
 - `key_vault.bicep`: Module principal pour déployer un Key Vault avec des configurations flexibles, incluant les access policies, secrets, clés, private endpoints, et plus encore.
 
 ## Description du module Key Vault Key
+
 Le module `key_vault_key.bicep` permet de déployer des clés dans un Key Vault existant. Il prend en charge la configuration de différents types de clés, de tailles, et d'opérations autorisées. Le module retourne des informations clés sur la clé déployée, telles que son Resource ID, son nom, et le nom du Key Vault parent.  
 
 ### Paramètres du module Key Vault Key
@@ -19,6 +22,7 @@ Le module `key_vault_key.bicep` permet de déployer des clés dans un Key Vault 
 #### Ressources créées
 
 ### Exemple d'utilisation du module Key Vault Key
+
 ```bicep
 module keyVaultKeys './modules/security/key-vault/key_vault_key.bicep' = [
   {
@@ -55,6 +59,7 @@ module keyVaultKeys './modules/security/key-vault/key_vault_key.bicep' = [
 ```
 
 ### Description du module Key Vault Secret
+
 Le module `key_vault_secret.bicep` permet de déployer des secrets dans un Key Vault existant. Il prend en charge la configuration de différents types de secrets, de valeurs, et de content types. Le module retourne des informations clés sur le secret déployé, telles que son Resource ID, son nom, et le nom du Key Vault parent.
 
 ### Paramètres du module Key Vault Secret
@@ -66,6 +71,7 @@ Le module `key_vault_secret.bicep` permet de déployer des secrets dans un Key V
 #### Ressources créées
 
 ### Exemple d'utilisation du module Key Vault Secret
+
 ```bicep
 module keyVaultSecrets './modules/security/key-vault/key_vault_secret.bicep' = [
   {
@@ -99,6 +105,7 @@ module keyVaultSecrets './modules/security/key-vault/key_vault_secret.bicep' = [
 ```
 
 ### Description du module Key Vault Access Policy
+
 Le module `key_vault_access_policy.bicep` permet de configurer les politiques d'accès dans un Key Vault existant. Il prend en charge la configuration de différentes permissions pour les clés, les secrets, et les certificats, ainsi que l'association de ces permissions à des identités spécifiques. Le module retourne des informations clés sur la politique d'accès configurée, telles que son Resource ID, son nom, et le nom du Key Vault parent.
 
 ### Paramètres du module Key Vault Access Policy
@@ -110,6 +117,7 @@ Le module `key_vault_access_policy.bicep` permet de configurer les politiques d'
 #### Ressources créées
 
 ### Exemple d'utilisation du module Key Vault Access Policy
+
 ```bicep
 module keyVaultAccessPolicies './modules/security/key-vault/key_vault_access_policy.bicep' = [
   {
@@ -155,17 +163,19 @@ module keyVaultAccessPolicies './modules/security/key-vault/key_vault_access_pol
 ```
 
 ### Description du module Key Vault
+
 Le module `key_vault.bicep` permet de déployer un Key Vault avec des configurations flexibles, incluant les access policies, secrets, clés, private endpoints, et plus encore. Il prend en charge la configuration de différents paramètres pour le Key Vault lui-même, ainsi que l'intégration avec d'autres services Azure pour une gestion complète des clés et des secrets. Le module retourne des informations clés sur le Key Vault déployé, telles que son Resource ID, son nom, et son URI.
 
 #### Paramètres du module Key Vault
 
-#### Inputs 
+#### Inputs
 
-#### Outputs    
+#### Outputs
 
 #### Ressources créées
 
 ### Exemple d'utilisation complète du module Key Vault avec les modules enfants
+
 ```bicep
 module keyVault './modules/security/key-vault/key_vault.bicep' = {
     name: 'kv-prod-001'

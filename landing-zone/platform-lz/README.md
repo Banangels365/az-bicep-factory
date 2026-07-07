@@ -1,8 +1,8 @@
 # Platform Landing Zone - Orchestrateur de la gouvernance et de l’observabilité
 
-> **Version** : 1.0.0
+> **Version** : 1.0.0  
 > **Région supportée** : `canadacentral` (`cace`), `canadaeast` (`caea`)  
-> **Mainteneur** : Angeles Banaka
+> **Mainteneur** : Angeles Banaka  
 > **Dernière mise à jour** : Juillet 2026
 ----
 

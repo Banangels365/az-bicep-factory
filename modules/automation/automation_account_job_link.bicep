@@ -18,6 +18,8 @@ param parameters object = {}
 @description('Nom du Hybrid Runbook Worker Group à utiliser. Laisser vide pour une exécution standard.')
 param runOn string = ''
 
+// Création des ressources
+
 resource automationAccount 'Microsoft.Automation/automationAccounts@2024-10-23' existing = {
   name: automationAccountName
 }
@@ -36,6 +38,8 @@ resource jobSchedule 'Microsoft.Automation/automationAccounts/jobSchedules@2024-
     }
   }
 }
+
+// Outputs
 
 @description('Nom technique du job schedule créé.')
 output name string = jobSchedule.name

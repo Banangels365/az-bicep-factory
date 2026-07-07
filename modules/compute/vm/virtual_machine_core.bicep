@@ -95,6 +95,7 @@ param availabilityZone int = -1
 @description('ID de l\'availability set.')
 param availabilitySetResourceId string = ''
 
+// Variables
 var isLinux = osType == 'Linux'
 
 var formattedUserAssignedIdentities = reduce(
@@ -142,6 +143,7 @@ var windowsConfiguration = {
     : null
 }
 
+// Création des ressources
 module managedDataDisks './virtual_machine_disk.bicep' = [
   for (dataDisk, index) in dataDisks: if (empty(dataDisk.?managedDisk.?resourceId) && ((dataDisk.?createOption ?? 'Empty') != 'FromImage')) {
     name: '${uniqueString(deployment().name, name, string(index))}-disk-${index}'
@@ -242,6 +244,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-11-01' = {
   }
 }
 
+// Outputs
 @description('ID de la VM.')
 output vmId string = vm.id
 

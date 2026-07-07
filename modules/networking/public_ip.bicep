@@ -5,7 +5,7 @@
 param publicIpName string
 
 @description('Région pour l\'adresse IP publique')
-param location string
+param location string = resourceGroup().location
 
 @description('SKU de l\'adresse IP publique')
 @allowed([
@@ -59,13 +59,10 @@ param enableDiagnostics bool = true
 @description('ID du Workspace Log Analytics pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // Public IP Address Resource
 resource publicIp 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
   name: publicIpName
-  location: resolvedLocation
+  location: location
   tags: tags
   sku: {
     name: sku

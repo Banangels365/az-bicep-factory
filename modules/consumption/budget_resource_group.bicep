@@ -56,7 +56,7 @@ param contactEmails array = []
 @description('Liste des rôles Azure à notifier lorsque les seuils sont atteints ou dépassés.')
 param contactRoles array = []
 
-@description('Liste des resource IDs d’Action Groups à notifier lorsque les seuils sont atteints ou dépassés.')
+@description('Liste des resource IDs d\'Action Groups à notifier lorsque les seuils sont atteints ou dépassés.')
 param actionGroups array = []
 
 @description('Type de seuil utilisé pour les notifications.')

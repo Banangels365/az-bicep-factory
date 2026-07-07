@@ -5,18 +5,15 @@
 param managedIdentityName string
 
 @description('Emplacement pour l\'identité managée')
-param location string
+param location string = resourceGroup().location
 
 @description('Tags à associer à l\'identité managée')
 param tags object = {}
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // User-Assigned Managed Identity Resource
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: managedIdentityName
-  location: resolvedLocation
+  location: location
   tags: tags
 }
 

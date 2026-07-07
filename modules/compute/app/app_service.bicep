@@ -8,11 +8,7 @@ param appServicePlanName string
 param appServiceName string
 
 @description('Région de déploiement')
-@allowed([
-  'cace' // canadacentral
-  'caea' // canadaeast
-])
-param location string = 'caea'
+param location string = resourceGroup().location
 
 @description('SKU du Plan App Service')
 @allowed([
@@ -107,7 +103,6 @@ param enableDiagnostics bool = true
 param logAnalyticsWorkspaceId string = ''
 
 // Variables
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 var linuxFxVersion = runtimeStack == 'dotnet'
   ? 'DOTNET|${runtimeVersion}'
@@ -152,10 +147,11 @@ var customAppSettings = [
 
 var allAppSettings = concat(baseAppSettings, appInsightsSettings, customAppSettings)
 
-// App Service Plan
+// Création des ressources
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: appServicePlanName
-  location: resolvedLocation
+  location: location
   tags: tags
   sku: {
     name: skuName
@@ -170,7 +166,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
 // App Service
 resource appService 'Microsoft.Web/sites@2023-01-01' = {
   name: appServiceName
-  location: resolvedLocation
+  location: location
   tags: tags
   kind: 'app,linux'
   identity: !empty(managedIdentityId)
@@ -206,7 +202,7 @@ resource appService 'Microsoft.Web/sites@2023-01-01' = {
 // Private Endpoint for App Service
 resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-09-01' = if (enablePrivateEndpoint && !empty(privateEndpointSubnetId) && !empty(privateDnsZoneIdSites)) {
   name: '${appServiceName}-pe'
-  location: resolvedLocation
+  location: location
   tags: tags
   properties: {
     subnet: {
@@ -264,6 +260,7 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // Outputs
+
 @description('ID du Plan App Service')
 output appServicePlanId string = appServicePlan.id
 

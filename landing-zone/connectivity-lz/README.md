@@ -1,11 +1,10 @@
 # Connectivity Landing Zone - Orchestrateur réseau Hub and Spoke
 
-> **Version** : 1.0.0
+> **Version** : 1.0.0  
 > **Région supportée** : `canadacentral` (`cace`), `canadaeast` (`caea`)  
-> **Mainteneur** : Angeles Banaka
+> **Mainteneur** : Angeles Banaka  
 > **Dernière mise à jour** : Juillet 2026
-
----
+----
 
 ## Contenu du dossier
 
@@ -26,8 +25,6 @@ connectivity-lz/
 
 > Le dossier ne contient pas de sous-répertoire local de modules. L’orchestrateur référence des modules partagés dans ../../modules/networking.
 
----
-
 ## Ce que déploie l’orchestrateur
 
 Le template principal déploie les composants suivants :
@@ -41,8 +38,6 @@ Le template principal déploie les composants suivants :
 - Azure Bastion optionnel
 - un plan DDoS optionnel
 
----
-
 ## Prérequis
 
 Avant le déploiement, vérifier les points suivants :
@@ -51,8 +46,6 @@ Avant le déploiement, vérifier les points suivants :
 - un workspace Log Analytics est disponible et son ID est fourni
 - le principal de déploiement dispose des permissions réseau suffisantes sur le resource group cible
 - les sous-réseaux réservés Azure sont configurés avec les tailles minimales attendues
-
----
 
 ## Déploiement
 
@@ -79,8 +72,6 @@ az deployment sub show \
   --query properties.outputs
 ```
 
----
-
 ## Paramètres principaux
 
 Le fichier de paramètres permet de piloter les éléments suivants :
@@ -94,15 +85,11 @@ Le fichier de paramètres permet de piloter les éléments suivants :
 - logAnalyticsWorkspaceId
 - tags
 
----
-
 ## Notes de conception
 
 - Cet élément est un orchestrateur de haut niveau ; il ne contient pas les définitions de modules locales.
 - Les ressources réseau détaillées sont déployées via des modules partagés situés dans ../../modules/networking.
 - La structure actuelle est volontairement simple afin de centraliser la logique de déploiement du hub dans un seul point d’entrée.
-
----
 
 ## Ressources utiles
 

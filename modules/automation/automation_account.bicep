@@ -7,11 +7,7 @@ targetScope = 'resourceGroup'
 param automationAccountName string
 
 @description('Région logique de déploiement.')
-@allowed([
-  'cace' // canadacentral
-  'caea' // canadaeast
-])
-param location string = 'caea'
+param location string = resourceGroup().location
 
 @description('SKU du compte Automation.')
 @allowed([
@@ -81,7 +77,6 @@ param sourceControlConfigurations array = []
 param tags object = {}
 
 // Variables 
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
 
 var userAssignedIdentitiesArray = [
   for id in userAssignedManagedIdentityIds: {
@@ -104,7 +99,7 @@ var identityType = enableSystemAssignedIdentity && length(userAssignedManagedIde
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2024-10-23' = {
   name: automationAccountName
-  location: resolvedLocation
+  location: location
   tags: tags
   identity: identityType == 'None'
     ? null
@@ -151,7 +146,7 @@ module automationCredentials './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'credential'
-      location: resolvedLocation
+      location: location
       name: item.name
       tags: tags
       properties: {
@@ -170,7 +165,7 @@ module automationModules './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'module'
-      location: resolvedLocation
+      location: location
       name: item.name
       tags: item.?tags ?? tags
       properties: {
@@ -188,7 +183,7 @@ module automationPwsh72Modules './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'powershell72Module'
-      location: item.?location ?? resolvedLocation
+      location: item.?location ?? location
       name: item.name
       tags: item.?tags ?? tags
       properties: {
@@ -206,7 +201,7 @@ module automationPython2Packages './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'python2Package'
-      location: resolvedLocation
+      location: location
       name: item.name
       tags: item.?tags ?? tags
       properties: {
@@ -224,7 +219,7 @@ module automationPython3Packages './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'python3Package'
-      location: resolvedLocation
+      location: location
       name: item.name
       tags: item.?tags ?? tags
       properties: {
@@ -242,7 +237,7 @@ module automationRunbooks './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'runbook'
-      location: resolvedLocation
+      location: location
       name: item.name
       tags: item.?tags ?? tags
       properties: {
@@ -265,7 +260,7 @@ module automationSchedules './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'schedule'
-      location: resolvedLocation
+      location: location
       name: item.name
       properties: {
         advancedSchedule: item.?advancedSchedule
@@ -287,7 +282,7 @@ module automationVariables './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'variable'
-      location: resolvedLocation
+      location: location
       name: item.name
       properties: {
         description: item.?description
@@ -305,7 +300,7 @@ module automationWebhooks './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'webhook'
-      location: resolvedLocation
+      location: location
       name: item.name
       properties: {
         runbookName: item.runbookName
@@ -325,7 +320,7 @@ module automationSourceControls './automation_account_artifact.bicep' = [
     params: {
       automationAccountName: automationAccount.name
       artifactType: 'sourceControl'
-      location: resolvedLocation
+      location: location
       name: item.name
       properties: {
         sourceType: item.sourceType
@@ -416,6 +411,8 @@ resource customDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05
     }
   }
 ]
+
+// Outputs
 
 @description('ID du compte Automation créé.')
 output automationAccountId string = automationAccount.id

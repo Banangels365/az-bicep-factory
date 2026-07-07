@@ -35,6 +35,7 @@ param networkSecurityGroupResourceId string = ''
 @description('Diagnostic settings à appliquer à la NIC.')
 param diagnosticSettings array = []
 
+// Variables
 var primaryIpConfig = first(ipConfigurations)
 var publicIpRequested = contains(primaryIpConfig, 'pipConfiguration') && primaryIpConfig.pipConfiguration != null
 var publicIpName = publicIpRequested ? (primaryIpConfig.pipConfiguration.?name ?? '${virtualMachineName}-pip') : ''
@@ -51,6 +52,7 @@ var publicIpZones = publicIpRequested && contains(primaryIpConfig.pipConfigurati
   ? primaryIpConfig.pipConfiguration.availabilityZones
   : null
 
+// Création de l'adresse IP publique si demandée
 resource publicIp 'Microsoft.Network/publicIPAddresses@2024-07-01' = if (publicIpRequested && (!contains(
   primaryIpConfig.pipConfiguration,
   'publicIPAddressResourceId'
@@ -67,6 +69,7 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2024-07-01' = if (publicI
   }
 }
 
+// Création de la carte réseau (NIC)
 resource networkInterface 'Microsoft.Network/networkInterfaces@2024-07-01' = {
   name: networkInterfaceName
   location: location
@@ -118,6 +121,7 @@ resource nicDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-previe
   }
 ]
 
+// Outputs
 @description('Nom de la NIC.')
 output name string = networkInterface.name
 

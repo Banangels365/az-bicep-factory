@@ -5,7 +5,7 @@
 param loadBalancerName string
 
 @description('Région pour le load balancer')
-param location string
+param location string = resourceGroup().location
 
 @description('SKU du Load Balancer')
 @allowed([
@@ -65,13 +65,10 @@ param enableDiagnostics bool = true
 @description('ID du Log Analytics Workspace pour les diagnostics')
 param logAnalyticsWorkspaceId string = ''
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // Load Balancer Resource
 resource loadBalancer 'Microsoft.Network/loadBalancers@2023-09-01' = {
   name: loadBalancerName
-  location: resolvedLocation
+  location: location
   tags: tags
   sku: {
     name: sku

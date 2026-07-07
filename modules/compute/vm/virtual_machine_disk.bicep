@@ -128,6 +128,7 @@ param availabilityZone int = -1
 @description('Tags à appliquer au disque.')
 param tags object = {}
 
+// Variables
 var isUltraOrPremiumV2 = contains(sku, 'Ultra') || contains(sku, 'PremiumV2')
 var creationData = {
   createOption: createOption
@@ -154,6 +155,7 @@ var creationData = {
   uploadSizeBytes: createOption == 'Upload' ? uploadSizeBytes : null
 }
 
+// Création du disque managé
 resource disk 'Microsoft.Compute/disks@2025-01-02' = {
   name: name
   location: location
@@ -188,6 +190,7 @@ resource disk 'Microsoft.Compute/disks@2025-01-02' = {
   }
 }
 
+// Outputs
 @description('Nom du disque.')
 output name string = disk.name
 

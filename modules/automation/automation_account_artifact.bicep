@@ -196,6 +196,8 @@ resource sourceControl 'Microsoft.Automation/automationAccounts/sourceControls@2
   }
 }
 
+// Outputs
+
 @description('Nom de l\'artefact créé.')
 output name string = name
 

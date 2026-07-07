@@ -29,7 +29,7 @@ param assignableScopes array = [
   subscription().id
 ]
 
-// Custom Role Definition Resource
+// Création de la définition de rôle personnalisé
 resource customRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
   name: guid(subscription().id, roleId)
   properties: {
@@ -48,6 +48,7 @@ resource customRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
 }
 
 // Outputs
+
 @description('ID du rôle personnalisé')
 output roleDefinitionId string = customRole.id
 

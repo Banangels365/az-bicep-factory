@@ -26,7 +26,7 @@ param tags object = {}
 ])
 param hostPoolType string = 'Pooled'
 
-@description('Algorithme de load balancing. Pour un Host Pool Personal, la valeur effective sera forcée à Persistent.')
+@description('Type de load balancing. Pour un Host Pool Personal, la valeur effective sera forcée à Persistent.')
 @allowed([
   'BreadthFirst'
   'DepthFirst'
@@ -150,6 +150,8 @@ param ssoSecretType string = ''
 @description('Liste des paramètres de diagnostic à créer sur le Host Pool.')
 param diagnosticSettings array = []
 
+// Variables
+
 var isPooled = hostPoolType == 'Pooled'
 var isPersonal = hostPoolType == 'Personal'
 var registrationTokenEnabled = managementType == 'Standard' && !empty(tokenValidityLength)
@@ -192,6 +194,8 @@ var hostPoolProperties = union(
   ring != null ? { ring: ring } : {}
 )
 
+// Création des ressources
+
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2025-03-01-preview' = {
   name: name
   location: location
@@ -228,6 +232,7 @@ resource hostPoolDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-
   }
 ]
 
+// Outputs
 @description('Resource ID du Host Pool.')
 output resourceId string = hostPool.id
 

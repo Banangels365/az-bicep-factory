@@ -5,7 +5,7 @@
 param firewallName string
 
 @description('Région Azure Firewall')
-param location string
+param location string = resourceGroup().location
 
 @description('SKU Azure Firewall')
 @allowed([
@@ -66,7 +66,7 @@ param logAnalyticsWorkspaceId string = ''
 // Azure Firewall Resource
 resource azureFirewall 'Microsoft.Network/azureFirewalls@2023-09-01' = {
   name: firewallName
-  location: location == 'caea' ? 'canadaeast' : 'canadacentral'
+  location: location
   tags: tags
   zones: !empty(zones) ? zones : null
   properties: {

@@ -84,6 +84,7 @@ param tags object = {}
 @description('Paramètres de diagnostic.')
 param diagnosticSettings array = []
 
+// Variables
 var formattedAccessPolicies = [
   for accessPolicy in accessPolicies: {
     applicationId: accessPolicy.?applicationId ?? ''
@@ -93,6 +94,7 @@ var formattedAccessPolicies = [
   }
 ]
 
+// Création du Key Vault
 resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' = {
   name: keyVaultName
   location: location
@@ -288,6 +290,7 @@ resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZone
   }
 ]
 
+// Outputs
 @description('ID du Key Vault.')
 output resourceId string = keyVault.id
 

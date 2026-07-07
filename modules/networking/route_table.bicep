@@ -5,7 +5,7 @@
 param routeTableName string
 
 @description('Région pour la table de routage')
-param location string
+param location string = resourceGroup().location
 
 @description('Désactiver la propagation des routes BGP')
 param disableBgpRoutePropagation bool
@@ -16,13 +16,10 @@ param routes array = []
 @description('Tags à appliquer à la table de routage')
 param tags object = {}
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
 // Route Table Resource
 resource routeTable 'Microsoft.Network/routeTables@2023-09-01' = {
   name: routeTableName
-  location: resolvedLocation
+  location: location
   tags: tags
   properties: {
     disableBgpRoutePropagation: disableBgpRoutePropagation

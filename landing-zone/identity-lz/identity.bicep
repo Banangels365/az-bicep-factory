@@ -1,5 +1,5 @@
 // landing-zone/identity/main.bicep
-// Identity Landing Zone orchestrator
+// Orchesrtrateur pour le déploiement des ressources d'identité et de sécurité dans les subscriptions cibles.
 
 targetScope = 'subscription'
 
@@ -41,7 +41,13 @@ param quarantineSubscriptionId string = ''
 @description('Group de ressources d\'identité (doit exister avant le déploiement)')
 param identityResourceGroupName string
 
-// Managed Identity names
+// ============================================
+// VARIABLES
+// ============================================
+
+var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
+
+// Identités Managées (Managed Identities)
 var miPlatformName = 'mi-${organizationName}-${environment}-${location}-platform'
 var miNetworkName = 'mi-${organizationName}-${environment}-${location}-network'
 var miAppDeployName = 'mi-${organizationName}-${environment}-${location}-app-deploy'
@@ -58,7 +64,7 @@ module miPlatform '../../modules/authorization/managed_identity.bicep' = {
   name: 'deploy-mi-platform'
   params: {
     managedIdentityName: miPlatformName
-    location: location
+    location: resolvedLocation
     tags: union(tags, {
       Purpose: 'Platform-Management'
     })
@@ -71,7 +77,7 @@ module miNetwork '../../modules/authorization/managed_identity.bicep' = {
   name: 'deploy-mi-network'
   params: {
     managedIdentityName: miNetworkName
-    location: location
+    location: resolvedLocation
     tags: union(tags, {
       Purpose: 'Network-Management'
     })
@@ -84,7 +90,7 @@ module miAppDeploy '../../modules/authorization/managed_identity.bicep' = {
   name: 'deploy-mi-app-deploy'
   params: {
     managedIdentityName: miAppDeployName
-    location: location
+    location: resolvedLocation
     tags: union(tags, {
       Purpose: 'Application-Deployment'
     })
@@ -97,7 +103,7 @@ module miBackup '../../modules/authorization/managed_identity.bicep' = {
   name: 'deploy-mi-backup'
   params: {
     managedIdentityName: miBackupName
-    location: location
+    location: resolvedLocation
     tags: union(tags, {
       Purpose: 'Backup-Operations'
     })
@@ -110,7 +116,7 @@ module miMonitoring '../../modules/authorization/managed_identity.bicep' = {
   name: 'deploy-mi-monitoring'
   params: {
     managedIdentityName: miMonitoringName
-    location: location
+    location: resolvedLocation
     tags: union(tags, {
       Purpose: 'Monitoring-Alerting'
     })

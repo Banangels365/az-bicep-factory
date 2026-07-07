@@ -11,7 +11,7 @@ param nsgId string
 param flowLogsStorageAccountId string
 
 @description('Région pour les Flow Logs (doit correspondre à celle du Network Watcher)')
-param location string
+param location string = resourceGroup().location
 
 @description('Tags à appliquer au Flow Logs')
 param tags object
@@ -25,9 +25,7 @@ param logAnalyticsWorkspaceId string
 @description('Nom du resource Flow Logs')
 param flowLogName string
 
-// Variable pour résoudre la location en fonction de l'abréviation
-var resolvedLocation = location == 'caea' ? 'canadaeast' : 'canadacentral'
-
+// Diagnostic Settings for NSG Flow Logs
 resource networkWatcher 'Microsoft.Network/networkWatchers@2023-09-01' existing = {
   name: networkWatcherName
 }
@@ -35,7 +33,7 @@ resource networkWatcher 'Microsoft.Network/networkWatchers@2023-09-01' existing 
 resource flowLogs 'Microsoft.Network/networkWatchers/flowLogs@2023-09-01' = {
   parent: networkWatcher
   name: flowLogName
-  location: resolvedLocation
+  location: location
   tags: tags
   properties: {
     targetResourceId: nsgId

@@ -52,10 +52,15 @@ param tags object = {}
 @description('Liste des paramètres de diagnostic à créer sur le Workspace.')
 param diagnosticSettings array = []
 
+// Variables
+
 var deployPrivateEndpoint = enablePrivateEndpoint && !empty(privateEndpointSubnetId) && !empty(privateDnsZoneIdWorkspace)
+
 var resolvedPrivateLinkServiceConnectionName = !empty(privateLinkServiceConnectionName)
   ? privateLinkServiceConnectionName
   : '${name}-pe-connection'
+
+// Création des ressources
 
 resource workspace 'Microsoft.DesktopVirtualization/workspaces@2025-10-10' = {
   name: name
@@ -136,6 +141,8 @@ resource workspaceDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021
     }
   }
 ]
+
+// Outputs
 
 @description('Resource ID du Workspace.')
 output resourceId string = workspace.id

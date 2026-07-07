@@ -17,10 +17,11 @@ param tags object = {}
 @description('Indique si la clé est activée.')
 param attributesEnabled bool = true
 
-@description('Date d\'expiration en secondes depuis 1970-01-01T00:00:00Z.')
+@description('Date d\'expiration en secondes depuis le 1er janvier 1970 à 00:00:00Z.')
+// Pour des raisons de sécurité, il est recommandé de définir une date d'expiration dans la mesure du possible.
 param attributesExp int?
 
-@description('Date "not before" en secondes depuis 1970-01-01T00:00:00Z.')
+@description('Date minimale d\'expiration en secondes depuis le 1er janvier 1970 à 00:00:00Z.')
 param attributesNbf int?
 
 @description('Nom de la courbe elliptique.')
@@ -56,10 +57,12 @@ param rotationPolicy object?
 @description('Role assignments au scope de la clé.')
 param roleAssignments array = []
 
+// Récupération du Key Vault existant
 resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' existing = {
   name: keyVaultName
 }
 
+// Création de la clé dans le Key Vault
 resource key 'Microsoft.KeyVault/vaults/keys@2024-11-01' = {
   name: name
   parent: keyVault
@@ -95,6 +98,7 @@ resource keyRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01'
   }
 ]
 
+// Outputs
 @description('URI de la clé.')
 output keyUri string = key.properties.keyUri
 
