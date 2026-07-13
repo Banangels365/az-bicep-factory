@@ -14,7 +14,7 @@ param managementSubscriptionId = '0061dc3e-7704-4778-bcda-b566d000d486'
 param tags = {
   Application: 'Platform-LZ'
   Environnement: 'sbox'
-  CreeLe: '2024-05-18'
+  CreeLe: '2026-06-10'
   CreePar: 'CloudOps-Team'
   Criticite: 'Moyen'
   Responsable: 'CloudOps-Team'

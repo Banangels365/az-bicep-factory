@@ -18,5 +18,10 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   tags: tags
 }
 
+// Outputs
+
+@description('ID du groupe de ressources créé')
 output resourceGroupId string = resourceGroup.id
+
+@description('Nom du groupe de ressources créé')
 output resourceGroupName string = resourceGroup.name

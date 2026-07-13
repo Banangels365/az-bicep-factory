@@ -40,6 +40,8 @@ resource subscriptionAssociations 'Microsoft.Management/managementGroups/subscri
   }
 ]
 
+// Outputs
+
 @description('ID du groupe d\'administration')
 output managementGroupId string = managementGroup.id
 
