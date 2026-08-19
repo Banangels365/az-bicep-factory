@@ -1,7 +1,9 @@
 # Modules pour compte de stockage Azure
+
 Ce dossier contient des modules Bicep pour déployer et configurer des comptes de stockage Azure. Ces modules permettent de créer des comptes de stockage avec des configurations personnalisées, y compris les types de comptes, les niveaux de performance, les règles de pare-feu, les points de terminaison privés, et plus encore. Ils sont conçus pour être réutilisables et adaptables à différents scénarios de stockage dans Azure.
 
 ## Modules disponibles
+
 - `storage_account.bicep`: Module principal pour déployer un compte de stockage avec des configurations flexibles, incluant les types de comptes, les niveaux de performance, les règles de pare-feu, les private endpoints, et plus encore.
 - `storage_blob_service.bicep`: Module pour déployer des services de blob dans un compte de stockage existant.
 - `storage_blob_container.bicep`: Module pour déployer des conteneurs de blob dans un compte de stockage existant.
@@ -15,7 +17,8 @@ Ce dossier contient des modules Bicep pour déployer et configurer des comptes d
 - `types.bicep`: Module pour la gestion de l'assignation des rôles et des identités managées dans les comptes de stockage.
 
 ## Description du module storage_account
-Le module `storage_account.bicep` permet de déployer un compte de stockage avec des configurations flexibles, incluant les types de comptes, les niveaux de performance, les règles de pare-feu, les private endpoints, et plus encore. Il prend en charge la configuration de différents paramètres pour le compte de stockage lui-même, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage. Le module retourne des informations clés sur le compte de stockage déployé, telles que son Resource ID, son nom, et son URI. 
+
+Le module `storage_account.bicep` permet de déployer un compte de stockage avec des configurations flexibles, incluant les types de comptes, les niveaux de performance, les règles de pare-feu, les private endpoints, et plus encore. Il prend en charge la configuration de différents paramètres pour le compte de stockage lui-même, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage. Le module retourne des informations clés sur le compte de stockage déployé, telles que son Resource ID, son nom, et son URI.
 
 ### Paramètres du module storage_account
 
@@ -26,6 +29,7 @@ Le module `storage_account.bicep` permet de déployer un compte de stockage avec
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_account
+
 ```bicep
 module storageAccount './modules/storage/storage_account.bicep' = {
   name: 'stprod001'
@@ -51,8 +55,8 @@ module storageAccount './modules/storage/storage_account.bicep' = {
 ```
 
 ### Description du module storage_blob_service
-Le module `storage_blob_service.bicep` permet de déployer des services de blob dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour le service de blob, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de blobs. Le module retourne des informations clés sur le service de blob déployé, telles que son Resource ID, son nom, et le nom du compte de stockage parent.
 
+Le module `storage_blob_service.bicep` permet de déployer des services de blob dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour le service de blob, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de blobs. Le module retourne des informations clés sur le service de blob déployé, telles que son Resource ID, son nom, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_blob_service
 
@@ -63,6 +67,7 @@ Le module `storage_blob_service.bicep` permet de déployer des services de blob 
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_blob_service
+
 ```bicep
 module blobService './modules/storage/storage_blob_service.bicep' = {
   name: 'blobService-prod-001'
@@ -81,8 +86,8 @@ module blobService './modules/storage/storage_blob_service.bicep' = {
 ```
 
 ### Description du module storage_blob_container
-Le module `storage_blob_container.bicep` permet de déployer des conteneurs de blob dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour les conteneurs de blob, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de blobs. Le module retourne des informations clés sur les conteneurs de blob déployés, telles que leurs Resource IDs, leurs noms, et le nom du compte de stockage parent.
 
+Le module `storage_blob_container.bicep` permet de déployer des conteneurs de blob dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour les conteneurs de blob, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de blobs. Le module retourne des informations clés sur les conteneurs de blob déployés, telles que leurs Resource IDs, leurs noms, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_blob_container
 
@@ -134,7 +139,9 @@ module blobContainer './modules/storage/storage_blob_container.bicep' = [
   }
 ]
 ```
+
 ### Description du module storage_blob_container_immutability_policy
+
 Le module `storage_blob_container_immutability_policy.bicep` permet de déployer des politiques d'immutabilité dans des conteneurs de blob existants. Il prend en charge la configuration de différents paramètres pour les politiques d'immutabilité, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de blobs. Le module retourne des informations clés sur les politiques d'immutabilité déployées, telles que leurs Resource IDs, leurs noms, et le nom du conteneur de blob parent.
 
 ### Paramètres du module storage_blob_container_immutability_policy
@@ -146,6 +153,7 @@ Le module `storage_blob_container_immutability_policy.bicep` permet de déployer
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_blob_container_immutability_policy
+
 ```bicep
 module immutabilityPolicy './modules/storage/storage_blob_container_immutability_policy.bicep' = [
   {
@@ -176,6 +184,7 @@ module immutabilityPolicy './modules/storage/storage_blob_container_immutability
 ```
 
 ### Description du module storage_file_service
+
 Le module `storage_file_service.bicep` permet de déployer des services de fichiers dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour le service de fichiers, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de fichiers. Le module retourne des informations clés sur le service de fichiers déployé, telles que son Resource ID, son nom, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_file_service
@@ -187,6 +196,7 @@ Le module `storage_file_service.bicep` permet de déployer des services de fichi
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_file_service
+
 ```bicep
 module fileService './modules/storage/storage_file_service.bicep' = {
   name: 'fileService-prod-001'
@@ -202,6 +212,7 @@ module fileService './modules/storage/storage_file_service.bicep' = {
 ```
 
 ### Description du module storage_file_share
+
 Le module `storage_file_share.bicep` permet de déployer des partages de fichiers dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour les partages de fichiers, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de fichiers. Le module retourne des informations clés sur les partages de fichiers déployés, telles que leurs Resource IDs, leurs noms, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_file_share
@@ -213,6 +224,7 @@ Le module `storage_file_share.bicep` permet de déployer des partages de fichier
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_file_share
+
 ```bicep
 module fileShare './modules/storage/storage_file_share.bicep' = [
   {
@@ -252,6 +264,7 @@ module fileShare './modules/storage/storage_file_share.bicep' = [
 ```
 
 ### Description du module storage_queue_service
+
 Le module `storage_queue_service.bicep` permet de déployer des services de file d'attente dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour le service de file d'attente, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de files d'attente. Le module retourne des informations clés sur le service de file d'attente déployé, telles que son Resource ID, son nom, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_queue_service
@@ -263,6 +276,7 @@ Le module `storage_queue_service.bicep` permet de déployer des services de file
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_queue_service
+
 ```bicep
 module queueService './modules/storage/storage_queue_service.bicep' = {
   name: 'queueService-prod-001'
@@ -278,6 +292,7 @@ module queueService './modules/storage/storage_queue_service.bicep' = {
 ```
 
 ### Description du module storage_queue
+
 Le module `storage_queue.bicep` permet de déployer des files d'attente dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour les files d'attente, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de files d'attente. Le module retourne des informations clés sur les files d'attente déployées, telles que leurs Resource IDs, leurs noms, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_queue
@@ -289,6 +304,7 @@ Le module `storage_queue.bicep` permet de déployer des files d'attente dans un 
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_queue
+
 ```bicep
 module queue './modules/storage/storage_queue.bicep' = [
   {
@@ -328,6 +344,7 @@ module queue './modules/storage/storage_queue.bicep' = [
 ```
 
 ### Description du module storage_table_service
+
 Le module `storage_table_service.bicep` permet de déployer des services de table dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour le service de table, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de tables. Le module retourne des informations clés sur le service de table déployé, telles que son Resource ID, son nom, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_table_service
@@ -339,6 +356,7 @@ Le module `storage_table_service.bicep` permet de déployer des services de tabl
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_table_service
+
 ```bicep
 module tableService './modules/storage/storage_table_service.bicep' = {
   name: 'tableService-prod-001'
@@ -354,6 +372,7 @@ module tableService './modules/storage/storage_table_service.bicep' = {
 ```
 
 ### Description du module storage_table
+
 Le module `storage_table.bicep` permet de déployer des tables dans un compte de stockage existant. Il prend en charge la configuration de différents paramètres pour les tables, ainsi que l'intégration avec d'autres services Azure pour une gestion complète du stockage de tables. Le module retourne des informations clés sur les tables déployées, telles que leurs Resource IDs, leurs noms, et le nom du compte de stockage parent.
 
 ### Paramètres du module storage_table
@@ -365,6 +384,7 @@ Le module `storage_table.bicep` permet de déployer des tables dans un compte de
 #### Ressources créées
 
 ### Exemple d'utilisation du module storage_table
+
 ```bicep
 module table './modules/storage/storage_table.bicep' = [
   {

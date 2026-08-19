@@ -199,6 +199,7 @@ module generalPolicy '../../modules/authorization/policy-assignment/02_General_P
     allowedLocations: [
       'canadacentral'
       'canadaeast'
+      'global'
     ]
   }
 }
@@ -206,6 +207,7 @@ module generalPolicy '../../modules/authorization/policy-assignment/02_General_P
 // 03-network-Policy Creation
 module networkPolicy '../../modules/authorization/policy-assignment/03_Network_Policy.bicep' = {
   name: 'deploy-03-network-policy'
+  scope: managementGroup('${organizationName}-root')
   params: {
     initiativeName: '03-network-Initiative'
     assignmentName: '03-network-Assignment' //ne doit pas depasse 24 
@@ -219,6 +221,7 @@ module networkPolicy '../../modules/authorization/policy-assignment/03_Network_P
 // 04-keyVault-Policy Creation
 module keyVaultPolicy '../../modules/authorization/policy-assignment/04_KeyVault_Policy.bicep' = {
   name: 'deploy-04-keyVault-policy'
+  scope: managementGroup('${organizationName}-root')
   params: {
     initiativeName: '04-Keyvault-RBAC-Initiative'
     assignmentName: '04-Key-RBAC-Assignment'
@@ -231,15 +234,22 @@ module keyVaultPolicy '../../modules/authorization/policy-assignment/04_KeyVault
 // 05-VM-Policy Creation
 module vmPolicy '../../modules/authorization/policy-assignment/05_VM_Policy.bicep' = {
   name: 'deploy-05-vm-policy'
+  scope: managementGroup('${organizationName}-root')
   params: {
     initiativeName: '05-VM-Initiative'
     assignmentName: '05-VM-Assignment'
     initiativeDisplayName: '05-VM Initiative'
     assignmentDisplayName: '05-VM Assignment'
     allowedVmSkus: [
-      'Standard_B2s'
-      'Standard_DS1_v2'
-      'Standard_DS2_v2'
+      'Standard_B2s' // (2 vCPU, 4 GiB RAM)
+      'Standard_B2ms' // (2 vCPU, 4 GiB RAM)
+      'Standard_B4ms' // (4 vCPU, 16 GiB RAM)
+      'Standard_B8ms' // (8 vCPU, 16 GiB RAM)
+      'Standard_B4as' // (4 vCPU, 8 GiB RAM)
+      'Standard_B4s_v2' // (4 vCPU, 16 GiB RAM)
+      'Standard_D2s_v5' // (2 vCPU, 8 GiB RAM)
+      'Standard_D4s_v5' // (4 vCPU, 16 GiB RAM)
+      'Standard_D8s_v5' // (8 vCPU, 16 GiB RAM)
     ]
     backupEffect: 'Disabled' // Utiliser 'AuditIfNotExists' pour activer l’audit, ou 'Disabled' pour désactiver temporairement l’audit
   }
@@ -248,6 +258,7 @@ module vmPolicy '../../modules/authorization/policy-assignment/05_VM_Policy.bice
 // 06-StorageAccount-Policy Creation
 module storageAccount '../../modules/authorization/policy-assignment/06_StorageAccount_Policy.bicep' = {
   name: 'deploy-06-storageaccount-policy'
+  scope: managementGroup('${organizationName}-root')
   params: {
     initiativeName: '06-StorageAccountInitiative'
     assignmentName: '06-StorageAccountAssign' //ne doit pas depasse 24 characteres
